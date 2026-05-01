@@ -1,0 +1,1630 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Öğrenci Takip</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html{overflow-x:hidden}
+:root{
+  --bg:#f0f4ff;--card:#fff;--card2:#f5f7ff;--border:#d0d8ff;
+  --shadow:0 2px 16px rgba(99,102,241,.10);
+  --purple:#7c3aed;--purple-l:#ede9fe;
+  --green:#059669;--green-l:#d1fae5;
+  --blue:#1d4ed8;--blue-l:#dbeafe;
+  --red:#dc2626;--red-l:#fee2e2;
+  --orange:#d97706;--orange-l:#fef3c7;
+  --text:#1e1b4b;--text2:#4c4f8a;--muted:#7c82b8;--dim:#a5aad4;
+}
+body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:15px;overflow-x:hidden}
+.screen{display:none;max-width:660px;margin:0 auto;padding:20px 14px;box-sizing:border-box;width:100%}
+.screen.active{display:block}
+input,select{width:100%;padding:11px 14px;border-radius:10px;border:2px solid var(--border);background:#fff;color:var(--text);font-family:'Nunito',sans-serif;font-size:15px;font-weight:600;outline:none;transition:border .2s}
+input:focus,select:focus{border-color:var(--purple);box-shadow:0 0 0 3px rgba(124,58,237,.1)}
+input.err,select.err{border-color:var(--red)}
+select{cursor:pointer;appearance:none}
+input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
+.btn{border:none;border-radius:12px;padding:11px 20px;font-family:'Nunito',sans-serif;font-weight:800;font-size:15px;cursor:pointer;transition:all .18s;display:inline-flex;align-items:center;gap:6px}
+.btn:hover{transform:translateY(-1px)}
+.btn-purple{background:linear-gradient(135deg,#7c3aed,#6d28d9);color:#fff;box-shadow:0 4px 16px rgba(124,58,237,.35)}
+.btn-green{background:linear-gradient(135deg,#059669,#047857);color:#fff;box-shadow:0 4px 14px rgba(5,150,105,.3)}
+.btn-blue{background:linear-gradient(135deg,#1d4ed8,#1e40af);color:#fff;box-shadow:0 4px 14px rgba(29,78,216,.3)}
+.btn-orange{background:linear-gradient(135deg,#d97706,#b45309);color:#fff;box-shadow:0 4px 14px rgba(217,119,6,.3)}
+.btn-wa{background:linear-gradient(135deg,#25d366,#128c7e);color:#fff;box-shadow:0 4px 14px rgba(37,211,102,.3)}
+.btn-ghost{background:#fff;color:var(--purple);border:2px solid var(--border);border-radius:10px;padding:9px 18px;font-family:'Nunito',sans-serif;font-weight:800;font-size:14px;cursor:pointer;transition:.18s}
+.btn-ghost:hover{border-color:var(--purple);background:var(--purple-l)}
+.btn-sm{padding:7px 14px;font-size:13px;border-radius:9px}
+.btn-del{background:var(--red-l);color:var(--red);border:2px solid #fecaca;border-radius:8px;padding:5px 11px;font-family:'Nunito',sans-serif;font-weight:800;font-size:13px;cursor:pointer}
+.btn-del:hover{background:#fecaca}
+.btn-edit2{background:var(--orange-l);color:var(--orange);border:2px solid #fde68a;border-radius:8px;padding:5px 11px;font-family:'Nunito',sans-serif;font-weight:800;font-size:13px;cursor:pointer}
+.card{background:#fff;border:2px solid var(--border);border-radius:18px;padding:16px 14px;box-shadow:var(--shadow);overflow:hidden;box-sizing:border-box;width:100%}
+@media(max-width:480px){.card{padding:12px 10px;border-radius:14px}.screen{padding:12px 8px}}
+.section-lbl{font-size:12px;font-weight:900;color:var(--purple);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;padding-bottom:7px;border-bottom:2px solid var(--purple-l)}
+.lbl{font-size:12px;font-weight:800;color:var(--text2);text-transform:uppercase;letter-spacing:.7px;display:block;margin-bottom:5px}
+.err-msg{color:var(--red);font-size:12px;margin-top:3px;font-weight:700;min-height:15px}
+.badge{display:inline-block;border-radius:20px;padding:4px 12px;font-size:12px;font-weight:800}
+.mb12{margin-bottom:12px}.mb14{margin-bottom:14px}.mb20{margin-bottom:20px}.mb24{margin-bottom:24px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.pg{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:6px}
+.app-hdr{background:linear-gradient(135deg,#7c3aed,#4f46e5);padding:26px 20px 22px;text-align:center;border-radius:18px;margin-bottom:18px;box-shadow:0 8px 32px rgba(124,58,237,.3)}
+.app-hdr h1{font-family:'Playfair Display',serif;font-size:28px;color:#fff;margin:6px 0 4px}
+.app-hdr p{font-size:12px;color:rgba(255,255,255,.7);font-weight:700;letter-spacing:2px;text-transform:uppercase}
+.s-row{background:#fff;border:2px solid var(--border);border-radius:14px;padding:12px 14px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:all .18s;margin-bottom:8px;box-shadow:var(--shadow)}
+.s-row:hover{border-color:var(--purple);transform:translateY(-2px)}
+.avatar{border-radius:14px;background:linear-gradient(135deg,#7c3aed,#6d28d9);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:22px}
+.tab-bar{display:grid;grid-template-columns:1fr 1fr;background:#fff;border:2px solid var(--border);border-radius:13px;padding:4px;gap:4px;margin-bottom:12px;box-shadow:var(--shadow)}
+.tab-btn{border:none;border-radius:9px;padding:10px 8px;background:transparent;color:var(--dim);font-family:'Nunito',sans-serif;font-weight:800;font-size:14px;cursor:pointer;transition:all .18s}
+.tab-att{background:var(--blue-l);color:var(--blue)}
+.tab-pay{background:var(--green-l);color:var(--green)}
+.cal-card{background:#fff;border:2px solid var(--border);border-radius:16px;padding:12px 10px;box-shadow:var(--shadow);overflow:hidden;width:100%;box-sizing:border-box;margin-bottom:12px}
+.cal-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.cal-nav{width:36px;height:36px;border-radius:8px;background:var(--bg);border:2px solid var(--border);color:var(--purple);font-size:18px;font-weight:900;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.day-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:2px;width:100%}
+.day-hdr{text-align:center;font-size:10px;font-weight:900;color:var(--dim);padding:3px 0;overflow:hidden}
+.day-cell{border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:12px;font-weight:800;cursor:pointer;border:1.5px solid transparent;background:var(--card2);color:var(--text2);user-select:none;transition:background .1s,border .1s;overflow:hidden;min-width:0;min-height:0;padding:6px 2px}
+.day-cell:active{opacity:.7}
+.day-cell.empty{opacity:0;pointer-events:none}
+.day-cell.came{background:#1d4ed8;color:#fff;border-color:#3b82f6}
+.day-cell.absent{background:#dc2626;color:#fff;border-color:#ef4444}
+.day-cell.paid{background:#059669!important;color:#fff!important;border-color:#10b981!important}
+.day-cell.payday{background:#fef9c3;color:#713f12;border-color:#fde047}
+.day-cell.today-r{border-color:var(--orange)!important;border-width:2px}
+.pay-amt{font-size:7px;font-weight:900;line-height:1;max-width:100%;overflow:hidden}
+.mark-row{display:flex;gap:6px;justify-content:center;margin-bottom:10px;overflow:hidden}
+.mark-btn{flex:1;max-width:160px;padding:8px 10px;border-radius:20px;border:2px solid transparent;background:var(--card2);color:var(--text2);font-family:'Nunito',sans-serif;font-weight:800;font-size:13px;cursor:pointer;text-align:center;white-space:nowrap}
+.mark-came{background:#1d4ed8;color:#fff;border-color:#1d4ed8}
+.mark-absent{background:#dc2626;color:#fff;border-color:#dc2626}
+.legend{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:8px;overflow:hidden}
+.ldot{display:flex;align-items:center;gap:4px;font-size:10px;color:var(--text2);font-weight:700}
+.dot{width:9px;height:9px;border-radius:2px;display:inline-block;flex-shrink:0}
+.stats{display:flex;gap:6px;margin-top:12px;overflow:hidden}
+.stat{flex:1;border-radius:10px;padding:8px 4px;text-align:center;min-width:0;overflow:hidden}
+.stat .n{font-size:18px;font-weight:900;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.stat .l{font-size:10px;margin-top:2px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pay-row{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:2px solid var(--border)}
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(30,27,74,.5);backdrop-filter:blur(5px);align-items:center;justify-content:center;z-index:999;padding:16px}
+.modal-bg.open{display:flex}
+.modal-box{background:#fff;border:2px solid var(--border);border-radius:20px;padding:24px;max-width:360px;width:100%;box-shadow:0 20px 60px rgba(99,102,241,.2)}
+.overdue{display:none;background:#fef2f2;border:2px solid #fecaca;border-radius:13px;padding:13px 15px;margin-bottom:12px}
+.overdue.show{display:block}
+.exp-bar{background:#fff;border:2px solid var(--border);border-radius:13px;padding:12px 15px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;box-shadow:var(--shadow)}
+.tip{text-align:center;font-size:13px;font-weight:700;background:var(--orange-l);border:2px solid #fde68a;border-radius:9px;padding:7px 12px;margin-bottom:10px}
+.pr-btn{padding:9px 8px;border-radius:9px;border:2px solid #fde047;background:#fff;color:#713f12;font-family:'Nunito',sans-serif;font-weight:800;font-size:13px;cursor:pointer;transition:.18s;text-align:center}
+.pr-btn:hover{background:#fef9c3}
+.pr-btn.sel{background:#f59e0b;color:#fff;border-color:#d97706}
+.rec-bg{display:none;position:fixed;inset:0;background:rgba(30,27,74,.55);backdrop-filter:blur(6px);z-index:1100;overflow-y:auto;padding:18px 14px}
+.rec-bg.open{display:block}
+.rec-wrap{max-width:540px;margin:0 auto}
+.rec-acts{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+#rec-card{background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 8px 40px rgba(30,27,74,.2)}
+.rec-hdr{background:linear-gradient(135deg,#1e1b4b,#4338ca);padding:26px 26px 20px;text-align:center;color:#fff}
+.rec-body{padding:20px 24px}
+.rec-row{display:flex;align-items:flex-start;padding:9px 0;border-bottom:1.5px solid #f0f4ff;gap:12px}
+.rec-row:last-child{border-bottom:none}
+.rec-lbl{font-size:11px;font-weight:900;color:#7c82b8;text-transform:uppercase;letter-spacing:.7px;min-width:100px;padding-top:4px;flex-shrink:0}
+.rec-val{flex:1}
+.rec-val input,.rec-val select{border:none;border-bottom:2px solid #e0e7ff;border-radius:0;padding:3px 2px;font-size:14px;font-weight:700;color:#1e1b4b;background:transparent;outline:none;appearance:none}
+.rec-fix{font-size:14px;font-weight:800;color:#1e1b4b;padding-top:4px;display:block}
+.rec-foot{background:#f8f7ff;padding:13px 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;border-top:2px solid #e0e7ff}
+@media print{body>*{display:none!important}.rec-bg{display:block!important;position:static;background:none;padding:0}.rec-acts{display:none!important}.rec-wrap{max-width:100%}#rec-card{box-shadow:none;border-radius:0}}
+.search-row{display:flex;gap:10px;margin-bottom:14px}
+.empty{text-align:center;padding:36px 16px}
+.tot{text-align:center;margin-top:12px;color:var(--dim);font-size:13px;font-weight:700}
+/* Loading */
+#loading{display:none;position:fixed;inset:0;background:rgba(255,255,255,.88);backdrop-filter:blur(4px);z-index:2000;flex-direction:column;align-items:center;justify-content:center;gap:14px}
+#loading.show{display:flex}
+.spinner{width:42px;height:42px;border:4px solid var(--purple-l);border-top:4px solid var(--purple);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+/* sync badge */
+.sync-dot{width:9px;height:9px;border-radius:50%;background:#10b981;display:inline-block;margin-left:6px;vertical-align:middle}
+.sync-dot.syncing{background:#f59e0b;animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+/* analysis */
+.per-btn{padding:8px 14px;border-radius:20px;border:2px solid var(--border);background:#fff;color:var(--text2);font-family:'Nunito',sans-serif;font-weight:800;font-size:13px;cursor:pointer;transition:.15s}
+.per-btn:hover{border-color:var(--purple);color:var(--purple)}
+.per-btn.sel{background:var(--purple);color:#fff;border-color:var(--purple)}
+.sum-card{border-radius:12px;padding:12px 10px;text-align:center;border:2px solid transparent;flex:1;min-width:0}
+.sum-n{font-size:18px;font-weight:900;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sum-l{font-size:10px;margin-top:3px;font-weight:700;color:var(--text2)}
+.bar-wrap{display:flex;align-items:flex-end;gap:3px;height:120px;width:100%;min-width:240px}
+.bar-col{display:flex;flex-direction:column;align-items:center;flex:1;min-width:0;gap:2px;height:100%}
+.bar-lbl{font-size:9px;font-weight:700;color:var(--muted);margin-top:4px;text-align:center;white-space:nowrap;overflow:hidden;width:100%}
+.bar-val{font-size:8px;font-weight:900;color:var(--text2);text-align:center;min-height:10px}
+.bar-pair{display:flex;gap:1px;align-items:flex-end;flex:1;width:100%}
+.bar-r{flex:1;border-radius:3px 3px 0 0;min-height:2px;transition:height .3s}
+.stu-pay-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1.5px solid var(--border)}
+.prog-bar{flex:1;height:8px;background:#e5e7eb;border-radius:4px;overflow:hidden}
+.prog-fill{height:100%;border-radius:4px;transition:width .3s}
+/* archive */
+.arc-card{background:#fff;border:2px solid #e5e7eb;border-radius:14px;padding:14px;margin-bottom:10px;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.arc-del-badge{display:inline-block;background:#f3f4f6;color:#6b7280;border-radius:20px;padding:3px 10px;font-size:11px;font-weight:800;margin-top:4px}
+</style>
+</head>
+<body>
+
+<div id="loading">
+  <div class="spinner"></div>
+  <div style="font-weight:800;color:var(--purple);font-size:15px" id="loading-msg">Bağlanıyor…</div>
+</div>
+
+<!-- LIST -->
+<div id="s-list" class="screen active">
+  <div class="app-hdr">
+    <div style="font-size:50px">🎓</div>
+    <h1>Öğrenci Takip <span class="sync-dot" id="sync-dot" title="Canlı senkronizasyon"></span></h1>
+    <p>Kayıt · Yoklama · Ödeme</p>
+  </div>
+  <div class="search-row">
+    <input id="search" type="text" placeholder="🔍 Öğrenci ara…" oninput="renderList()">
+    <button class="btn btn-purple" onclick="go('s-reg')">➕ Yeni Kayıt</button>
+  </div>
+  <button class="btn btn-blue" style="width:100%;justify-content:center;margin-bottom:14px;font-size:14px" onclick="openAnalysis()">📈 Gelir Analizi &amp; Ödeme Yönetimi</button>
+  <button class="btn" style="width:100%;justify-content:center;margin-bottom:14px;font-size:14px;background:linear-gradient(135deg,#374151,#1f2937);color:#fff;box-shadow:0 4px 14px rgba(55,65,81,.3)" onclick="openArchive()">🗃️ Eski Kursiyer Arşivi</button>
+  <div style="background:#fff;border:2px solid var(--border);border-radius:14px;padding:14px;margin-bottom:14px;box-shadow:var(--shadow)">
+    <div style="font-weight:900;font-size:14px;color:var(--purple);margin-bottom:12px">📊 Aylık Toplu Arşiv</div>
+    <div style="display:grid;grid-template-columns:1fr 80px;gap:8px;margin-bottom:10px">
+      <select id="bulk-month" style="width:100%;padding:10px;font-size:14px;border-radius:9px;border:2px solid var(--border);background:#fff;font-family:'Nunito',sans-serif;font-weight:700;color:var(--text);appearance:none">
+        <option value="0">Ocak</option><option value="1">Şubat</option><option value="2">Mart</option>
+        <option value="3">Nisan</option><option value="4">Mayıs</option><option value="5">Haziran</option>
+        <option value="6">Temmuz</option><option value="7">Ağustos</option><option value="8">Eylül</option>
+        <option value="9">Ekim</option><option value="10">Kasım</option><option value="11">Aralık</option>
+      </select>
+      <input id="bulk-year" type="number" placeholder="2026" style="width:100%;padding:10px 6px;font-size:14px;border-radius:9px;border:2px solid var(--border);font-weight:800;color:var(--text);font-family:'Nunito',sans-serif;text-align:center;background:#fff">
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <button class="btn btn-green" style="justify-content:center;padding:11px 8px;font-size:13px" onclick="bulkExcel()">⬇️ Excel İndir</button>
+      <button class="btn btn-blue" style="justify-content:center;padding:11px 8px;font-size:13px" onclick="bulkDrive()">☁️ Drive'a Yükle</button>
+    </div>
+    <div style="font-size:11px;color:var(--dim);margin-top:8px;font-weight:700;text-align:center">Tüm öğrenciler · Her öğrenci ayrı sekme · Yoklama + Ödeme + Özet</div>
+  </div>
+  <div id="list-el"></div>
+  <div class="tot" id="tot-el"></div>
+</div>
+
+<!-- REGISTER -->
+<div id="s-reg" class="screen">
+  <button class="btn-ghost mb14" onclick="go('s-list')">← Geri</button>
+  <div class="card">
+    <h2 style="font-family:'Playfair Display',serif;font-size:21px;text-align:center;color:var(--purple);margin-bottom:20px">📝 Yeni Öğrenci Kaydı</h2>
+    <div class="section-lbl">👤 Öğrenci Bilgileri</div>
+    <div class="g2 mb14">
+      <div><label class="lbl">Ad *</label><input id="r-name" placeholder="Adı" oninput="ce('r-name','r-err-name')"><div class="err-msg" id="r-err-name"></div></div>
+      <div><label class="lbl">Soyad *</label><input id="r-surname" placeholder="Soyadı" oninput="ce('r-surname','r-err-surname')"><div class="err-msg" id="r-err-surname"></div></div>
+    </div>
+    <div class="mb14"><label class="lbl">Öğrenci Telefonu</label><input id="r-phone" type="tel" placeholder="0500 000 00 00"></div>
+    <div class="mb14">
+      <label class="lbl">Eğitim Türü *</label>
+      <select id="r-edu" onchange="ce('r-edu','r-err-edu')">
+        <option value="">— Seçin —</option>
+        <option>🎸 Gitar</option><option>🪕 Bağlama</option><option>🎹 Piyano</option>
+        <option>🎵 Ukulele</option><option>🎤 Şan</option><option>🎼 Müzik Okullarına Hazırlık</option>
+        <option>♟ Satranç – Başlangıç</option><option>♟ Satranç – 1. Seviye</option>
+        <option>♟ Satranç – 2. Seviye</option><option>♟ Satranç – 3. ve Üzeri Seviye</option>
+      </select>
+      <div class="err-msg" id="r-err-edu"></div>
+    </div>
+    <div class="mb20">
+      <label class="lbl">Ders Programı *</label>
+      <select id="r-prog" onchange="ce('r-prog','r-err-prog')">
+        <option value="">— Seçin —</option>
+        <option>10 dk</option><option>20 dk</option><option>30 dk</option><option>40 dk</option>
+        <option>Aylık 10 dk × 2</option><option>Aylık 10 dk × 3</option>
+        <option>Aylık 20 dk × 2</option><option>Aylık 20 dk × 3</option>
+        <option>Aylık 30 dk × 2</option><option>Aylık 40 dk</option>
+      </select>
+      <div class="err-msg" id="r-err-prog"></div>
+    </div>
+    <div class="section-lbl">💰 Ödeme Bilgileri</div>
+    <div style="background:#f0fdf4;border:2px solid #86efac;border-radius:11px;padding:14px 15px;margin-bottom:16px">
+      <label class="lbl" style="color:#166534">Aylık Sabit Ders Bedeli (₺)</label>
+      <div style="display:flex;align-items:center;gap:10px;margin-top:4px;margin-bottom:14px">
+        <input id="r-fee" type="number" placeholder="Örn: 800" style="font-size:20px;font-weight:900;color:#059669;border-color:#86efac;background:#fff;flex:1">
+        <span style="font-size:22px;font-weight:900;color:#059669;flex-shrink:0">₺</span>
+      </div>
+      <label class="lbl" style="color:#166534">Ders Başı Ücret (₺) <span style="font-weight:600;text-transform:none;letter-spacing:0;font-size:11px;color:#4ade80">— geldiği ders × bu ücret = hesaplama</span></label>
+      <div style="display:flex;align-items:center;gap:10px;margin-top:4px">
+        <input id="r-lesson-fee" type="number" placeholder="Örn: 150" style="font-size:20px;font-weight:900;color:#059669;border-color:#86efac;background:#fff;flex:1">
+        <span style="font-size:22px;font-weight:900;color:#059669;flex-shrink:0">₺</span>
+      </div>
+    </div>
+    <div class="section-lbl">💳 Ödeme Taahhüdü</div>
+    <div style="background:#fefce8;border:2px solid #fde047;border-radius:11px;padding:12px 13px;margin-bottom:16px">
+      <div style="font-size:13px;font-weight:800;color:#713f12;margin-bottom:9px">📋 Veli hangi tarih aralığında ödeme yapacak?</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px" id="r-pr-btns">
+        <button type="button" class="pr-btn" data-v="1-5" onclick="selPR('r','1-5')">📅 1–5. günler</button>
+        <button type="button" class="pr-btn" data-v="6-10" onclick="selPR('r','6-10')">📅 6–10. günler</button>
+        <button type="button" class="pr-btn" data-v="11-15" onclick="selPR('r','11-15')">📅 11–15. günler</button>
+        <button type="button" class="pr-btn" data-v="16-20" onclick="selPR('r','16-20')">📅 16–20. günler</button>
+      </div>
+      <input type="hidden" id="r-payday" value="">
+    </div>
+    <div class="section-lbl">👩 Anne Bilgileri</div>
+    <div class="pg mb14">
+      <div><label class="lbl">Anne Adı Soyadı</label><input id="r-mom-name" placeholder="Anne adı soyadı"></div>
+      <div><label class="lbl">Anne Telefonu</label><input id="r-mom-phone" type="tel" placeholder="0500 000 00 00"></div>
+    </div>
+    <div class="section-lbl">👨 Baba Bilgileri</div>
+    <div class="pg mb24">
+      <div><label class="lbl">Baba Adı Soyadı</label><input id="r-dad-name" placeholder="Baba adı soyadı"></div>
+      <div><label class="lbl">Baba Telefonu</label><input id="r-dad-phone" type="tel" placeholder="0500 000 00 00"></div>
+    </div>
+    <button class="btn btn-purple" style="width:100%;padding:14px;font-size:16px" onclick="saveReg()">✅ Kaydı Tamamla</button>
+  </div>
+</div>
+
+<!-- EDIT -->
+<div id="s-edit" class="screen">
+  <button class="btn-ghost mb14" onclick="go('s-detail')">← Geri</button>
+  <div class="card">
+    <h2 style="font-family:'Playfair Display',serif;font-size:21px;text-align:center;color:var(--orange);margin-bottom:20px">✏️ Öğrenci Düzenle</h2>
+    <div class="section-lbl">👤 Öğrenci Bilgileri</div>
+    <div class="g2 mb14">
+      <div><label class="lbl">Ad *</label><input id="e-name" oninput="ce('e-name','e-err-name')"><div class="err-msg" id="e-err-name"></div></div>
+      <div><label class="lbl">Soyad *</label><input id="e-surname" oninput="ce('e-surname','e-err-surname')"><div class="err-msg" id="e-err-surname"></div></div>
+    </div>
+    <div class="mb14"><label class="lbl">Öğrenci Telefonu</label><input id="e-phone" type="tel"></div>
+    <div class="mb14">
+      <label class="lbl">Eğitim Türü *</label>
+      <select id="e-edu" onchange="ce('e-edu','e-err-edu')">
+        <option value="">— Seçin —</option>
+        <option>🎸 Gitar</option><option>🪕 Bağlama</option><option>🎹 Piyano</option>
+        <option>🎵 Ukulele</option><option>🎤 Şan</option><option>🎼 Müzik Okullarına Hazırlık</option>
+        <option>♟ Satranç – Başlangıç</option><option>♟ Satranç – 1. Seviye</option>
+        <option>♟ Satranç – 2. Seviye</option><option>♟ Satranç – 3. ve Üzeri Seviye</option>
+      </select>
+      <div class="err-msg" id="e-err-edu"></div>
+    </div>
+    <div class="mb20">
+      <label class="lbl">Ders Programı *</label>
+      <select id="e-prog" onchange="ce('e-prog','e-err-prog')">
+        <option value="">— Seçin —</option>
+        <option>10 dk</option><option>20 dk</option><option>30 dk</option><option>40 dk</option>
+        <option>Aylık 10 dk × 2</option><option>Aylık 10 dk × 3</option>
+        <option>Aylık 20 dk × 2</option><option>Aylık 20 dk × 3</option>
+        <option>Aylık 30 dk × 2</option><option>Aylık 40 dk</option>
+      </select>
+      <div class="err-msg" id="e-err-prog"></div>
+    </div>
+    <div class="section-lbl">💰 Ödeme Bilgileri</div>
+    <div style="background:#f0fdf4;border:2px solid #86efac;border-radius:11px;padding:14px 15px;margin-bottom:16px">
+      <label class="lbl" style="color:#166534">Aylık Sabit Ders Bedeli (₺)</label>
+      <div style="display:flex;align-items:center;gap:10px;margin-top:4px;margin-bottom:14px">
+        <input id="e-fee" type="number" placeholder="Örn: 800" style="font-size:20px;font-weight:900;color:#059669;border-color:#86efac;background:#fff;flex:1">
+        <span style="font-size:22px;font-weight:900;color:#059669;flex-shrink:0">₺</span>
+      </div>
+      <label class="lbl" style="color:#166534">Ders Başı Ücret (₺)</label>
+      <div style="display:flex;align-items:center;gap:10px;margin-top:4px">
+        <input id="e-lesson-fee" type="number" placeholder="Örn: 150" style="font-size:20px;font-weight:900;color:#059669;border-color:#86efac;background:#fff;flex:1">
+        <span style="font-size:22px;font-weight:900;color:#059669;flex-shrink:0">₺</span>
+      </div>
+    </div>
+    <div class="section-lbl">💳 Ödeme Taahhüdü</div>
+    <div style="background:#fefce8;border:2px solid #fde047;border-radius:11px;padding:12px 13px;margin-bottom:16px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px" id="e-pr-btns">
+        <button type="button" class="pr-btn" data-v="1-5" onclick="selPR('e','1-5')">📅 1–5. günler</button>
+        <button type="button" class="pr-btn" data-v="6-10" onclick="selPR('e','6-10')">📅 6–10. günler</button>
+        <button type="button" class="pr-btn" data-v="11-15" onclick="selPR('e','11-15')">📅 11–15. günler</button>
+        <button type="button" class="pr-btn" data-v="16-20" onclick="selPR('e','16-20')">📅 16–20. günler</button>
+      </div>
+      <input type="hidden" id="e-payday" value="">
+    </div>
+    <div class="section-lbl">👩 Anne Bilgileri</div>
+    <div class="pg mb14">
+      <div><label class="lbl">Anne Adı Soyadı</label><input id="e-mom-name"></div>
+      <div><label class="lbl">Anne Telefonu</label><input id="e-mom-phone" type="tel"></div>
+    </div>
+    <div class="section-lbl">👨 Baba Bilgileri</div>
+    <div class="pg mb24">
+      <div><label class="lbl">Baba Adı Soyadı</label><input id="e-dad-name"></div>
+      <div><label class="lbl">Baba Telefonu</label><input id="e-dad-phone" type="tel"></div>
+    </div>
+    <button class="btn btn-orange" style="width:100%;padding:14px;font-size:16px" onclick="saveEdit()">💾 Değişiklikleri Kaydet</button>
+  </div>
+</div>
+
+<!-- DETAIL -->
+<div id="s-detail" class="screen">
+  <button class="btn-ghost mb14" onclick="go('s-list')">← Geri</button>
+  <div class="card mb12" id="det-hdr"></div>
+  <div class="overdue" id="overdue-box"></div>
+  <div class="exp-bar">
+    <div style="font-weight:800;font-size:14px;color:var(--text2)">📊 İşlemler</div>
+    <div style="display:flex;gap:7px;flex-wrap:wrap">
+      <button class="btn btn-orange btn-sm" onclick="openReceipt()">🧾 Makbuz</button>
+      <button class="btn btn-green btn-sm" onclick="exportExcel()">⬇️ Excel</button>
+      <button class="btn btn-blue btn-sm" onclick="openDrive()">☁️ Drive</button>
+    </div>
+  </div>
+  <div class="tab-bar">
+    <button class="tab-btn tab-att" id="tbtn-att" onclick="switchTab('att')">📋 Yoklama Takvimi</button>
+    <button class="tab-btn" id="tbtn-pay" onclick="switchTab('pay')">💰 Ödeme Takvimi</button>
+  </div>
+  <div class="cal-card">
+    <div class="cal-hdr">
+      <button class="cal-nav" onclick="prevM()">‹</button>
+      <span id="mon-lbl" style="font-weight:900;font-size:18px;color:var(--text)"></span>
+      <button class="cal-nav" onclick="nextM()">›</button>
+    </div>
+    <div class="mark-row" id="mark-row">
+      <button class="mark-btn mark-came" id="mbtn-came" onclick="setMark('came')">🔵 Geldi</button>
+      <button class="mark-btn" id="mbtn-absent" onclick="setMark('absent')">🔴 Gelmedi</button>
+    </div>
+    <div class="tip" id="pay-tip" style="display:none">💡 Ödeme eklemek için takvimde o güne tıkla → Yeşile döner</div>
+    <div class="day-grid mb12" id="day-hdrs"></div>
+    <div class="day-grid" id="cal-grid"></div>
+    <div class="legend" id="cal-leg"></div>
+    <div class="stats" id="cal-stats"></div>
+  </div>
+  <div id="pay-status-box" style="display:none;border-radius:13px;padding:13px 16px;margin-bottom:12px;border:2px solid;font-weight:800;font-size:14px;text-align:center"></div>
+  <div class="card mb12" id="pay-list-card" style="display:none">
+    <div id="pay-list-title" style="font-weight:900;font-size:15px;margin-bottom:10px"></div>
+    <div id="pay-list-body"></div>
+  </div>
+  <div class="card" id="yearly-card" style="display:none">
+    <div id="yearly-body"></div>
+  </div>
+</div>
+
+<!-- ANALYSIS SCREEN -->
+<div id="s-analysis" class="screen">
+  <button class="btn-ghost mb14" onclick="go('s-list')">← Geri</button>
+  <div class="app-hdr" style="padding:18px 16px 16px">
+    <div style="font-size:36px">📈</div>
+    <h1 style="font-size:22px">Gelir Analizi</h1>
+    <p>Ödeme Yönetimi · İstatistikler · Karşılaştırma</p>
+  </div>
+
+  <!-- Period selector -->
+  <div style="background:#fff;border:2px solid var(--border);border-radius:14px;padding:14px;margin-bottom:14px;box-shadow:var(--shadow)">
+    <div style="font-weight:900;font-size:13px;color:var(--text2);margin-bottom:10px">📅 Dönem Seçimi</div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap" id="period-btns">
+      <button class="per-btn sel" data-p="1" onclick="setPeriod(1)">Bu Ay</button>
+      <button class="per-btn" data-p="3" onclick="setPeriod(3)">3 Ay</button>
+      <button class="per-btn" data-p="6" onclick="setPeriod(6)">6 Ay</button>
+      <button class="per-btn" data-p="9" onclick="setPeriod(9)">9 Ay</button>
+      <button class="per-btn" data-p="12" onclick="setPeriod(12)">12 Ay</button>
+    </div>
+  </div>
+
+  <!-- Summary cards -->
+  <div id="ana-summary"></div>
+
+  <!-- Bar chart -->
+  <div class="card mb14" id="ana-chart-card">
+    <div style="font-weight:900;font-size:14px;color:var(--text);margin-bottom:14px" id="ana-chart-title">Aylık Gelir Grafiği</div>
+    <div id="ana-chart" style="width:100%;overflow-x:auto"></div>
+    <div style="display:flex;gap:12px;margin-top:12px;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:700;color:var(--text2)"><span style="width:12px;height:12px;border-radius:3px;background:#059669;display:inline-block"></span>Alınan</div>
+      <div style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:700;color:var(--text2)"><span style="width:12px;height:12px;border-radius:3px;background:#d0d5f5;display:inline-block"></span>Beklenen</div>
+    </div>
+  </div>
+
+  <!-- Music vs Chess -->
+  <div class="card mb14" id="ana-compare-card">
+    <div style="font-weight:900;font-size:14px;color:var(--text);margin-bottom:14px">🎵 Müzik vs ♟ Satranç Karşılaştırması</div>
+    <div id="ana-compare"></div>
+  </div>
+
+  <!-- Per student payment table -->
+  <div class="card mb14">
+    <div style="font-weight:900;font-size:14px;color:var(--text);margin-bottom:12px">👤 Öğrenci Bazlı Ödeme Durumu</div>
+    <div id="ana-students"></div>
+  </div>
+
+  <!-- Excel export -->
+  <div style="background:#fff;border:2px solid var(--border);border-radius:14px;padding:14px;margin-bottom:20px;box-shadow:var(--shadow)">
+    <div style="font-weight:900;font-size:14px;color:var(--purple);margin-bottom:10px">⬇️ Tüm Verileri Dışa Aktar</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <button class="btn btn-green" style="justify-content:center;padding:12px 8px;font-size:13px" onclick="exportAnalysisExcel()">📊 Gelir Raporu Excel</button>
+      <button class="btn btn-blue" style="justify-content:center;padding:12px 8px;font-size:13px" onclick="exportAllPayments()">💳 Tüm Ödemeler Excel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ARCHIVE SCREEN -->
+<div id="s-archive" class="screen">
+  <button class="btn-ghost mb14" onclick="go('s-list')">← Geri</button>
+  <div style="background:linear-gradient(135deg,#374151,#1f2937);padding:22px 18px 18px;text-align:center;border-radius:18px;margin-bottom:16px;box-shadow:0 8px 24px rgba(0,0,0,.25)">
+    <div style="font-size:40px;margin-bottom:6px">🗃️</div>
+    <h2 style="font-family:'Playfair Display',serif;font-size:22px;color:#fff;margin:0 0 4px">Eski Kursiyer Arşivi</h2>
+    <p style="font-size:12px;color:rgba(255,255,255,.6);font-weight:700;letter-spacing:1px">Silinen öğrencilerin tüm kayıtları burada saklanır</p>
+  </div>
+  <div style="display:flex;gap:8px;margin-bottom:14px">
+    <button class="btn btn-green btn-sm" style="flex:1;justify-content:center" onclick="exportArchiveExcel()">⬇️ Tüm Arşivi Excel'e Aktar</button>
+  </div>
+  <div id="archive-list"></div>
+  <div id="archive-empty" style="display:none">
+    <div class="card" style="text-align:center;padding:36px 16px">
+      <div style="font-size:48px;margin-bottom:12px">📂</div>
+      <p style="color:var(--muted);font-size:15px">Arşivde henüz kayıt yok.</p>
+      <p style="color:var(--dim);font-size:12px;margin-top:6px">Silinen öğrenciler otomatik olarak buraya taşınır.</p>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM -->
+<div class="modal-bg" id="conf-modal">
+  <div class="modal-box" style="max-width:320px;text-align:center">
+    <div id="conf-icon" style="font-size:36px;margin-bottom:8px">⚠️</div>
+    <div id="conf-msg" style="font-weight:800;font-size:15px;color:var(--text);margin-bottom:20px;line-height:1.5"></div>
+    <div style="display:flex;gap:8px">
+      <button class="btn-ghost" style="flex:1;padding:11px;font-size:14px;border-radius:9px" onclick="confNo()">İptal</button>
+      <button id="conf-yes" style="flex:1;padding:11px;font-size:14px;border-radius:9px;border:none;background:#dc2626;color:#fff;font-family:'Nunito',sans-serif;font-weight:800;cursor:pointer" onclick="confYes()">Evet</button>
+    </div>
+  </div>
+</div>
+
+<!-- PAYMENT MODAL -->
+<div class="modal-bg" id="pay-modal">
+  <div class="modal-box">
+    <div style="font-weight:900;font-size:18px;margin-bottom:4px;color:var(--text)">💰 Ödeme Ekle</div>
+    <div id="pay-modal-date" style="font-size:13px;color:var(--muted);margin-bottom:14px;font-weight:700"></div>
+    <label class="lbl">Ödeme Tutarı (₺)</label>
+    <input id="pay-amt" type="number" placeholder="Örn: 500" style="margin-bottom:12px;font-size:16px">
+    <label class="lbl">Açıklama <span style="font-weight:600;text-transform:none;font-size:11px;color:var(--dim)">(isteğe bağlı)</span></label>
+    <input id="pay-desc" type="text" placeholder="Nakit, EFT, eksik ödeme vb." style="margin-bottom:16px;font-size:14px" onkeydown="if(event.key==='Enter')doSavePay()">
+    <div style="display:flex;gap:8px">
+      <button class="btn-ghost" style="flex:1;padding:11px;border-radius:9px" onclick="closePayModal()">İptal</button>
+      <button class="btn btn-green" style="flex:2;padding:11px;border-radius:9px" onclick="doSavePay()">✅ Kaydet</button>
+    </div>
+  </div>
+</div>
+
+<!-- RECEIPT -->
+<div class="rec-bg" id="rec-modal">
+  <div class="rec-wrap">
+    <div class="rec-acts">
+      <button class="btn-ghost" onclick="closeReceipt()">← Geri</button>
+      <button class="btn btn-purple" onclick="window.print()">🖨️ Yazdır / PDF</button>
+      <button class="btn btn-wa" onclick="sendWA()">📲 WhatsApp</button>
+    </div>
+    <div id="rec-card">
+      <div class="rec-hdr">
+        <div style="font-size:42px;margin-bottom:7px">🎵♟</div>
+        <div style="font-size:16px;font-weight:900;line-height:1.4">RockJazz Müzik Aletleri<br>ve Silifke Satranç Atölyesi</div>
+        <div style="font-size:11px;color:rgba(255,255,255,.6);margin-top:4px;font-weight:700;letter-spacing:1px;text-transform:uppercase">Resmi Ödeme Makbuzu</div>
+        <div style="display:inline-block;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:4px 16px;font-size:13px;font-weight:800;margin-top:10px">✅ MAKBUZ</div>
+        <div id="rec-no" style="font-size:11px;font-weight:700;color:rgba(255,255,255,.4);margin-top:5px"></div>
+      </div>
+      <div class="rec-body">
+        <div class="rec-row"><div class="rec-lbl">Öğrenci</div><div class="rec-val"><input id="rec-student" placeholder="Öğrenci adı soyadı"></div></div>
+        <div class="rec-row"><div class="rec-lbl">Veli</div><div class="rec-val"><input id="rec-parent" placeholder="Veli adı soyadı"></div></div>
+        <div class="rec-row">
+          <div class="rec-lbl">Ders</div>
+          <div class="rec-val">
+            <select id="rec-lesson">
+              <option value="">— Seçin —</option>
+              <option>🎸 Gitar Dersi</option><option>🪕 Bağlama Dersi</option><option>🎹 Piyano Dersi</option>
+              <option>🎵 Ukulele Dersi</option><option>🎤 Şan Dersi</option><option>🎼 Müzik Okullarına Hazırlık</option>
+              <option>♟ Satranç – Başlangıç</option><option>♟ Satranç – 1. Seviye</option>
+              <option>♟ Satranç – 2. Seviye</option><option>♟ Satranç – 3. ve Üzeri Seviye</option>
+            </select>
+          </div>
+        </div>
+        <div class="rec-row">
+          <div class="rec-lbl">Dönem</div>
+          <div class="rec-val"><select id="rec-month"><option>Ocak</option><option>Şubat</option><option>Mart</option><option>Nisan</option><option>Mayıs</option><option>Haziran</option><option>Temmuz</option><option>Ağustos</option><option>Eylül</option><option>Ekim</option><option>Kasım</option><option>Aralık</option></select></div>
+          <div class="rec-val" style="max-width:76px"><input id="rec-year" type="number" style="text-align:center"></div>
+        </div>
+        <div class="rec-row">
+          <div class="rec-lbl" style="padding-top:9px">Ücret</div>
+          <div class="rec-val"><div style="display:flex;align-items:center;gap:6px"><input id="rec-amount" type="number" placeholder="0" style="font-size:24px;font-weight:900;color:#059669;max-width:150px"><span style="font-size:20px;font-weight:900;color:#059669">₺</span></div></div>
+        </div>
+        <div class="rec-row"><div class="rec-lbl">Parayı Alan</div><div class="rec-val"><span class="rec-fix">RockJazz Müzik Aletleri<br>ve Silifke Satranç Atölyesi</span></div></div>
+        <div class="rec-row"><div class="rec-lbl">Not</div><div class="rec-val"><input id="rec-note" placeholder="Ek not (isteğe bağlı)"></div></div>
+      </div>
+      <div class="rec-foot">
+        <div style="font-size:13px;color:#7c82b8;font-weight:700" id="rec-date"></div>
+        <div style="font-size:12px;color:#4c4f8a;font-weight:800;text-align:right;line-height:1.5">Kaşe / İmza<br><span style="font-size:15px">____________________</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══ FIREBASE ══════════════════════════════════════════════════════════
+const firebaseConfig = {
+  apiKey: "AIzaSyC15PE3FiOE3i46wVYxQ392YLOtHIzNYCI",
+  authDomain: "ogrencitakipveyoklama.firebaseapp.com",
+  databaseURL: "https://ogrencitakipveyoklama-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "ogrencitakipveyoklama",
+  storageBucket: "ogrencitakipveyoklama.firebasestorage.app",
+  messagingSenderId: "1070872863541",
+  appId: "1:1070872863541:web:1217b7df834298810fa27c"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+// ══ CONSTANTS ═════════════════════════════════════════════════════════
+const MONTHS=['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
+const DAYS=['Pt','Sa','Ça','Pe','Cu','Ct','Pz'];
+
+// ══ STATE ═════════════════════════════════════════════════════════════
+let students=[], curId=null, attData={}, payData=[];
+let curY=new Date().getFullYear(), curM=new Date().getMonth();
+let curTab='att', markC='came', confCB=null, payModalDate=null;
+
+// ══ LOADING ═══════════════════════════════════════════════════════════
+function showLoad(msg='Yükleniyor…'){
+  document.getElementById('loading-msg').textContent=msg;
+  document.getElementById('loading').classList.add('show');
+}
+function hideLoad(){ document.getElementById('loading').classList.remove('show'); }
+
+function setSyncing(on){
+  const d=document.getElementById('sync-dot');
+  if(d) d.className='sync-dot'+(on?' syncing':'');
+}
+
+// ══ FIREBASE HELPERS ══════════════════════════════════════════════════
+const fbSet = (path,data) => db.ref(path).set(data);
+const fbGet = async path => { const s=await db.ref(path).once('value'); return s.val(); };
+const fbDel = path => db.ref(path).remove();
+
+// ══ PERSIST ═══════════════════════════════════════════════════════════
+async function saveStudents(){
+  setSyncing(true);
+  const obj={};
+  students.forEach(s=>obj[s.id]=s);
+  await fbSet('students',obj);
+  setSyncing(false);
+}
+
+async function saveAtt(){
+  setSyncing(true);
+  await fbSet('attendance/'+curId, attData);
+  setSyncing(false);
+}
+
+async function savePay(){
+  setSyncing(true);
+  const obj={};
+  payData.forEach(p=>obj[p.id]=p);
+  await fbSet('payments/'+curId, obj);
+  setSyncing(false);
+}
+
+// ══ HELPERS ═══════════════════════════════════════════════════════════
+const fmt=(y,m,d)=>`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+const mkey=(y,m)=>`${y}-${String(m+1).padStart(2,'0')}`;
+const dim=(y,m)=>new Date(y,m+1,0).getDate();
+const fd=(y,m)=>{const d=new Date(y,m,1).getDay();return d===0?6:d-1;};
+const todays=()=>{const n=new Date();return fmt(n.getFullYear(),n.getMonth(),n.getDate());};
+const parseRange=s=>{if(!s)return null;const p=s.split('-');return p.length===2?{a:+p[0],b:+p[1]}:null;};
+const eduIcon=e=>{
+  if(!e)return'🎼';
+  if(e.includes('Gitar'))return'🎸';if(e.includes('Bağlama'))return'🪕';
+  if(e.includes('Piyano'))return'🎹';if(e.includes('Ukulele'))return'🎵';
+  if(e.includes('Şan'))return'🎤';if(e.includes('Satranç'))return'♟';
+  return'🎼';
+};
+
+// ══ SCREENS ═══════════════════════════════════════════════════════════
+function go(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0,0);
+  if(id==='s-list') renderList();
+  if(id==='s-reg') resetReg();
+  if(id==='s-detail') renderDetail();
+  if(id==='s-edit') fillEdit();
+  if(id==='s-analysis') renderAnalysis();
+  if(id==='s-archive') renderArchive();
+}
+
+// ══ LIST ══════════════════════════════════════════════════════════════
+function renderList(){
+  const q=(document.getElementById('search').value||'').toLowerCase();
+  const shown=students.filter(s=>(s.name+' '+s.surname).toLowerCase().includes(q));
+  const el=document.getElementById('list-el');
+  if(!shown.length){
+    el.innerHTML='<div class="card empty"><div style="font-size:50px;margin-bottom:12px">📋</div><p style="color:var(--muted);font-size:16px">Henüz öğrenci kaydı yok.</p></div>';
+  } else {
+    el.innerHTML=shown.map(s=>`
+      <div class="s-row" onclick="openDet('${s.id}')">
+        <div class="avatar" style="width:48px;height:48px">${eduIcon(s.education)}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:900;font-size:15px">${s.name} ${s.surname}</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${s.education} · ${s.program}</div>
+          <div style="font-size:12px;color:var(--dim);margin-top:1px">${s.phone?'📞 '+s.phone:''}${s.momPhone?' · 👩 '+s.momPhone:''}</div>
+        </div>
+        <button class="btn-del" onclick="event.stopPropagation();delStudent('${s.id}')">Sil</button>
+      </div>`).join('');
+  }
+  document.getElementById('tot-el').textContent='Toplam '+students.length+' öğrenci';
+}
+
+function delStudent(id){
+  showConf('Bu öğrenci silinecek. Tüm bilgileri ve ödemeleri ARŞİVE kaydedilecek.','🗑️','Evet, Arşivle & Sil',async()=>{
+    showLoad('Arşivleniyor…');
+    const student=students.find(s=>s.id===id);
+    if(student){
+      // Fetch att + pay before deleting
+      const [attSnap,paySnap]=await Promise.all([
+        db.ref('attendance/'+id).once('value'),
+        db.ref('payments/'+id).once('value')
+      ]);
+      const archiveEntry={
+        ...student,
+        deletedAt:new Date().toISOString().split('T')[0],
+        attendance:attSnap.val()||{},
+        payments:paySnap.val()||{}
+      };
+      await fbSet('archived/'+id, archiveEntry);
+    }
+    students=students.filter(s=>s.id!==id);
+    await Promise.all([
+      fbDel('students/'+id),
+      fbDel('attendance/'+id),
+      fbDel('payments/'+id)
+    ]);
+    hideLoad();
+    renderList();
+  });
+}
+
+// ══ REGISTER ══════════════════════════════════════════════════════════
+function resetReg(){
+  ['r-name','r-surname','r-phone','r-edu','r-prog','r-fee','r-lesson-fee','r-payday',
+   'r-mom-name','r-mom-phone','r-dad-name','r-dad-phone'].forEach(id=>{
+    const el=document.getElementById(id);if(el){el.value='';el.classList.remove('err');}
+  });
+  ['r-err-name','r-err-surname','r-err-edu','r-err-prog'].forEach(id=>{
+    const el=document.getElementById(id);if(el)el.textContent='';
+  });
+  document.querySelectorAll('#r-pr-btns .pr-btn').forEach(b=>b.classList.remove('sel'));
+}
+
+function ce(iid,eid){
+  document.getElementById(iid).classList.remove('err');
+  document.getElementById(eid).textContent='';
+}
+
+function selPR(p,v){
+  document.getElementById(p+'-payday').value=v;
+  document.querySelectorAll('#'+p+'-pr-btns .pr-btn').forEach(b=>b.classList.toggle('sel',b.dataset.v===v));
+}
+
+function readForm(p){
+  return{
+    name:document.getElementById(p+'-name').value.trim(),
+    surname:document.getElementById(p+'-surname').value.trim(),
+    phone:document.getElementById(p+'-phone').value.trim(),
+    education:document.getElementById(p+'-edu').value,
+    program:document.getElementById(p+'-prog').value,
+    fee:document.getElementById(p+'-fee').value.trim(),
+    lessonFee:document.getElementById(p+'-lesson-fee').value.trim(),
+    payDay:document.getElementById(p+'-payday').value||'',
+    momName:document.getElementById(p+'-mom-name').value.trim(),
+    momPhone:document.getElementById(p+'-mom-phone').value.trim(),
+    dadName:document.getElementById(p+'-dad-name').value.trim(),
+    dadPhone:document.getElementById(p+'-dad-phone').value.trim(),
+  };
+}
+
+function validate(d,p){
+  let ok=true;
+  const ep=p==='r'?'r-err-':'e-err-';
+  const chk=(v,iid,eid,msg)=>{if(!v){document.getElementById(iid).classList.add('err');document.getElementById(eid).textContent='⚠ '+msg;ok=false;}};
+  chk(d.name,    p+'-name',   ep+'name',   'Ad zorunludur');
+  chk(d.surname, p+'-surname',ep+'surname','Soyad zorunludur');
+  chk(d.education,p+'-edu',  ep+'edu',    'Eğitim türü seçin');
+  chk(d.program, p+'-prog',  ep+'prog',   'Program seçin');
+  return ok;
+}
+
+async function saveReg(){
+  const d=readForm('r');
+  if(!validate(d,'r'))return;
+  showLoad('Kaydediliyor…');
+  const now=new Date();
+  const regDate=fmt(now.getFullYear(),now.getMonth(),now.getDate());
+  const id=String(Date.now());
+  const student={id,registeredAt:regDate,...d};
+  students.push(student);
+  await fbSet('students/'+id, student);
+  hideLoad();
+  go('s-list');
+}
+
+// ══ EDIT ══════════════════════════════════════════════════════════════
+function fillEdit(){
+  const s=students.find(x=>x.id===curId);if(!s)return;
+  document.getElementById('e-name').value=s.name||'';
+  document.getElementById('e-surname').value=s.surname||'';
+  document.getElementById('e-phone').value=s.phone||'';
+  document.getElementById('e-edu').value=s.education||'';
+  document.getElementById('e-prog').value=s.program||'';
+  document.getElementById('e-fee').value=s.fee||'';
+  document.getElementById('e-lesson-fee').value=s.lessonFee||'';
+  document.getElementById('e-payday').value=s.payDay||'';
+  document.getElementById('e-mom-name').value=s.momName||'';
+  document.getElementById('e-mom-phone').value=s.momPhone||'';
+  document.getElementById('e-dad-name').value=s.dadName||'';
+  document.getElementById('e-dad-phone').value=s.dadPhone||'';
+  document.querySelectorAll('#e-pr-btns .pr-btn').forEach(b=>b.classList.toggle('sel',b.dataset.v===(s.payDay||'')));
+  ['e-err-name','e-err-surname','e-err-edu','e-err-prog'].forEach(id=>{
+    const el=document.getElementById(id);if(el)el.textContent='';
+  });
+}
+
+async function saveEdit(){
+  const d=readForm('e');
+  if(!validate(d,'e'))return;
+  showLoad('Güncelleniyor…');
+  const i=students.findIndex(x=>x.id===curId);
+  if(i>=0){students[i]={...students[i],...d};}
+  await fbSet('students/'+curId, students[i>=0?i:0]);
+  hideLoad();
+  go('s-detail');
+}
+
+// ══ DETAIL ════════════════════════════════════════════════════════════
+async function openDet(id){
+  curId=id;
+  curY=new Date().getFullYear();curM=new Date().getMonth();
+  curTab='att';markC='came';
+  showLoad('Yükleniyor…');
+  const [attVal,payVal]=await Promise.all([
+    fbGet('attendance/'+id),
+    fbGet('payments/'+id)
+  ]);
+  attData=attVal||{};
+  payData=Object.values(payVal||{});
+  hideLoad();
+  go('s-detail');
+}
+
+function renderDetail(){
+  const s=students.find(x=>x.id===curId);if(!s)return;
+  const rng=parseRange(s.payDay);
+  let regBadge='';
+  if(s.registeredAt){
+    const[ry,rm,rd]=s.registeredAt.split('-');
+    regBadge=`<div style="display:inline-flex;align-items:center;gap:5px;background:#1e1b4b;color:#c4b5fd;border-radius:8px;padding:4px 10px;font-size:12px;font-weight:800;margin-top:5px">📅 Kayıt: ${rd} ${MONTHS[+rm-1]} ${ry}</div>`;
+  }
+  document.getElementById('det-hdr').innerHTML=`
+    <div style="display:flex;align-items:flex-start;gap:13px">
+      <div class="avatar" style="width:54px;height:54px;font-size:26px;border-radius:16px">${eduIcon(s.education)}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:900;font-size:19px">${s.name} ${s.surname}</div>
+        ${regBadge}
+        <div style="display:flex;gap:6px;margin-top:7px;flex-wrap:wrap">
+          <span class="badge" style="background:var(--purple-l);color:var(--purple);border:2px solid #ddd6fe">${s.education}</span>
+          <span class="badge" style="background:var(--green-l);color:var(--green);border:2px solid #a7f3d0">⏱ ${s.program}</span>
+          ${s.fee?'<span class="badge" style="background:var(--green-l);color:var(--green);border:2px solid #a7f3d0">💰 '+parseFloat(s.fee).toLocaleString('tr-TR')+' ₺/ay</span>':''}
+          ${s.lessonFee?'<span class="badge" style="background:#f0fdf4;color:#166534;border:2px solid #86efac">📚 '+parseFloat(s.lessonFee).toLocaleString('tr-TR')+' ₺/ders</span>':''}
+          ${rng?'<span class="badge" style="background:#fef9c3;color:#713f12;border:2px solid #fde047">💳 Her ay '+s.payDay+'. günler</span>':''}
+        </div>
+        <div style="margin-top:10px;display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12px;font-weight:700">
+          ${s.phone?'<div style="background:var(--bg);padding:6px 9px;border-radius:7px;color:var(--text2)">📞 '+s.phone+'</div>':''}
+          ${s.momName||s.momPhone?'<div style="background:#fdf4ff;padding:6px 9px;border-radius:7px;color:var(--text2)">👩 '+(s.momName||'Anne')+': '+(s.momPhone||'—')+'</div>':''}
+          ${s.dadName||s.dadPhone?'<div style="background:#eff6ff;padding:6px 9px;border-radius:7px;color:var(--text2)">👨 '+(s.dadName||'Baba')+': '+(s.dadPhone||'—')+'</div>':''}
+        </div>
+      </div>
+      <button class="btn-edit2" onclick="go('s-edit')">✏️ Düzenle</button>
+    </div>`;
+  updateTabUI();
+  renderCal();
+  checkOverdue();
+}
+
+function switchTab(t){curTab=t;updateTabUI();renderCal();}
+function updateTabUI(){
+  document.getElementById('tbtn-att').className='tab-btn'+(curTab==='att'?' tab-att':'');
+  document.getElementById('tbtn-pay').className='tab-btn'+(curTab==='pay'?' tab-pay':'');
+}
+
+// ══ CALENDAR ══════════════════════════════════════════════════════════
+function prevM(){if(curM===0){curY--;curM=11;}else curM--;renderCal();}
+function nextM(){if(curM===11){curY++;curM=0;}else curM++;renderCal();}
+function setMark(c){
+  markC=c;
+  document.getElementById('mbtn-came').className='mark-btn'+(c==='came'?' mark-came':'');
+  document.getElementById('mbtn-absent').className='mark-btn'+(c==='absent'?' mark-absent':'');
+}
+
+function renderCal(){
+  document.getElementById('mon-lbl').textContent=MONTHS[curM]+' '+curY;
+  document.getElementById('mark-row').style.display=curTab==='att'?'flex':'none';
+  document.getElementById('pay-tip').style.display=curTab==='pay'?'block':'none';
+  document.getElementById('day-hdrs').innerHTML=DAYS.map(d=>'<div class="day-hdr">'+d+'</div>').join('');
+
+  const total=dim(curY,curM),start=fd(curY,curM),today=todays();
+  const s=students.find(x=>x.id===curId);
+  const rng=parseRange(s&&s.payDay);
+  let html='';
+  for(let i=0;i<start;i++)html+='<div class="day-cell empty"></div>';
+  for(let d=1;d<=total;d++){
+    const ds=fmt(curY,curM,d);
+    const att=attData[ds];
+    const paid=payData.find(p=>p.date===ds);
+    let cls='day-cell',extra='';
+    if(curTab==='att'){
+      if(att==='came') cls+=' came';
+      else if(att==='absent') cls+=' absent';
+      else if(rng&&d>=rng.a&&d<=rng.b) cls+=' payday';
+      if(ds===today&&!att) cls+=' today-r';
+    } else {
+      if(paid){ cls+=' paid'; extra='<span class="pay-amt">₺'+paid.amount+'</span>'; }
+      if(ds===today&&!paid) cls+=' today-r';
+    }
+    html+='<div class="'+cls+'" onclick="handleDay(\''+ds+'\','+d+')">'+d+extra+'</div>';
+  }
+  document.getElementById('cal-grid').innerHTML=html;
+
+  const leg=curTab==='att'
+    ?'<div class="ldot"><span class="dot" style="background:#1d4ed8"></span>Geldi</div>'+
+      '<div class="ldot"><span class="dot" style="background:#dc2626"></span>Gelmedi</div>'+
+      (rng?'<div class="ldot"><span class="dot" style="background:#fef9c3;border:2px solid #fde047"></span>Taahhüt Günleri</div>':'')+
+      '<div class="ldot"><span class="dot" style="background:transparent;border:2px solid var(--orange)"></span>Bugün</div>'
+    :'<div class="ldot"><span class="dot" style="background:#059669"></span>Ödeme Yapıldı</div>'+
+      '<div class="ldot"><span class="dot" style="background:transparent;border:2px solid var(--orange)"></span>Bugün</div>';
+  document.getElementById('cal-leg').innerHTML=leg;
+
+  const mk=mkey(curY,curM);
+  const came=Object.entries(attData).filter(([k,v])=>k.startsWith(mk)&&v==='came').length;
+  const abs=Object.entries(attData).filter(([k,v])=>k.startsWith(mk)&&v==='absent').length;
+  const pays=payData.filter(p=>p.date.startsWith(mk));
+  const tot=pays.reduce((acc,p)=>acc+parseFloat(p.amount||0),0);
+  const lf=parseFloat(s&&s.lessonFee||0);
+  const calcTot=lf>0?came*lf:0;
+
+  document.getElementById('cal-stats').innerHTML=curTab==='att'
+    ?'<div class="stat" style="background:var(--blue-l);border:2px solid #bfdbfe"><div class="n" style="color:var(--blue)">'+came+'</div><div class="l" style="color:var(--blue)">Geldi</div></div>'+
+      '<div class="stat" style="background:var(--red-l);border:2px solid #fecaca"><div class="n" style="color:var(--red)">'+abs+'</div><div class="l" style="color:var(--red)">Gelmedi</div></div>'+
+      '<div class="stat" style="background:var(--purple-l);border:2px solid #ddd6fe"><div class="n" style="color:var(--purple)">'+(came+abs)+'</div><div class="l" style="color:var(--purple)">Toplam</div></div>'+
+      (lf>0&&came>0?'<div class="stat" style="flex:2;background:#f0fdf4;border:2px dashed #86efac"><div class="n" style="color:#059669;font-size:13px">'+came+'×'+lf.toLocaleString('tr-TR')+'₺='+calcTot.toLocaleString('tr-TR')+'₺</div><div class="l" style="color:#166534">Tahmini Ücret</div></div>':'')
+    :'<div class="stat" style="background:var(--green-l);border:2px solid #a7f3d0"><div class="n" style="color:var(--green)">'+pays.length+'</div><div class="l" style="color:var(--green)">Ödeme</div></div>'+
+      '<div class="stat" style="flex:2;background:var(--green-l);border:2px solid #a7f3d0"><div class="n" style="color:var(--green);font-size:19px">'+tot.toLocaleString('tr-TR')+' ₺</div><div class="l" style="color:var(--green)">Bu Ay Alınan</div></div>'+
+      (lf>0?'<div class="stat" style="background:#f0fdf4;border:2px dashed #86efac;flex:2"><div class="n" style="color:#166534;font-size:12px">'+came+'×'+lf.toLocaleString('tr-TR')+'₺</div><div class="n" style="color:#059669;font-size:16px;margin-top:2px">='+calcTot.toLocaleString('tr-TR')+'₺</div><div class="l" style="color:#166534">Hesaplama</div></div>':'');
+
+  renderPayList();
+  renderPayStatus();
+  renderYearlyTable();
+}
+
+async function handleDay(ds,day){
+  if(curTab==='att'){
+    if(attData[ds]===markC) delete attData[ds]; else attData[ds]=markC;
+    renderCal();
+    await saveAtt();
+  } else {
+    const ex=payData.find(p=>p.date===ds);
+    if(ex){
+      showConf('Bu ödemeyi silmek istiyor musunuz?','💰','Evet, Sil',async()=>{
+        payData=payData.filter(p=>p.id!==ex.id);
+        renderCal();
+        await savePay();
+      });
+    } else {
+      payModalDate=ds;
+      document.getElementById('pay-modal-date').textContent='📅 '+day+' '+MONTHS[curM]+' '+curY;
+      document.getElementById('pay-amt').value='';
+      document.getElementById('pay-desc').value='';
+      document.getElementById('pay-modal').classList.add('open');
+      setTimeout(()=>document.getElementById('pay-amt').focus(),100);
+    }
+  }
+}
+
+function closePayModal(){document.getElementById('pay-modal').classList.remove('open');payModalDate=null;}
+async function doSavePay(){
+  const a=document.getElementById('pay-amt').value.trim();
+  if(!a||isNaN(a)){showConf('Lütfen geçerli bir tutar girin.','⚠️','Tamam',()=>{});return;}
+  const desc=document.getElementById('pay-desc').value.trim();
+  const pay={id:String(Date.now()),date:payModalDate,amount:a,desc:desc};
+  payData.push(pay);
+  closePayModal();
+  renderCal();
+  await savePay();
+}
+document.getElementById('pay-modal').addEventListener('click',function(e){if(e.target===this)closePayModal();});
+
+function renderPayList(){
+  const mk=mkey(curY,curM);
+  const pays=payData.filter(p=>p.date.startsWith(mk)).sort((a,b)=>a.date.localeCompare(b.date));
+  const card=document.getElementById('pay-list-card');
+  if(curTab!=='pay'||!pays.length){card.style.display='none';return;}
+  card.style.display='block';
+  document.getElementById('pay-list-title').textContent='💳 '+MONTHS[curM]+' '+curY+' – Ödemeler';
+  document.getElementById('pay-list-body').innerHTML=pays.map(p=>{
+    const d=new Date(p.date+'T12:00:00');
+    return '<div class="pay-row">'+
+      '<div style="min-width:0;flex:1">'+
+        '<div style="font-size:14px;font-weight:700">📅 '+d.getDate()+' '+MONTHS[d.getMonth()]+' '+d.getFullYear()+'</div>'+
+        (p.desc?'<div style="font-size:12px;color:var(--muted);margin-top:2px;font-weight:600">💬 '+p.desc+'</div>':'')+
+      '</div>'+
+      '<div style="display:flex;align-items:center;gap:9px;flex-shrink:0">'+
+        '<span style="font-weight:900;color:var(--green);font-size:15px">'+parseFloat(p.amount).toLocaleString('tr-TR')+' ₺</span>'+
+        '<button class="btn-del" onclick="delPay(\''+p.id+'\')">Sil</button>'+
+      '</div></div>';
+  }).join('');
+}
+
+function delPay(id){
+  showConf('Bu ödemeyi silmek istiyor musunuz?','💳','Evet, Sil',async()=>{
+    payData=payData.filter(p=>p.id!==id);
+    renderCal();
+    await savePay();
+  });
+}
+
+function renderPayStatus(){
+  const box=document.getElementById('pay-status-box');
+  if(curTab!=='pay'){box.style.display='none';return;}
+  const s=students.find(x=>x.id===curId);
+  const rng=parseRange(s&&s.payDay);
+  const mk=mkey(curY,curM);
+  const now=new Date();
+  const isPast=(curY*100+curM)<(now.getFullYear()*100+now.getMonth());
+  const pays=payData.filter(p=>p.date.startsWith(mk));
+  let prevY=curY,prevM2=curM-1;
+  if(prevM2<0){prevM2=11;prevY--;}
+  const prevPays=payData.filter(p=>p.date.startsWith(mkey(prevY,prevM2)));
+  if(pays.length>0&&rng){
+    const onTime=pays.some(p=>{const d=new Date(p.date+'T12:00:00').getDate();return d>=rng.a&&d<=rng.b;});
+    box.style.display='block';
+    if(onTime){
+      box.style.background='#d1fae5';box.style.borderColor='#10b981';box.style.color='#065f46';
+      box.innerHTML='✅ <b>'+MONTHS[curM]+' '+curY+'</b> — Ödemesi zamanında alındı';
+    } else {
+      box.style.background='#fef3c7';box.style.borderColor='#f59e0b';box.style.color='#92400e';
+      box.innerHTML='⚠️ <b>'+MONTHS[curM]+' '+curY+'</b> — Gecikmeli ödemesi alındı';
+    }
+  } else if(pays.length>0){
+    box.style.display='block';box.style.background='#d1fae5';box.style.borderColor='#10b981';box.style.color='#065f46';
+    box.innerHTML='✅ <b>'+MONTHS[curM]+' '+curY+'</b> — Ödemesi alındı';
+  } else if(isPast&&prevPays.length===0){
+    box.style.display='block';box.style.background='#fee2e2';box.style.borderColor='#fecaca';box.style.color='#991b1b';
+    box.innerHTML='🔴 <b>'+MONTHS[prevM2]+' '+prevY+'</b> — Geçen ay ödeme yapmadı!';
+  } else {
+    box.style.display='none';
+  }
+}
+
+function renderYearlyTable(){
+  const card=document.getElementById('yearly-card');
+  const s=students.find(x=>x.id===curId);
+  if(!s||curTab!=='pay'){card.style.display='none';return;}
+  const fee=parseFloat(s.fee||0);
+  const now=new Date();
+  const tableYear=curY;
+  let regY=0,regM2=0;
+  if(s.registeredAt){const p=s.registeredAt.split('-');regY=+p[0];regM2=+p[1]-1;}
+  let carryover=0,hasData=false;
+  let html='<div style="font-weight:900;font-size:15px;color:var(--text);margin-bottom:4px">📋 '+tableYear+' Yılı Ödeme Tablosu</div>';
+  if(s.registeredAt){const[ry,rm,rd]=s.registeredAt.split('-');html+='<div style="font-size:11px;color:var(--muted);font-weight:700;margin-bottom:12px">📅 Kayıt: '+rd+' '+MONTHS[+rm-1]+' '+ry+' tarihinden itibaren</div>';}
+  else html+='<div style="margin-bottom:12px"></div>';
+  html+='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px">';
+  html+='<thead><tr style="background:var(--purple-l)"><th style="padding:8px 5px;text-align:left;font-weight:900;color:var(--purple)">Ay</th><th style="padding:8px 5px;text-align:right;font-weight:900;color:var(--purple)">Beklenen</th><th style="padding:8px 5px;text-align:right;font-weight:900;color:var(--purple)">Ödenen</th><th style="padding:8px 5px;text-align:right;font-weight:900;color:var(--purple)">Bakiye</th><th style="padding:8px 5px;text-align:left;font-weight:900;color:var(--purple)">Durum</th></tr></thead><tbody>';
+  for(let m=0;m<12;m++){
+    if(s.registeredAt){if(tableYear<regY)break;if(tableYear===regY&&m<regM2)continue;}
+    const isFuture=(tableYear>now.getFullYear())||(tableYear===now.getFullYear()&&m>now.getMonth());
+    const mk=mkey(tableYear,m);
+    const moPays=payData.filter(p=>p.date.startsWith(mk));
+    if(isFuture&&moPays.length===0)continue;
+    const paid=moPays.reduce((a,p)=>a+parseFloat(p.amount||0),0);
+    const desc=moPays.map(p=>p.desc).filter(Boolean).join(', ');
+    const expected=fee>0?fee+carryover:carryover;
+    const balance=expected-paid;
+    const newCarryover=balance>0?balance:0;
+    if(fee===0&&paid===0&&carryover===0){carryover=0;continue;}
+    hasData=true;
+    let stTxt='',stColor='',rowBg='';
+    if(paid===0&&expected===0){stTxt='—';stColor='var(--dim)';rowBg='';}
+    else if(paid===0){stTxt='Ödeme Yok';stColor='#991b1b';rowBg='#fff5f5';}
+    else if(balance<=0){stTxt='✅ Tam';stColor='#065f46';rowBg='#f0fdf4';}
+    else{stTxt='⚠ Eksik';stColor='#92400e';rowBg='#fefce8';}
+    html+='<tr style="border-bottom:1.5px solid var(--border);background:'+rowBg+'">'+
+      '<td style="padding:8px 5px;font-weight:800">'+MONTHS[m]+'</td>'+
+      '<td style="padding:8px 5px;text-align:right;font-weight:700;color:var(--text2)">'+(expected>0?expected.toLocaleString('tr-TR')+' ₺':'—')+'</td>'+
+      '<td style="padding:8px 5px;text-align:right;font-weight:800;color:'+(paid>0?'#059669':'var(--dim)')+'">'+
+        (paid>0?paid.toLocaleString('tr-TR')+' ₺':'—')+'</td>'+
+      '<td style="padding:8px 5px;text-align:right;font-weight:900;color:'+(balance>0?'#dc2626':'#059669')+'">'+
+        (balance>0?'+'+balance.toLocaleString('tr-TR')+' ₺':balance<0?Math.abs(balance).toLocaleString('tr-TR')+' ₺ fazla':'✓')+'</td>'+
+      '<td style="padding:8px 5px;font-weight:800;color:'+stColor+'">'+stTxt+
+        (desc?'<div style="font-size:10px;color:var(--muted);margin-top:2px">'+desc+'</div>':'')+
+      '</td></tr>';
+    carryover=newCarryover;
+  }
+  html+='</tbody></table></div>';
+  if(carryover>0){
+    html+='<div style="margin-top:10px;background:#fef2f2;border:2px solid #fecaca;border-radius:9px;padding:10px 12px;font-weight:800;font-size:13px;color:#991b1b">⚠️ Toplam kalan bakiye: <b>'+carryover.toLocaleString('tr-TR')+' ₺</b></div>';
+  } else if(fee>0&&hasData){
+    html+='<div style="margin-top:10px;background:#f0fdf4;border:2px solid #a7f3d0;border-radius:9px;padding:10px 12px;font-weight:800;font-size:13px;color:#065f46">✅ Tüm ödemeler tam yapılmış</div>';
+  }
+  if(!hasData){card.style.display='none';return;}
+  card.style.display='block';
+  document.getElementById('yearly-body').innerHTML=html;
+}
+
+// ══ OVERDUE ═══════════════════════════════════════════════════════════
+function checkOverdue(){
+  const s=students.find(x=>x.id===curId);
+  const box=document.getElementById('overdue-box');
+  const rng=parseRange(s&&s.payDay);
+  if(!rng||!box){if(box)box.className='overdue';return;}
+  const now=new Date();
+  const isCurMon=(curY===now.getFullYear()&&curM===now.getMonth());
+  const mk=mkey(curY,curM);
+  const hasPaid=payData.some(p=>p.date.startsWith(mk));
+  if(hasPaid){box.className='overdue';return;}
+  const isPast=!isCurMon&&(curY*100+curM<now.getFullYear()*100+now.getMonth());
+  const isLate=isCurMon&&now.getDate()>rng.b;
+  if(!isLate&&!isPast){box.className='overdue';return;}
+  const ph=(s.momPhone||s.dadPhone||'').replace(/\D/g,'');
+  const pn=s.momName||s.dadName||'Veli';
+  const msg='Sayın '+pn+',\n\nÖğrenciniz '+s.name+' '+s.surname+' adına '+MONTHS[curM]+' '+curY+' ayı ders ücreti, taahhüt edilen '+s.payDay+'. günler aralığı geçtiği halde henüz ödenmemiştir.\n\nLütfen en kısa sürede ödemenizi yapınız.\n\nSaygılarımla,\nRockJazz Müzik Aletleri ve Silifke Satranç Atölyesi';
+  const waUrl='https://wa.me/'+(ph?'90'+ph.replace(/^0/,''):'')+'?text='+encodeURIComponent(msg);
+  box.className='overdue show';
+  box.innerHTML='<div style="display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap">'+
+    '<div style="flex:1;min-width:0"><div style="font-weight:900;font-size:15px;color:#991b1b;margin-bottom:3px">⚠️ Ödeme Gecikmiş!</div>'+
+    '<div style="font-size:13px;color:#b91c1c;font-weight:700">'+s.name+' '+s.surname+' — <b>'+MONTHS[curM]+' '+curY+'</b><br>Taahhüt: <b>'+s.payDay+'. günler</b></div></div>'+
+    '<div style="display:flex;flex-direction:column;gap:5px;flex-shrink:0">'+
+    '<a href="'+waUrl+'" target="_blank" style="display:inline-flex;align-items:center;gap:5px;background:linear-gradient(135deg,#25d366,#128c7e);color:#fff;border-radius:9px;padding:8px 13px;font-family:\'Nunito\',sans-serif;font-weight:800;font-size:13px;text-decoration:none">📲 WhatsApp</a>'+
+    (ph?'<div style="font-size:11px;color:#b91c1c;font-weight:700;text-align:center">'+ph+'</div>':'<div style="font-size:11px;color:#b91c1c;font-weight:700">⚠ Telefon yok</div>')+
+    '</div></div>';
+}
+
+// ══ CONFIRM ═══════════════════════════════════════════════════════════
+function showConf(msg,icon,yTxt,cb){
+  document.getElementById('conf-msg').textContent=msg;
+  document.getElementById('conf-icon').textContent=icon||'⚠️';
+  document.getElementById('conf-yes').textContent=yTxt||'Evet';
+  confCB=cb;
+  document.getElementById('conf-modal').classList.add('open');
+}
+function confYes(){document.getElementById('conf-modal').classList.remove('open');if(confCB)confCB();confCB=null;}
+function confNo(){document.getElementById('conf-modal').classList.remove('open');confCB=null;}
+document.getElementById('conf-modal').addEventListener('click',function(e){if(e.target===this)confNo();});
+
+// ══ RECEIPT ═══════════════════════════════════════════════════════════
+function openReceipt(){
+  const s=students.find(x=>x.id===curId);if(!s)return;
+  const now=new Date();
+  document.getElementById('rec-student').value=s.name+' '+s.surname;
+  document.getElementById('rec-parent').value=s.momName||s.dadName||'';
+  const mk=mkey(curY,curM);
+  const moPays=payData.filter(p=>p.date.startsWith(mk));
+  const lp=[...moPays].sort((a,b)=>b.date.localeCompare(a.date))[0];
+  const totalPaid=moPays.reduce((a,p)=>a+parseFloat(p.amount||0),0);
+  document.getElementById('rec-amount').value=lp?lp.amount:(s.fee||'');
+  document.getElementById('rec-month').selectedIndex=curM;
+  document.getElementById('rec-year').value=curY;
+  const fee=parseFloat(s.fee||0);
+  let autoNote='';
+  if(fee>0&&totalPaid>0){
+    const bal=fee-totalPaid;
+    autoNote=bal<=0?'Tam ödeme alınmıştır.':MONTHS[curM]+' ayından '+bal.toLocaleString('tr-TR')+' ₺ bakiyeniz kalmıştır.';
+  }
+  document.getElementById('rec-note').value=autoNote;
+  document.getElementById('rec-no').textContent='No: MKB-'+String(Date.now()).slice(-6);
+  document.getElementById('rec-date').textContent='📅 '+now.getDate()+' '+MONTHS[now.getMonth()]+' '+now.getFullYear();
+  document.getElementById('rec-modal').classList.add('open');
+  window.scrollTo(0,0);
+}
+function closeReceipt(){document.getElementById('rec-modal').classList.remove('open');}
+function sendWA(){
+  const student=document.getElementById('rec-student').value||'—';
+  const parent=document.getElementById('rec-parent').value||'—';
+  const lesson=document.getElementById('rec-lesson').value||'—';
+  const mon=document.getElementById('rec-month').value||'—';
+  const yr=document.getElementById('rec-year').value||'';
+  const amt=document.getElementById('rec-amount').value||'0';
+  const note=document.getElementById('rec-note').value;
+  const now=new Date();
+  const msg='🎵♟ *RockJazz Müzik Aletleri ve Silifke Satranç Atölyesi*\n━━━━━━━━━━━━━━━━━━━━\n✅ *ÖDEME MAKBUZU*\n━━━━━━━━━━━━━━━━━━━━\n👤 *Öğrenci:* '+student+'\n👨‍👩‍👦 *Veli:* '+parent+'\n📚 *Ders:* '+lesson+'\n📅 *Dönem:* '+mon+' '+yr+'\n💰 *Ücret:* '+parseFloat(amt).toLocaleString('tr-TR')+' ₺\n'+(note?'📝 *Not:* '+note+'\n':'')+'━━━━━━━━━━━━━━━━━━━━\n🗓 Tarih: '+now.getDate()+'.'+String(now.getMonth()+1).padStart(2,'0')+'.'+now.getFullYear()+'\n✍️ RockJazz Müzik Aletleri ve Silifke Satranç Atölyesi';
+  window.open('https://wa.me/?text='+encodeURIComponent(msg),'_blank');
+}
+
+// ══ EXCEL (bireysel) ══════════════════════════════════════════════════
+function exportExcel(){
+  const s=students.find(x=>x.id===curId);if(!s)return;
+  const mk=mkey(curY,curM),total=dim(curY,curM);
+  const ar=[[s.name+' '+s.surname+' – '+MONTHS[curM]+' '+curY],['Eğitim',s.education],['Program',s.program],['Tel',s.phone||'—'],['Anne',(s.momName||'—')+' / '+(s.momPhone||'—')],['Baba',(s.dadName||'—')+' / '+(s.dadPhone||'—')],['Kayıt Tarihi',s.registeredAt||'—'],['Ödeme Taahhüdü',s.payDay?'Her ay '+s.payDay+'. günler':'—'],[],['Gün','Tarih','Durum']];
+  let g=0,ab=0;
+  for(let d=1;d<=total;d++){const ds=fmt(curY,curM,d);const v=attData[ds];const st=v==='came'?'Geldi':v==='absent'?'Gelmedi':'—';if(v==='came')g++;if(v==='absent')ab++;ar.push([d,ds,st]);}
+  ar.push([],['','Geldi',g],['','Gelmedi',ab]);
+  const pays=payData.filter(p=>p.date.startsWith(mk));
+  const pr=[[s.name+' '+s.surname+' – '+MONTHS[curM]+' '+curY+' Ödemeler'],[],['Tarih','Tutar (₺)','Açıklama']];
+  let tot=0;pays.forEach(p=>{pr.push([p.date,parseFloat(p.amount),p.desc||'']);tot+=parseFloat(p.amount);});
+  pr.push([],['TOPLAM',tot]);
+  const wb=XLSX.utils.book_new();
+  const ws1=XLSX.utils.aoa_to_sheet(ar);ws1['!cols']=[{wch:8},{wch:14},{wch:12}];
+  const ws2=XLSX.utils.aoa_to_sheet(pr);ws2['!cols']=[{wch:14},{wch:14},{wch:20}];
+  XLSX.utils.book_append_sheet(wb,ws1,'Yoklama');
+  XLSX.utils.book_append_sheet(wb,ws2,'Ödemeler');
+  XLSX.writeFile(wb,s.name+'_'+s.surname+'_'+MONTHS[curM]+'_'+curY+'.xlsx');
+}
+function openDrive(){
+  exportExcel();
+  setTimeout(()=>{showConf('Excel dosyası indirildi!\nGoogle Drive açılıyor.','☁️','Drive\'ı Aç',()=>{window.open('https://drive.google.com/drive/my-drive','_blank');});},600);
+}
+
+// ══ BULK EXCEL ════════════════════════════════════════════════════════
+async function bulkExcel(){
+  if(!students.length){showConf('Henüz kayıtlı öğrenci yok.','ℹ️','Tamam',()=>{});return;}
+  showLoad('Tüm veriler hazırlanıyor…');
+  const [allAttSnap,allPaySnap]=await Promise.all([
+    db.ref('attendance').once('value'),
+    db.ref('payments').once('value')
+  ]);
+  const allAtt=allAttSnap.val()||{};
+  const allPay=allPaySnap.val()||{};
+  const m=parseInt(document.getElementById('bulk-month').value);
+  const y=parseInt(document.getElementById('bulk-year').value)||new Date().getFullYear();
+  const mk=mkey(y,m),total=dim(y,m);
+  const wb=XLSX.utils.book_new();
+  const sumRows=[['RockJazz Müzik Aletleri ve Silifke Satranç Atölyesi'],[MONTHS[m]+' '+y+' – Tüm Öğrenci Raporu'],['Oluşturma',new Date().toLocaleDateString('tr-TR')],[],['Ad Soyad','Eğitim','Program','Aylık (₺)','Ders Başı (₺)','Geldi','Gelmedi','Ödeme (₺)','Durum','Taahhüt','Anne','Anne Tel','Baba','Baba Tel']];
+  students.forEach(s=>{
+    const att=allAtt[s.id]||{};
+    const payObj=allPay[s.id]||{};
+    const pays=Object.values(payObj);
+    const cameDays=Object.entries(att).filter(([d,v])=>d.startsWith(mk)&&v==='came').length;
+    const absDays=Object.entries(att).filter(([d,v])=>d.startsWith(mk)&&v==='absent').length;
+    const moPays=pays.filter(p=>p.date.startsWith(mk));
+    const totPaid=moPays.reduce((a,p)=>a+parseFloat(p.amount||0),0);
+    const rng=parseRange(s.payDay);
+    const onTime=rng?moPays.some(p=>{const d=new Date(p.date+'T12:00:00').getDate();return d>=rng.a&&d<=rng.b;}):null;
+    const payStatus=moPays.length===0?'Ödeme Yok':(onTime===null?'Ödeme Yapıldı':(onTime?'Zamanında':'Gecikmeli'));
+    sumRows.push([s.name+' '+s.surname,s.education,s.program,s.fee?parseFloat(s.fee):'—',s.lessonFee?parseFloat(s.lessonFee):'—',cameDays,absDays,totPaid||'—',payStatus,s.payDay?'Her ay '+s.payDay+'. günler':'—',s.momName||'—',s.momPhone||'—',s.dadName||'—',s.dadPhone||'—']);
+    const ar=[[s.name+' '+s.surname+' — '+MONTHS[m]+' '+y],['Eğitim',s.education],['Program',s.program],['Aylık',s.fee?s.fee+' ₺':'—'],['Ders Başı',s.lessonFee?s.lessonFee+' ₺':'—'],['Kayıt',s.registeredAt||'—'],['Taahhüt',s.payDay?'Her ay '+s.payDay+'. günler':'—'],[],['── YOKLAMA ──'],['Gün','Tarih','Gün Adı','Durum']];
+    for(let d=1;d<=total;d++){const ds=fmt(y,m,d);const dayName=['Pazar','Pazartesi','Salı','Çarşamba','Perşembe','Cuma','Cumartesi'][new Date(ds+'T12:00:00').getDay()];const v=att[ds];ar.push([d,ds,dayName,v==='came'?'Geldi':v==='absent'?'Gelmedi':'—']);}
+    ar.push([],['','Geldi',cameDays],['','Gelmedi',absDays]);
+    ar.push([],['── ÖDEMELER ──'],['Tarih','Tutar (₺)','Açıklama','Durum']);
+    moPays.forEach(p=>{const d=new Date(p.date+'T12:00:00').getDate();const st=rng?(d>=rng.a&&d<=rng.b?'Zamanında':'Gecikmeli'):'—';ar.push([p.date,parseFloat(p.amount),p.desc||'',st]);});
+    ar.push([],['','TOPLAM',totPaid],['','Durum',payStatus]);
+    const sn=(s.name+' '+s.surname).slice(0,31).replace(/[:\\\/\?\*\[\]]/g,'');
+    const ws=XLSX.utils.aoa_to_sheet(ar);ws['!cols']=[{wch:8},{wch:14},{wch:12},{wch:14}];
+    XLSX.utils.book_append_sheet(wb,ws,sn);
+  });
+  const wsSum=XLSX.utils.aoa_to_sheet(sumRows);
+  wsSum['!cols']=[{wch:20},{wch:22},{wch:18},{wch:12},{wch:12},{wch:7},{wch:8},{wch:12},{wch:14},{wch:18},{wch:16},{wch:14},{wch:16},{wch:14}];
+  XLSX.utils.book_append_sheet(wb,wsSum,'ÖZET');
+  wb.SheetNames=['ÖZET',...wb.SheetNames.filter(n=>n!=='ÖZET')];
+  hideLoad();
+  XLSX.writeFile(wb,'OgrenciTakip_'+MONTHS[m]+'_'+y+'.xlsx');
+}
+
+function bulkDrive(){
+  bulkExcel().then(()=>{
+    setTimeout(()=>{showConf('Excel dosyası indirildi!\nGoogle Drive açılıyor.','☁️','Drive\'ı Aç',()=>{window.open('https://drive.google.com/drive/my-drive','_blank');});},800);
+  });
+}
+
+// ══ ANALYSIS ══════════════════════════════════════════════════════════
+let analysisPeriod=1;
+let allAttCache={}, allPayCache={};
+
+async function openAnalysis(){
+  showLoad('Veriler yükleniyor…');
+  const [attSnap,paySnap]=await Promise.all([
+    db.ref('attendance').once('value'),
+    db.ref('payments').once('value')
+  ]);
+  allAttCache=attSnap.val()||{};
+  allPayCache=paySnap.val()||{};
+  hideLoad();
+  go('s-analysis');
+  renderAnalysis();
+}
+
+function setPeriod(p){
+  analysisPeriod=p;
+  document.querySelectorAll('.per-btn').forEach(b=>b.classList.toggle('sel',+b.dataset.p===p));
+  renderAnalysis();
+}
+
+function getMonthsBack(n){
+  const months=[];
+  const now=new Date();
+  for(let i=n-1;i>=0;i--){
+    let m=now.getMonth()-i;
+    let y=now.getFullYear();
+    while(m<0){m+=12;y--;}
+    months.push({y,m,key:mkey(y,m),label:MONTHS[m].slice(0,3)+(n>6?' '+String(y).slice(2):'')});
+  }
+  return months;
+}
+
+function calcMonthData(mk){
+  let expected=0,received=0,chess=0,music=0,chessExp=0,musicExp=0;
+  students.forEach(s=>{
+    const fee=parseFloat(s.fee||0);
+    const pays=Object.values(allPayCache[s.id]||{}).filter(p=>p.date.startsWith(mk));
+    const rec=pays.reduce((a,p)=>a+parseFloat(p.amount||0),0);
+    const isChess=s.education&&s.education.includes('Satranç');
+    expected+=fee;
+    received+=rec;
+    if(isChess){chess+=rec;chessExp+=fee;}
+    else{music+=rec;musicExp+=fee;}
+  });
+  return{expected,received,chess,music,chessExp,musicExp};
+}
+
+function renderAnalysis(){
+  const months=getMonthsBack(analysisPeriod);
+  let totalExp=0,totalRec=0,totalChess=0,totalMusic=0,totalChessExp=0,totalMusicExp=0;
+  const monthData=months.map(mo=>{
+    const d=calcMonthData(mo.key);
+    totalExp+=d.expected;totalRec+=d.received;
+    totalChess+=d.chess;totalMusic+=d.music;
+    totalChessExp+=d.chessExp;totalMusicExp+=d.musicExp;
+    return{...mo,...d};
+  });
+
+  const pct=totalExp>0?Math.round(totalRec/totalExp*100):0;
+  const missing=Math.max(0,totalExp-totalRec);
+
+  // Summary cards
+  document.getElementById('ana-summary').innerHTML=`
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
+      <div class="sum-card" style="background:var(--green-l);border-color:#a7f3d0">
+        <div class="sum-n" style="color:var(--green);font-size:16px">${totalRec.toLocaleString('tr-TR')} ₺</div>
+        <div class="sum-l">Alınan</div>
+      </div>
+      <div class="sum-card" style="background:var(--purple-l);border-color:#ddd6fe">
+        <div class="sum-n" style="color:var(--purple);font-size:16px">${totalExp.toLocaleString('tr-TR')} ₺</div>
+        <div class="sum-l">Beklenen</div>
+      </div>
+      <div class="sum-card" style="background:${missing>0?'#fee2e2':'#f0fdf4'};border-color:${missing>0?'#fecaca':'#a7f3d0'}">
+        <div class="sum-n" style="color:${missing>0?'#dc2626':'#059669'};font-size:16px">${missing>0?missing.toLocaleString('tr-TR')+' ₺':'✅ Tam'}</div>
+        <div class="sum-l">${missing>0?'Eksik':'Tüm Ödemeler'}</div>
+      </div>
+      <div class="sum-card" style="background:${pct>=100?'#f0fdf4':pct>=70?'#fefce8':'#fee2e2'};border-color:${pct>=100?'#a7f3d0':pct>=70?'#fde047':'#fecaca'}">
+        <div class="sum-n" style="color:${pct>=100?'#059669':pct>=70?'#d97706':'#dc2626'}">${pct}%</div>
+        <div class="sum-l">Tahsilat Oranı</div>
+      </div>
+    </div>`;
+
+  // Bar chart
+  const maxVal=Math.max(...monthData.map(d=>Math.max(d.expected,d.received)),1);
+  let chartHtml=`<div class="bar-wrap">`;
+  monthData.forEach(d=>{
+    const hRec=Math.round((d.received/maxVal)*110);
+    const hExp=Math.round((d.expected/maxVal)*110);
+    chartHtml+=`<div class="bar-col">
+      <div class="bar-val">${d.received>0?Math.round(d.received/1000)+'K':''}</div>
+      <div class="bar-pair">
+        <div class="bar-r" style="height:${hExp}px;background:#d0d5f5"></div>
+        <div class="bar-r" style="height:${hRec}px;background:#059669"></div>
+      </div>
+      <div class="bar-lbl">${d.label}</div>
+    </div>`;
+  });
+  chartHtml+='</div>';
+  document.getElementById('ana-chart-title').textContent=`Aylık Gelir — Son ${analysisPeriod} Ay`;
+  document.getElementById('ana-chart').innerHTML=chartHtml;
+
+  // Music vs Chess
+  const mPct=totalMusicExp>0?Math.round(totalMusic/totalMusicExp*100):0;
+  const cPct=totalChessExp>0?Math.round(totalChess/totalChessExp*100):0;
+  document.getElementById('ana-compare').innerHTML=`
+    <div style="margin-bottom:14px">
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+        <span style="font-weight:800;font-size:13px">🎵 Müzik</span>
+        <span style="font-weight:900;font-size:13px;color:#059669">${totalMusic.toLocaleString('tr-TR')} ₺ / ${totalMusicExp.toLocaleString('tr-TR')} ₺ <span style="color:var(--muted)">(${mPct}%)</span></span>
+      </div>
+      <div class="prog-bar"><div class="prog-fill" style="width:${mPct}%;background:#1d4ed8"></div></div>
+    </div>
+    <div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+        <span style="font-weight:800;font-size:13px">♟ Satranç</span>
+        <span style="font-weight:900;font-size:13px;color:#059669">${totalChess.toLocaleString('tr-TR')} ₺ / ${totalChessExp.toLocaleString('tr-TR')} ₺ <span style="color:var(--muted)">(${cPct}%)</span></span>
+      </div>
+      <div class="prog-bar"><div class="prog-fill" style="width:${cPct}%;background:#7c3aed"></div></div>
+    </div>
+    <div style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px">
+      <div style="background:var(--blue-l);border-radius:9px;padding:8px;text-align:center">
+        <div style="font-weight:900;color:var(--blue)">${students.filter(s=>!s.education?.includes('Satranç')).length}</div>
+        <div style="color:var(--text2);font-weight:700">Müzik Öğrencisi</div>
+      </div>
+      <div style="background:var(--purple-l);border-radius:9px;padding:8px;text-align:center">
+        <div style="font-weight:900;color:var(--purple)">${students.filter(s=>s.education?.includes('Satranç')).length}</div>
+        <div style="color:var(--text2);font-weight:700">Satranç Öğrencisi</div>
+      </div>
+    </div>`;
+
+  // Per-student table
+  const curMk=mkey(new Date().getFullYear(),new Date().getMonth());
+  const stuRows=students.map(s=>{
+    const fee=parseFloat(s.fee||0);
+    const allPays=Object.values(allPayCache[s.id]||{});
+    // Last 'period' months total
+    const periodPays=months.reduce((a,mo)=>{
+      return a+allPays.filter(p=>p.date.startsWith(mo.key)).reduce((x,p)=>x+parseFloat(p.amount||0),0);
+    },0);
+    const periodExp=fee*analysisPeriod;
+    const thisMoPays=allPays.filter(p=>p.date.startsWith(curMk)).reduce((a,p)=>a+parseFloat(p.amount||0),0);
+    const bal=fee>0?(fee-thisMoPays):0;
+    const pct2=periodExp>0?Math.min(100,Math.round(periodPays/periodExp*100)):null;
+    const statusColor=thisMoPays>=fee&&fee>0?'#059669':bal>0?'#dc2626':'#7c82b8';
+    const statusTxt=fee===0?'—':thisMoPays>=fee?'✅ Tam':thisMoPays>0?'⚠ Eksik':'❌ Yok';
+    return{s,periodPays,periodExp,pct2,statusTxt,statusColor};
+  }).sort((a,b)=>b.periodPays-a.periodPays);
+
+  document.getElementById('ana-students').innerHTML=stuRows.map(({s,periodPays,periodExp,pct2,statusTxt,statusColor})=>`
+    <div class="stu-pay-row">
+      <div style="font-size:18px;flex-shrink:0">${eduIcon(s.education)}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:800;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${s.name} ${s.surname}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px">${periodPays.toLocaleString('tr-TR')} ₺ / ${periodExp.toLocaleString('tr-TR')} ₺</div>
+        ${pct2!==null?`<div class="prog-bar" style="margin-top:4px"><div class="prog-fill" style="width:${pct2}%;background:${pct2>=100?'#059669':pct2>=50?'#d97706':'#dc2626'}"></div></div>`:''}
+      </div>
+      <div style="font-weight:900;font-size:12px;color:${statusColor};flex-shrink:0;text-align:right">${statusTxt}</div>
+    </div>`).join('');
+}
+
+function exportAnalysisExcel(){
+  const months=getMonthsBack(12); // always 12 month for income report
+  const wb=XLSX.utils.book_new();
+
+  // Sheet 1: Monthly summary
+  const sumRows=[
+    ['RockJazz Müzik Aletleri ve Silifke Satranç Atölyesi'],
+    ['Yıllık Gelir Raporu — '+new Date().toLocaleDateString('tr-TR')],
+    [],
+    ['Ay','Beklenen (₺)','Alınan (₺)','Eksik (₺)','Tahsilat %','Müzik (₺)','Satranç (₺)']
+  ];
+  let grandExp=0,grandRec=0;
+  months.forEach(mo=>{
+    const d=calcMonthData(mo.key);
+    const missing=Math.max(0,d.expected-d.received);
+    const pct=d.expected>0?Math.round(d.received/d.expected*100):0;
+    sumRows.push([MONTHS[mo.m]+' '+mo.y,d.expected,d.received,missing,pct+'%',d.music,d.chess]);
+    grandExp+=d.expected;grandRec+=d.received;
+  });
+  sumRows.push([],['TOPLAM',grandExp,grandRec,Math.max(0,grandExp-grandRec),(grandExp>0?Math.round(grandRec/grandExp*100):0)+'%']);
+  const ws1=XLSX.utils.aoa_to_sheet(sumRows);
+  ws1['!cols']=[{wch:14},{wch:14},{wch:14},{wch:12},{wch:12},{wch:12},{wch:12}];
+  XLSX.utils.book_append_sheet(wb,ws1,'Aylık Gelir');
+
+  // Sheet 2: Per-student
+  const stuRows=[['Ad Soyad','Eğitim','Aylık Ücret (₺)','Bu Ay Alınan (₺)','Bu Ay Eksik (₺)','Durum']];
+  const curMk=mkey(new Date().getFullYear(),new Date().getMonth());
+  students.forEach(s=>{
+    const fee=parseFloat(s.fee||0);
+    const pays=Object.values(allPayCache[s.id]||{}).filter(p=>p.date.startsWith(curMk));
+    const rec=pays.reduce((a,p)=>a+parseFloat(p.amount||0),0);
+    const missing=Math.max(0,fee-rec);
+    const status=fee===0?'Ücret Yok':rec>=fee?'Tam':rec>0?'Eksik':'Ödeme Yok';
+    stuRows.push([s.name+' '+s.surname,s.education,fee,rec,missing,status]);
+  });
+  const ws2=XLSX.utils.aoa_to_sheet(stuRows);
+  ws2['!cols']=[{wch:22},{wch:24},{wch:14},{wch:14},{wch:14},{wch:12}];
+  XLSX.utils.book_append_sheet(wb,ws2,'Öğrenci Durumu');
+
+  XLSX.writeFile(wb,'GelirRaporu_'+new Date().toLocaleDateString('tr-TR').replace(/\./g,'-')+'.xlsx');
+}
+
+async function exportAllPayments(){
+  showLoad('Tüm ödemeler hazırlanıyor…');
+  const paySnap=await db.ref('payments').once('value');
+  const allPay=paySnap.val()||{};
+  hideLoad();
+  const rows=[['Tarih','Öğrenci','Eğitim','Tutar (₺)','Açıklama','Durum']];
+  students.forEach(s=>{
+    const pays=Object.values(allPay[s.id]||{}).sort((a,b)=>a.date.localeCompare(b.date));
+    const rng=parseRange(s.payDay);
+    pays.forEach(p=>{
+      const d=new Date(p.date+'T12:00:00').getDate();
+      const status=rng?(d>=rng.a&&d<=rng.b?'Zamanında':'Gecikmeli'):'—';
+      rows.push([p.date,s.name+' '+s.surname,s.education,parseFloat(p.amount),p.desc||'',status]);
+    });
+  });
+  const ws=XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols']=[{wch:14},{wch:22},{wch:24},{wch:12},{wch:22},{wch:12}];
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'Tüm Ödemeler');
+  XLSX.writeFile(wb,'TumOdemeler_'+new Date().toLocaleDateString('tr-TR').replace(/\./g,'-')+'.xlsx');
+}
+
+// ══ ARCHIVE ═══════════════════════════════════════════════════════════
+let archivedStudents=[];
+
+async function openArchive(){
+  showLoad('Arşiv yükleniyor…');
+  const snap=await db.ref('archived').once('value');
+  const val=snap.val()||{};
+  archivedStudents=Object.values(val).sort((a,b)=>(b.deletedAt||'').localeCompare(a.deletedAt||''));
+  hideLoad();
+  go('s-archive');
+}
+
+function renderArchive(){
+  const el=document.getElementById('archive-list');
+  const empty=document.getElementById('archive-empty');
+  if(!archivedStudents.length){
+    el.innerHTML='';
+    empty.style.display='block';
+    return;
+  }
+  empty.style.display='none';
+  el.innerHTML=archivedStudents.map(s=>{
+    // calc total paid from archived payments
+    const pays=Object.values(s.payments||{});
+    const totalPaid=pays.reduce((a,p)=>a+parseFloat(p.amount||0),0);
+    const payCount=pays.length;
+    // format deletedAt
+    let delLabel='';
+    if(s.deletedAt){
+      const[dy,dm,dd]=s.deletedAt.split('-');
+      delLabel=`${dd} ${MONTHS[+dm-1]} ${dy}`;
+    }
+    // contacts
+    const contacts=[];
+    if(s.phone)      contacts.push('📞 Öğrenci: '+s.phone);
+    if(s.momName||s.momPhone) contacts.push('👩 '+(s.momName||'Anne')+': '+(s.momPhone||'—'));
+    if(s.dadName||s.dadPhone) contacts.push('👨 '+(s.dadName||'Baba')+': '+(s.dadPhone||'—'));
+
+    return `<div class="arc-card">
+      <div style="display:flex;align-items:flex-start;gap:10px">
+        <div style="font-size:26px;flex-shrink:0">${eduIcon(s.education)}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:900;font-size:15px;color:#1f2937">${s.name} ${s.surname}</div>
+          <div class="arc-del-badge">🗑️ Silindi: ${delLabel||'—'}</div>
+          ${s.registeredAt?`<div class="arc-del-badge" style="margin-left:4px">📅 Kayıt: ${(()=>{const[ry,rm,rd]=s.registeredAt.split('-');return rd+' '+MONTHS[+rm-1]+' '+ry;})()}</div>`:''}
+          <div style="margin-top:8px;font-size:12px;font-weight:700;color:#374151">
+            <span style="background:#ede9fe;color:#7c3aed;border-radius:6px;padding:2px 7px;margin-right:4px">${s.education}</span>
+            <span style="background:#f0fdf4;color:#059669;border-radius:6px;padding:2px 7px">⏱ ${s.program}</span>
+          </div>
+          <div style="margin-top:10px;display:flex;flex-direction:column;gap:4px">
+            ${contacts.map(c=>`<div style="font-size:13px;font-weight:700;color:#374151;background:#f9fafb;padding:5px 9px;border-radius:7px">${c}</div>`).join('')}
+          </div>
+          ${s.fee?`<div style="margin-top:8px;font-size:12px;color:#059669;font-weight:800;background:#f0fdf4;padding:5px 9px;border-radius:7px">💰 Aylık: ${parseFloat(s.fee).toLocaleString('tr-TR')} ₺</div>`:''}
+          ${payCount>0?`<div style="margin-top:6px;font-size:12px;color:#374151;font-weight:800;background:#f0fdf4;padding:5px 9px;border-radius:7px">
+            💳 ${payCount} ödeme kaydı · Toplam: ${totalPaid.toLocaleString('tr-TR')} ₺
+          </div>`:'<div style="margin-top:6px;font-size:12px;color:#9ca3af;font-weight:700">Ödeme kaydı yok</div>'}
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0">
+          <button onclick="viewArchiveDetail('${s.id}')" style="background:#ede9fe;color:#7c3aed;border:none;border-radius:8px;padding:6px 10px;font-family:'Nunito',sans-serif;font-weight:800;font-size:12px;cursor:pointer">Detay</button>
+          <button onclick="restoreStudent('${s.id}')" style="background:#d1fae5;color:#059669;border:none;border-radius:8px;padding:6px 10px;font-family:'Nunito',sans-serif;font-weight:800;font-size:12px;cursor:pointer">Geri Al</button>
+          <button onclick="deleteArchive('${s.id}')" style="background:#fee2e2;color:#dc2626;border:none;border-radius:8px;padding:6px 10px;font-family:'Nunito',sans-serif;font-weight:800;font-size:12px;cursor:pointer">Kalıcı Sil</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// Show payment detail popup for archived student
+function viewArchiveDetail(id){
+  const s=archivedStudents.find(x=>x.id===id);
+  if(!s)return;
+  const pays=Object.values(s.payments||{}).sort((a,b)=>a.date.localeCompare(b.date));
+  let payHtml=pays.length===0
+    ?'<p style="color:var(--dim);font-size:13px">Ödeme kaydı bulunmuyor.</p>'
+    :pays.map(p=>{
+        const d=new Date(p.date+'T12:00:00');
+        return `<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #f3f4f6">
+          <div>
+            <div style="font-size:13px;font-weight:700;color:#374151">📅 ${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}</div>
+            ${p.desc?`<div style="font-size:11px;color:#9ca3af">💬 ${p.desc}</div>`:''}
+          </div>
+          <div style="font-weight:900;color:#059669;font-size:14px">${parseFloat(p.amount).toLocaleString('tr-TR')} ₺</div>
+        </div>`;
+      }).join('');
+  const total=pays.reduce((a,p)=>a+parseFloat(p.amount||0),0);
+
+  // show in a confirm-style modal repurposed
+  document.getElementById('conf-icon').textContent='💳';
+  document.getElementById('conf-msg').innerHTML=`
+    <div style="text-align:left;max-height:50vh;overflow-y:auto">
+      <div style="font-weight:900;font-size:16px;color:#1f2937;margin-bottom:12px">${s.name} ${s.surname} — Ödeme Geçmişi</div>
+      ${payHtml}
+      ${pays.length>0?`<div style="margin-top:10px;font-weight:900;color:#059669;font-size:14px">Toplam: ${total.toLocaleString('tr-TR')} ₺</div>`:''}
+    </div>`;
+  document.getElementById('conf-yes').textContent='Kapat';
+  document.getElementById('conf-yes').style.background='#7c3aed';
+  confCB=()=>{ document.getElementById('conf-yes').style.background='#dc2626'; };
+  document.getElementById('conf-modal').classList.add('open');
+}
+
+async function restoreStudent(id){
+  showConf('Bu öğrenci aktif listeye geri alınacak. Yoklama ve ödeme kayıtları da geri gelecek.','♻️','Evet, Geri Al',async()=>{
+    showLoad('Geri alınıyor…');
+    const s=archivedStudents.find(x=>x.id===id);
+    if(!s)return hideLoad();
+    const {attendance,payments,deletedAt,...studentData}=s;
+    // Restore to active nodes
+    await Promise.all([
+      fbSet('students/'+id, studentData),
+      fbSet('attendance/'+id, attendance||{}),
+      fbSet('payments/'+id, payments||{})
+    ]);
+    await fbDel('archived/'+id);
+    students.push(studentData);
+    archivedStudents=archivedStudents.filter(x=>x.id!==id);
+    hideLoad();
+    renderArchive();
+  });
+}
+
+async function deleteArchive(id){
+  showConf('Bu kayıt kalıcı olarak silinecek, geri alınamaz!','⚠️','Kalıcı Sil',async()=>{
+    showLoad('Siliniyor…');
+    await fbDel('archived/'+id);
+    archivedStudents=archivedStudents.filter(x=>x.id!==id);
+    hideLoad();
+    renderArchive();
+  });
+}
+
+async function exportArchiveExcel(){
+  if(!archivedStudents.length){showConf('Arşivde kayıt yok.','ℹ️','Tamam',()=>{});return;}
+  const wb=XLSX.utils.book_new();
+  // Sheet 1: contact list
+  const contacts=[
+    ['RockJazz Müzik Aletleri ve Silifke Satranç Atölyesi'],
+    ['Eski Kursiyer Arşivi — '+new Date().toLocaleDateString('tr-TR')],
+    [],
+    ['Ad Soyad','Eğitim','Program','Kayıt Tarihi','Silinme Tarihi','Öğrenci Tel','Anne','Anne Tel','Baba','Baba Tel','Aylık Ücret (₺)','Toplam Ödeme (₺)','Ödeme Sayısı']
+  ];
+  archivedStudents.forEach(s=>{
+    const pays=Object.values(s.payments||{});
+    const total=pays.reduce((a,p)=>a+parseFloat(p.amount||0),0);
+    contacts.push([
+      s.name+' '+s.surname, s.education||'—', s.program||'—',
+      s.registeredAt||'—', s.deletedAt||'—',
+      s.phone||'—', s.momName||'—', s.momPhone||'—',
+      s.dadName||'—', s.dadPhone||'—',
+      s.fee?parseFloat(s.fee):'—', total||'—', pays.length
+    ]);
+  });
+  const ws1=XLSX.utils.aoa_to_sheet(contacts);
+  ws1['!cols']=[{wch:20},{wch:22},{wch:16},{wch:12},{wch:12},{wch:14},{wch:16},{wch:14},{wch:16},{wch:14},{wch:12},{wch:14},{wch:12}];
+  XLSX.utils.book_append_sheet(wb,ws1,'Arşiv Listesi');
+
+  // Sheet per student: payments
+  archivedStudents.forEach(s=>{
+    const pays=Object.values(s.payments||{}).sort((a,b)=>a.date.localeCompare(b.date));
+    if(!pays.length)return;
+    const rows=[
+      [s.name+' '+s.surname+' — Ödeme Geçmişi'],
+      ['Eğitim',s.education], ['Kayıt',s.registeredAt||'—'], ['Silinme',s.deletedAt||'—'],
+      [],['Tarih','Tutar (₺)','Açıklama']
+    ];
+    let tot=0;
+    pays.forEach(p=>{rows.push([p.date,parseFloat(p.amount),p.desc||'']);tot+=parseFloat(p.amount);});
+    rows.push([],['TOPLAM',tot]);
+    const ws=XLSX.utils.aoa_to_sheet(rows);
+    ws['!cols']=[{wch:14},{wch:12},{wch:24}];
+    const sn=(s.name+' '+s.surname).slice(0,31).replace(/[:\\\/\?\*\[\]]/g,'');
+    XLSX.utils.book_append_sheet(wb,ws,sn);
+  });
+
+  XLSX.writeFile(wb,'KursiyerArsivi_'+new Date().toLocaleDateString('tr-TR').replace(/\./g,'-')+'.xlsx');
+}
+
+// ══ INIT ══════════════════════════════════════════════════════════════
+(function(){
+  const now=new Date();
+  document.getElementById('bulk-month').value=now.getMonth();
+  document.getElementById('bulk-year').value=now.getFullYear();
+})();
+
+showLoad('Firebase\'e bağlanıyor…');
+db.ref('students').once('value').then(snap=>{
+  const val=snap.val()||{};
+  students=Object.values(val).sort((a,b)=>String(a.id).localeCompare(String(b.id)));
+  hideLoad();
+  renderList();
+  // Canlı güncelleme — başka cihazdan değişiklik olursa yansısın
+  db.ref('students').on('value',snap2=>{
+    const val2=snap2.val()||{};
+    students=Object.values(val2).sort((a,b)=>String(a.id).localeCompare(String(b.id)));
+    const activeScreen=document.querySelector('.screen.active');
+    if(activeScreen&&activeScreen.id==='s-list') renderList();
+  });
+}).catch(err=>{
+  hideLoad();
+  alert('Firebase bağlantı hatası: '+err.message+'\n\nFirebase Realtime Database kurallarını kontrol edin.');
+});
+</script>
+</body>
+</html>
