@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Öğrenci Takip</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><defs><linearGradient id='g' x1='0%' y1='0%' x2='100%' y2='100%'><stop offset='0%' stop-color='%237c3aed'/><stop offset='100%' stop-color='%234f46e5'/></linearGradient></defs><rect width='100' height='100' rx='24' fill='url(%23g)'/><text x='50' y='68' font-size='50' text-anchor='middle'>🎓</text></svg>">
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
@@ -644,7 +645,6 @@ function delStudent(id){
     showLoad('Arşivleniyor…');
     const student=students.find(s=>s.id===id);
     if(student){
-      // Fetch att + pay before deleting
       const [attSnap,paySnap]=await Promise.all([
         db.ref('attendance/'+id).once('value'),
         db.ref('payments/'+id).once('value')
@@ -711,10 +711,10 @@ function validate(d,p){
   let ok=true;
   const ep=p==='r'?'r-err-':'e-err-';
   const chk=(v,iid,eid,msg)=>{if(!v){document.getElementById(iid).classList.add('err');document.getElementById(eid).textContent='⚠ '+msg;ok=false;}};
-  chk(d.name,    p+'-name',   ep+'name',   'Ad zorunludur');
+  chk(d.name,    p+'-name',    ep+'name',    'Ad zorunludur');
   chk(d.surname, p+'-surname',ep+'surname','Soyad zorunludur');
-  chk(d.education,p+'-edu',  ep+'edu',    'Eğitim türü seçin');
-  chk(d.program, p+'-prog',  ep+'prog',   'Program seçin');
+  chk(d.education,p+'-edu',   ep+'edu',     'Eğitim türü seçin');
+  chk(d.program, p+'-prog',   ep+'prog',    'Program seçin');
   return ok;
 }
 
@@ -1336,7 +1336,6 @@ function renderAnalysis(){
   const stuRows=students.map(s=>{
     const fee=parseFloat(s.fee||0);
     const allPays=Object.values(allPayCache[s.id]||{});
-    // Last 'period' months total
     const periodPays=months.reduce((a,mo)=>{
       return a+allPays.filter(p=>p.date.startsWith(mo.key)).reduce((x,p)=>x+parseFloat(p.amount||0),0);
     },0);
@@ -1362,10 +1361,9 @@ function renderAnalysis(){
 }
 
 function exportAnalysisExcel(){
-  const months=getMonthsBack(12); // always 12 month for income report
+  const months=getMonthsBack(12);
   const wb=XLSX.utils.book_new();
 
-  // Sheet 1: Monthly summary
   const sumRows=[
     ['RockJazz Müzik Aletleri ve Silifke Satranç Atölyesi'],
     ['Yıllık Gelir Raporu — '+new Date().toLocaleDateString('tr-TR')],
@@ -1385,7 +1383,6 @@ function exportAnalysisExcel(){
   ws1['!cols']=[{wch:14},{wch:14},{wch:14},{wch:12},{wch:12},{wch:12},{wch:12}];
   XLSX.utils.book_append_sheet(wb,ws1,'Aylık Gelir');
 
-  // Sheet 2: Per-student
   const stuRows=[['Ad Soyad','Eğitim','Aylık Ücret (₺)','Bu Ay Alınan (₺)','Bu Ay Eksik (₺)','Durum']];
   const curMk=mkey(new Date().getFullYear(),new Date().getMonth());
   students.forEach(s=>{
@@ -1447,19 +1444,16 @@ function renderArchive(){
   }
   empty.style.display='none';
   el.innerHTML=archivedStudents.map(s=>{
-    // calc total paid from archived payments
     const pays=Object.values(s.payments||{});
     const totalPaid=pays.reduce((a,p)=>a+parseFloat(p.amount||0),0);
     const payCount=pays.length;
-    // format deletedAt
     let delLabel='';
     if(s.deletedAt){
       const[dy,dm,dd]=s.deletedAt.split('-');
       delLabel=`${dd} ${MONTHS[+dm-1]} ${dy}`;
     }
-    // contacts
     const contacts=[];
-    if(s.phone)      contacts.push('📞 Öğrenci: '+s.phone);
+    if(s.phone)    contacts.push('📞 Öğrenci: '+s.phone);
     if(s.momName||s.momPhone) contacts.push('👩 '+(s.momName||'Anne')+': '+(s.momPhone||'—'));
     if(s.dadName||s.dadPhone) contacts.push('👨 '+(s.dadName||'Baba')+': '+(s.dadPhone||'—'));
 
@@ -1492,7 +1486,6 @@ function renderArchive(){
   }).join('');
 }
 
-// Show payment detail popup for archived student
 function viewArchiveDetail(id){
   const s=archivedStudents.find(x=>x.id===id);
   if(!s)return;
@@ -1511,7 +1504,6 @@ function viewArchiveDetail(id){
       }).join('');
   const total=pays.reduce((a,p)=>a+parseFloat(p.amount||0),0);
 
-  // show in a confirm-style modal repurposed
   document.getElementById('conf-icon').textContent='💳';
   document.getElementById('conf-msg').innerHTML=`
     <div style="text-align:left;max-height:50vh;overflow-y:auto">
@@ -1531,7 +1523,6 @@ async function restoreStudent(id){
     const s=archivedStudents.find(x=>x.id===id);
     if(!s)return hideLoad();
     const {attendance,payments,deletedAt,...studentData}=s;
-    // Restore to active nodes
     await Promise.all([
       fbSet('students/'+id, studentData),
       fbSet('attendance/'+id, attendance||{}),
@@ -1558,7 +1549,6 @@ async function deleteArchive(id){
 async function exportArchiveExcel(){
   if(!archivedStudents.length){showConf('Arşivde kayıt yok.','ℹ️','Tamam',()=>{});return;}
   const wb=XLSX.utils.book_new();
-  // Sheet 1: contact list
   const contacts=[
     ['RockJazz Müzik Aletleri ve Silifke Satranç Atölyesi'],
     ['Eski Kursiyer Arşivi — '+new Date().toLocaleDateString('tr-TR')],
@@ -1580,7 +1570,6 @@ async function exportArchiveExcel(){
   ws1['!cols']=[{wch:20},{wch:22},{wch:16},{wch:12},{wch:12},{wch:14},{wch:16},{wch:14},{wch:16},{wch:14},{wch:12},{wch:14},{wch:12}];
   XLSX.utils.book_append_sheet(wb,ws1,'Arşiv Listesi');
 
-  // Sheet per student: payments
   archivedStudents.forEach(s=>{
     const pays=Object.values(s.payments||{}).sort((a,b)=>a.date.localeCompare(b.date));
     if(!pays.length)return;
@@ -1614,7 +1603,6 @@ db.ref('students').once('value').then(snap=>{
   students=Object.values(val).sort((a,b)=>String(a.id).localeCompare(String(b.id)));
   hideLoad();
   renderList();
-  // Canlı güncelleme — başka cihazdan değişiklik olursa yansısın
   db.ref('students').on('value',snap2=>{
     const val2=snap2.val()||{};
     students=Object.values(val2).sort((a,b)=>String(a.id).localeCompare(String(b.id)));
