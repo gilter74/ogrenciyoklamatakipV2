@@ -1694,29 +1694,32 @@ async function genVeliLink(){
     attSummary.push({l:MONTHS[m]+' '+y,c:came,a:absent});
   }
 
-  // Bu yılın ödeme tablosu (bugüne kadar)
+  // Kayıt tarihinden bugüne aylık ödeme takvimi (carryover dahil), en son 5 ay gösterilecek
   const fee=parseFloat(s.fee||0);
   let regY=0,regM2=0;
   if(s.registeredAt){const p=s.registeredAt.split('-');regY=+p[0];regM2=+p[1]-1;}
+  let cy=s.registeredAt?regY:now.getFullYear(), cm=s.registeredAt?regM2:now.getMonth();
+  if(!s.registeredAt){ cm=now.getMonth()-11; while(cm<0){cm+=12;cy--;} }
   let carryover=0;
-  const payRows=[];
-  const tableYear=now.getFullYear();
-  for(let m=0;m<=now.getMonth();m++){
-    if(s.registeredAt){if(tableYear<regY)break;if(tableYear===regY&&m<regM2)continue;}
-    const mk=mkey(tableYear,m);
+  const schedule=[];
+  let guard=0;
+  while((cy<now.getFullYear()||(cy===now.getFullYear()&&cm<=now.getMonth()))&&guard<240){
+    guard++;
+    const mk=mkey(cy,cm);
     const moPays=pays.filter(p=>p.date.startsWith(mk));
-    const paid=moPays.reduce((a,p)=>a+parseFloat(p.amount||0),0);
+    const got=moPays.reduce((a,p)=>a+parseFloat(p.amount||0),0);
     const expected=fee>0?fee+carryover:carryover;
-    const balance=expected-paid;
+    const balance=expected-got;
     carryover=balance>0?balance:0;
-    if(fee===0&&paid===0&&carryover===0)continue;
-    payRows.push({m:MONTHS[m],e:expected,p:paid,b:balance});
+    schedule.push({l:MONTHS[cm]+' '+cy,paid:fee>0&&balance<=0,exp:expected,got:got});
+    cm++; if(cm>11){cm=0;cy++;}
   }
+  const last5=fee>0?schedule.slice(-5):[];
 
   const data={
     n:s.name+' '+s.surname, e:s.education||'', pr:s.program||'',
     f:s.fee||'', pd:s.payDay||'', reg:s.registeredAt||'',
-    att:attSummary, pay:payRows, bal:carryover,
+    att:attSummary, last5:last5, bal:carryover,
     hw:note.homework||'', gr:note.grade||'',
     gen:fmt(now.getFullYear(),now.getMonth(),now.getDate())
   };
@@ -1758,14 +1761,21 @@ function renderVeliView(data){
     `<div style="font-weight:900;color:var(--blue);font-size:13px;flex-shrink:0">🔵 ${a.c}</div>`+
     `<div style="font-weight:900;color:var(--red);font-size:13px;flex-shrink:0;margin-left:8px">🔴 ${a.a}</div></div>`
   ).join('')||'<p style="color:var(--dim);font-size:13px;text-align:center">Yoklama kaydı yok.</p>';
-  const payRows=(data.pay||[]).map(p=>{
-    const late=p.b>0;
-    return '<tr style="border-bottom:1.5px solid var(--border)">'+
-      '<td style="padding:8px 5px;font-weight:800">'+p.m+'</td>'+
-      '<td style="padding:8px 5px;text-align:right;font-weight:700;color:var(--text2)">'+p.e.toLocaleString('tr-TR')+' ₺</td>'+
-      '<td style="padding:8px 5px;text-align:right;font-weight:800;color:#059669">'+p.p.toLocaleString('tr-TR')+' ₺</td>'+
-      '<td style="padding:8px 5px;text-align:right;font-weight:900;color:'+(late?'#dc2626':'#059669')+'">'+(late?'⚠ Eksik':'✅ Tam')+'</td>'+
-      '</tr>';
+  const last5Html=(data.last5||[]).map(p=>{
+    if(p.paid){
+      return `<div style="border-radius:16px;padding:18px 10px;text-align:center;background:linear-gradient(135deg,#059669,#065f46);color:#fff;box-shadow:0 4px 14px rgba(5,150,105,.35)">
+        <div style="font-weight:900;font-size:13px;margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">${p.l}</div>
+        <div style="font-size:26px;margin-bottom:6px">✅</div>
+        <div style="font-weight:900;font-size:13px">Ödeme Alınmıştır</div>
+        <div style="font-size:11px;font-weight:700;margin-top:4px;opacity:.85">${p.got.toLocaleString('tr-TR')} ₺</div>
+      </div>`;
+    }
+    return `<div style="border-radius:16px;padding:18px 10px;text-align:center;background:linear-gradient(135deg,#dc2626,#991b1b);color:#fff;box-shadow:0 4px 14px rgba(220,38,38,.35)">
+      <div style="font-weight:900;font-size:13px;margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">${p.l}</div>
+      <div style="font-size:26px;margin-bottom:6px">❌</div>
+      <div style="font-weight:900;font-size:13px">Ödeme Alınmamıştır</div>
+      <div style="font-size:11px;font-weight:700;margin-top:5px;line-height:1.4">Lütfen ödeme takvimi içinde yapmanızı rica ederiz.</div>
+    </div>`;
   }).join('');
   document.getElementById('veli-view-body').innerHTML=`
     <div class="app-hdr">
@@ -1787,10 +1797,11 @@ function renderVeliView(data){
       ${data.bal>0
         ?`<div style="background:#fef2f2;border:2px solid #fecaca;border-radius:11px;padding:12px 14px;font-weight:800;color:#991b1b;text-align:center">⚠️ Kalan Bakiye: ${data.bal.toLocaleString('tr-TR')} ₺</div>`
         :`<div style="background:#f0fdf4;border:2px solid #a7f3d0;border-radius:11px;padding:12px 14px;font-weight:800;color:#065f46;text-align:center">✅ Tüm ödemeler güncel</div>`}
-      ${payRows?`<div style="overflow-x:auto;margin-top:12px"><table style="width:100%;border-collapse:collapse;font-size:13px">
-        <thead><tr style="background:var(--purple-l)"><th style="padding:8px 5px;text-align:left;font-weight:900;color:var(--purple)">Ay</th><th style="padding:8px 5px;text-align:right;font-weight:900;color:var(--purple)">Beklenen</th><th style="padding:8px 5px;text-align:right;font-weight:900;color:var(--purple)">Ödenen</th><th style="padding:8px 5px;text-align:left;font-weight:900;color:var(--purple)">Durum</th></tr></thead>
-        <tbody>${payRows}</tbody></table></div>`:''}
     </div>
+    ${last5Html?`<div class="card mb12">
+      <div class="section-lbl">📆 Son 5 Ay Ödeme Durumu</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px">${last5Html}</div>
+    </div>`:''}
     <div class="card mb12">
       <div class="section-lbl">📅 Yoklama Özeti (Son 3 Ay)</div>
       ${attRows}
