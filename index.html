@@ -165,6 +165,7 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
     <button class="btn btn-purple" onclick="go('s-reg')">➕ Yeni Kayıt</button>
   </div>
   <button class="btn btn-blue" style="width:100%;justify-content:center;margin-bottom:14px;font-size:14px" onclick="openAnalysis()">📈 Gelir Analizi &amp; Ödeme Yönetimi</button>
+  <button class="btn" style="width:100%;justify-content:center;margin-bottom:14px;font-size:14px;background:linear-gradient(135deg,#0ea5e9,#0284c7);color:#fff;box-shadow:0 4px 14px rgba(14,165,233,.3)" onclick="go('s-veli-share')">👪 Veli Paylaşımı</button>
   <button class="btn" style="width:100%;justify-content:center;margin-bottom:14px;font-size:14px;background:linear-gradient(135deg,#374151,#1f2937);color:#fff;box-shadow:0 4px 14px rgba(55,65,81,.3)" onclick="openArchive()">🗃️ Eski Kursiyer Arşivi</button>
   <div style="background:#fff;border:2px solid var(--border);border-radius:14px;padding:14px;margin-bottom:14px;box-shadow:var(--shadow)">
     <div style="font-weight:900;font-size:14px;color:var(--purple);margin-bottom:12px">📊 Aylık Toplu Arşiv</div>
@@ -333,6 +334,12 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
   <button class="btn-ghost mb14" onclick="go('s-list')">← Geri</button>
   <div class="card mb12" id="det-hdr"></div>
   <div class="overdue" id="overdue-box"></div>
+  <div class="card mb12">
+    <div class="section-lbl">📚 Ödev &amp; Not</div>
+    <div class="mb14"><label class="lbl">Bu Haftanın Ödevi</label><textarea id="n-hw" rows="2" placeholder="Örn: Sayfa 12-14 tekrar, gam çalışması…" style="width:100%;padding:11px 14px;border-radius:10px;border:2px solid var(--border);font-family:'Nunito',sans-serif;font-size:14px;font-weight:600;color:var(--text);resize:vertical;outline:none"></textarea></div>
+    <div class="mb14"><label class="lbl">Öğretmen Notu</label><textarea id="n-grade" rows="2" placeholder="Örn: Bu ay çok iyi ilerledi…" style="width:100%;padding:11px 14px;border-radius:10px;border:2px solid var(--border);font-family:'Nunito',sans-serif;font-size:14px;font-weight:600;color:var(--text);resize:vertical;outline:none"></textarea></div>
+    <button class="btn btn-purple btn-sm" onclick="saveNotes()">💾 Kaydet</button>
+  </div>
   <div class="exp-bar">
     <div style="font-weight:800;font-size:14px;color:var(--text2)">📊 İşlemler</div>
     <div style="display:flex;gap:7px;flex-wrap:wrap">
@@ -448,6 +455,40 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
   </div>
 </div>
 
+<!-- VELİ PAYLAŞIMI -->
+<div id="s-veli-share" class="screen">
+  <button class="btn-ghost mb14" onclick="go('s-list')">← Geri</button>
+  <div class="card mb14">
+    <div class="section-lbl">👪 Veli Panel Bağlantısı</div>
+    <p style="font-size:13px;color:var(--text2);font-weight:600;line-height:1.6;margin-bottom:16px">Her öğrenci için şifresiz, doğrudan açılan bir bağlantı oluşturun. Veli bu adresten ders programını, bakiyesini, yoklama durumunu ve öğretmen notunu görür — sunucu gerekmez, bilgiler doğrudan bağlantının içinde taşınır. Bilgi güncellendiğinde (ödeme, yoklama, ödev/not vb.) bağlantıyı yeniden oluşturup tekrar göndermen gerekir.</p>
+    <label class="lbl">Öğrenci Seç</label>
+    <select id="veli-select" style="margin-bottom:14px"></select>
+    <button class="btn btn-purple" style="width:100%;justify-content:center;padding:12px;margin-bottom:14px" onclick="genVeliLink()">🔗 Bağlantı Oluştur</button>
+    <div id="veli-link-box" style="display:none">
+      <label class="lbl">Veli Bağlantısı</label>
+      <input id="veli-link-input" readonly onclick="this.select()" style="margin-bottom:10px;font-size:12px;color:var(--text2)">
+      <div style="display:flex;gap:8px">
+        <button class="btn-ghost" style="flex:1;justify-content:center" onclick="copyVeliLink()">📋 Kopyala</button>
+        <button class="btn btn-wa" style="flex:1;justify-content:center" onclick="sendVeliWA()">📲 WhatsApp'tan Gönder</button>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="section-lbl">💾 Yedekleme</div>
+    <p style="font-size:13px;color:var(--text2);font-weight:600;line-height:1.6;margin-bottom:14px">Tüm veriler Firebase bulut veritabanında saklanır. Başka bir cihaza taşımak veya yedek almak için dışa/içe aktarabilirsin.</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <button class="btn btn-green" style="justify-content:center;padding:11px 8px;font-size:13px" onclick="exportBackup()">⬇️ Dışa Aktar (.json)</button>
+      <button class="btn btn-blue" style="justify-content:center;padding:11px 8px;font-size:13px" onclick="document.getElementById('import-file').click()">⬆️ İçe Aktar</button>
+    </div>
+    <input type="file" id="import-file" accept=".json,application/json" style="display:none" onchange="importBackupFile(this)">
+  </div>
+</div>
+
+<!-- VELİ GÖRÜNÜMÜ (salt okunur, veliye açılır) -->
+<div id="s-veli-view" class="screen">
+  <div id="veli-view-body"></div>
+</div>
+
 <!-- CONFIRM -->
 <div class="modal-bg" id="conf-modal">
   <div class="modal-box" style="max-width:320px;text-align:center">
@@ -546,7 +587,7 @@ const MONTHS=['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağust
 const DAYS=['Pt','Sa','Ça','Pe','Cu','Ct','Pz'];
 
 // ══ STATE ═════════════════════════════════════════════════════════════
-let students=[], curId=null, attData={}, payData=[];
+let students=[], curId=null, attData={}, payData=[], notesData={};
 let curY=new Date().getFullYear(), curM=new Date().getMonth();
 let curTab='att', markC='came', confCB=null, payModalDate=null;
 
@@ -616,6 +657,7 @@ function go(id){
   if(id==='s-edit') fillEdit();
   if(id==='s-analysis') renderAnalysis();
   if(id==='s-archive') renderArchive();
+  if(id==='s-veli-share') renderVeliShare();
 }
 
 // ══ LIST ══════════════════════════════════════════════════════════════
@@ -645,15 +687,17 @@ function delStudent(id){
     showLoad('Arşivleniyor…');
     const student=students.find(s=>s.id===id);
     if(student){
-      const [attSnap,paySnap]=await Promise.all([
+      const [attSnap,paySnap,noteSnap]=await Promise.all([
         db.ref('attendance/'+id).once('value'),
-        db.ref('payments/'+id).once('value')
+        db.ref('payments/'+id).once('value'),
+        db.ref('notes/'+id).once('value')
       ]);
       const archiveEntry={
         ...student,
         deletedAt:new Date().toISOString().split('T')[0],
         attendance:attSnap.val()||{},
-        payments:paySnap.val()||{}
+        payments:paySnap.val()||{},
+        notes:noteSnap.val()||{}
       };
       await fbSet('archived/'+id, archiveEntry);
     }
@@ -661,7 +705,8 @@ function delStudent(id){
     await Promise.all([
       fbDel('students/'+id),
       fbDel('attendance/'+id),
-      fbDel('payments/'+id)
+      fbDel('payments/'+id),
+      fbDel('notes/'+id)
     ]);
     hideLoad();
     renderList();
@@ -770,12 +815,14 @@ async function openDet(id){
   curY=new Date().getFullYear();curM=new Date().getMonth();
   curTab='att';markC='came';
   showLoad('Yükleniyor…');
-  const [attVal,payVal]=await Promise.all([
+  const [attVal,payVal,noteVal]=await Promise.all([
     fbGet('attendance/'+id),
-    fbGet('payments/'+id)
+    fbGet('payments/'+id),
+    fbGet('notes/'+id)
   ]);
   attData=attVal||{};
   payData=Object.values(payVal||{});
+  notesData=noteVal||{};
   hideLoad();
   go('s-detail');
 }
@@ -809,9 +856,21 @@ function renderDetail(){
       </div>
       <button class="btn-edit2" onclick="go('s-edit')">✏️ Düzenle</button>
     </div>`;
+  document.getElementById('n-hw').value=notesData.homework||'';
+  document.getElementById('n-grade').value=notesData.grade||'';
   updateTabUI();
   renderCal();
   checkOverdue();
+}
+
+async function saveNotes(){
+  const hw=document.getElementById('n-hw').value.trim();
+  const gr=document.getElementById('n-grade').value.trim();
+  notesData={homework:hw,grade:gr,updatedAt:todays()};
+  setSyncing(true);
+  await fbSet('notes/'+curId,notesData);
+  setSyncing(false);
+  showConf('Ödev ve not kaydedildi!','✅','Tamam',()=>{});
 }
 
 function switchTab(t){curTab=t;updateTabUI();renderCal();}
@@ -1522,11 +1581,12 @@ async function restoreStudent(id){
     showLoad('Geri alınıyor…');
     const s=archivedStudents.find(x=>x.id===id);
     if(!s)return hideLoad();
-    const {attendance,payments,deletedAt,...studentData}=s;
+    const {attendance,payments,notes,deletedAt,...studentData}=s;
     await Promise.all([
       fbSet('students/'+id, studentData),
       fbSet('attendance/'+id, attendance||{}),
-      fbSet('payments/'+id, payments||{})
+      fbSet('payments/'+id, payments||{}),
+      fbSet('notes/'+id, notes||{})
     ]);
     await fbDel('archived/'+id);
     students.push(studentData);
@@ -1590,6 +1650,204 @@ async function exportArchiveExcel(){
   XLSX.writeFile(wb,'KursiyerArsivi_'+new Date().toLocaleDateString('tr-TR').replace(/\./g,'-')+'.xlsx');
 }
 
+// ══ VELİ PAYLAŞIMI ════════════════════════════════════════════════════
+function b64urlEncode(str){
+  const b64=btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g,(_,p1)=>String.fromCharCode(parseInt(p1,16))));
+  return b64.replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+}
+function b64urlDecode(str){
+  let b64=str.replace(/-/g,'+').replace(/_/g,'/');
+  while(b64.length%4)b64+='=';
+  return decodeURIComponent(atob(b64).split('').map(c=>'%'+('00'+c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+}
+
+function renderVeliShare(){
+  const sel=document.getElementById('veli-select');
+  sel.innerHTML='<option value="">— Öğrenci seçin —</option>'+
+    students.map(s=>`<option value="${s.id}">${s.name} ${s.surname}</option>`).join('');
+  document.getElementById('veli-link-box').style.display='none';
+}
+
+async function genVeliLink(){
+  const id=document.getElementById('veli-select').value;
+  if(!id){showConf('Lütfen bir öğrenci seçin.','⚠️','Tamam',()=>{});return;}
+  const s=students.find(x=>x.id===id);if(!s)return;
+  showLoad('Bağlantı oluşturuluyor…');
+  const [attVal,payVal,noteVal]=await Promise.all([
+    fbGet('attendance/'+id),
+    fbGet('payments/'+id),
+    fbGet('notes/'+id)
+  ]);
+  const att=attVal||{};
+  const pays=Object.values(payVal||{});
+  const note=noteVal||{};
+  const now=new Date();
+
+  // Son 3 ayın yoklama özeti
+  const attSummary=[];
+  for(let i=2;i>=0;i--){
+    let m=now.getMonth()-i,y=now.getFullYear();
+    while(m<0){m+=12;y--;}
+    const mk=mkey(y,m);
+    const came=Object.entries(att).filter(([k,v])=>k.startsWith(mk)&&v==='came').length;
+    const absent=Object.entries(att).filter(([k,v])=>k.startsWith(mk)&&v==='absent').length;
+    attSummary.push({l:MONTHS[m]+' '+y,c:came,a:absent});
+  }
+
+  // Bu yılın ödeme tablosu (bugüne kadar)
+  const fee=parseFloat(s.fee||0);
+  let regY=0,regM2=0;
+  if(s.registeredAt){const p=s.registeredAt.split('-');regY=+p[0];regM2=+p[1]-1;}
+  let carryover=0;
+  const payRows=[];
+  const tableYear=now.getFullYear();
+  for(let m=0;m<=now.getMonth();m++){
+    if(s.registeredAt){if(tableYear<regY)break;if(tableYear===regY&&m<regM2)continue;}
+    const mk=mkey(tableYear,m);
+    const moPays=pays.filter(p=>p.date.startsWith(mk));
+    const paid=moPays.reduce((a,p)=>a+parseFloat(p.amount||0),0);
+    const expected=fee>0?fee+carryover:carryover;
+    const balance=expected-paid;
+    carryover=balance>0?balance:0;
+    if(fee===0&&paid===0&&carryover===0)continue;
+    payRows.push({m:MONTHS[m],e:expected,p:paid,b:balance});
+  }
+
+  const data={
+    n:s.name+' '+s.surname, e:s.education||'', pr:s.program||'',
+    f:s.fee||'', pd:s.payDay||'', reg:s.registeredAt||'',
+    att:attSummary, pay:payRows, bal:carryover,
+    hw:note.homework||'', gr:note.grade||'',
+    gen:fmt(now.getFullYear(),now.getMonth(),now.getDate())
+  };
+  const encoded=b64urlEncode(JSON.stringify(data));
+  const url=location.origin+location.pathname+'#veli='+encoded;
+  hideLoad();
+  window._veliUrl=url;
+  window._veliName=data.n;
+  document.getElementById('veli-link-box').style.display='block';
+  document.getElementById('veli-link-input').value=url;
+}
+
+function copyVeliLink(){
+  const inp=document.getElementById('veli-link-input');
+  if(!inp.value)return;
+  inp.select();
+  inp.setSelectionRange(0,99999);
+  const done=()=>showConf('Bağlantı kopyalandı!','✅','Tamam',()=>{});
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(inp.value).then(done).catch(()=>{document.execCommand('copy');done();});
+  } else {
+    document.execCommand('copy');done();
+  }
+}
+
+function sendVeliWA(){
+  const url=window._veliUrl;if(!url)return;
+  const name=window._veliName||'';
+  const msg='Sayın Velimiz,\n\n'+name+' için öğrenci takip bağlantınız aşağıdadır. Bu bağlantıdan ders programını, bakiyesini, yoklama durumunu ve öğretmen notunu görebilirsiniz:\n\n'+url+'\n\nSaygılarımla,\nRockJazz Müzik Aletleri ve Silifke Satranç Atölyesi';
+  window.open('https://wa.me/?text='+encodeURIComponent(msg),'_blank');
+}
+
+function renderVeliView(data){
+  hideLoad();
+  document.querySelectorAll('.screen').forEach(sc=>sc.classList.remove('active'));
+  document.getElementById('s-veli-view').classList.add('active');
+  const attRows=(data.att||[]).map(a=>
+    `<div class="stu-pay-row"><div style="flex:1;font-weight:800;font-size:13px">${a.l}</div>`+
+    `<div style="font-weight:900;color:var(--blue);font-size:13px;flex-shrink:0">🔵 ${a.c}</div>`+
+    `<div style="font-weight:900;color:var(--red);font-size:13px;flex-shrink:0;margin-left:8px">🔴 ${a.a}</div></div>`
+  ).join('')||'<p style="color:var(--dim);font-size:13px;text-align:center">Yoklama kaydı yok.</p>';
+  const payRows=(data.pay||[]).map(p=>{
+    const late=p.b>0;
+    return '<tr style="border-bottom:1.5px solid var(--border)">'+
+      '<td style="padding:8px 5px;font-weight:800">'+p.m+'</td>'+
+      '<td style="padding:8px 5px;text-align:right;font-weight:700;color:var(--text2)">'+p.e.toLocaleString('tr-TR')+' ₺</td>'+
+      '<td style="padding:8px 5px;text-align:right;font-weight:800;color:#059669">'+p.p.toLocaleString('tr-TR')+' ₺</td>'+
+      '<td style="padding:8px 5px;text-align:right;font-weight:900;color:'+(late?'#dc2626':'#059669')+'">'+(late?'⚠ Eksik':'✅ Tam')+'</td>'+
+      '</tr>';
+  }).join('');
+  document.getElementById('veli-view-body').innerHTML=`
+    <div class="app-hdr">
+      <div style="font-size:44px">🎓</div>
+      <h1 style="font-size:23px">${data.n||''}</h1>
+      <p>Veli Bilgilendirme Paneli</p>
+    </div>
+    <div class="card mb12">
+      <div class="section-lbl">📋 Ders Programı</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        ${data.e?`<span class="badge" style="background:var(--purple-l);color:var(--purple);border:2px solid #ddd6fe">${data.e}</span>`:''}
+        ${data.pr?`<span class="badge" style="background:var(--green-l);color:var(--green);border:2px solid #a7f3d0">⏱ ${data.pr}</span>`:''}
+        ${data.f?`<span class="badge" style="background:var(--green-l);color:var(--green);border:2px solid #a7f3d0">💰 ${parseFloat(data.f).toLocaleString('tr-TR')} ₺/ay</span>`:''}
+        ${data.pd?`<span class="badge" style="background:#fef9c3;color:#713f12;border:2px solid #fde047">💳 Her ay ${data.pd}. günler</span>`:''}
+      </div>
+    </div>
+    <div class="card mb12">
+      <div class="section-lbl">💰 Bakiye Durumu</div>
+      ${data.bal>0
+        ?`<div style="background:#fef2f2;border:2px solid #fecaca;border-radius:11px;padding:12px 14px;font-weight:800;color:#991b1b;text-align:center">⚠️ Kalan Bakiye: ${data.bal.toLocaleString('tr-TR')} ₺</div>`
+        :`<div style="background:#f0fdf4;border:2px solid #a7f3d0;border-radius:11px;padding:12px 14px;font-weight:800;color:#065f46;text-align:center">✅ Tüm ödemeler güncel</div>`}
+      ${payRows?`<div style="overflow-x:auto;margin-top:12px"><table style="width:100%;border-collapse:collapse;font-size:13px">
+        <thead><tr style="background:var(--purple-l)"><th style="padding:8px 5px;text-align:left;font-weight:900;color:var(--purple)">Ay</th><th style="padding:8px 5px;text-align:right;font-weight:900;color:var(--purple)">Beklenen</th><th style="padding:8px 5px;text-align:right;font-weight:900;color:var(--purple)">Ödenen</th><th style="padding:8px 5px;text-align:left;font-weight:900;color:var(--purple)">Durum</th></tr></thead>
+        <tbody>${payRows}</tbody></table></div>`:''}
+    </div>
+    <div class="card mb12">
+      <div class="section-lbl">📅 Yoklama Özeti (Son 3 Ay)</div>
+      ${attRows}
+    </div>
+    ${(data.hw||data.gr)?`<div class="card mb12">
+      <div class="section-lbl">📚 Ödev &amp; Öğretmen Notu</div>
+      ${data.hw?`<div class="mb12"><span class="lbl">Ödev</span><div style="font-weight:700;font-size:14px;color:var(--text);margin-top:3px">${data.hw}</div></div>`:''}
+      ${data.gr?`<div><span class="lbl">Not</span><div style="font-weight:700;font-size:14px;color:var(--text);margin-top:3px">${data.gr}</div></div>`:''}
+    </div>`:''}
+    <div style="text-align:center;font-size:11px;color:var(--dim);font-weight:700;margin:16px 0 8px">📅 Oluşturulma: ${data.gen||'—'}<br>RockJazz Müzik Aletleri ve Silifke Satranç Atölyesi</div>`;
+}
+
+// ══ YEDEKLEME ═════════════════════════════════════════════════════════
+async function exportBackup(){
+  showLoad('Yedek hazırlanıyor…');
+  try{
+    const snap=await db.ref('/').once('value');
+    const data=snap.val()||{};
+    hideLoad();
+    const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url;a.download='OgrenciTakip_Yedek_'+todays()+'.json';
+    document.body.appendChild(a);a.click();a.remove();
+    URL.revokeObjectURL(url);
+  }catch(err){
+    hideLoad();
+    showConf('Yedek alınamadı: '+err.message,'⚠️','Tamam',()=>{});
+  }
+}
+
+function importBackupFile(input){
+  const file=input.files&&input.files[0];
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    let data;
+    try{ data=JSON.parse(e.target.result); }
+    catch(err){ showConf('Dosya okunamadı. Geçerli bir yedek (.json) dosyası seçin.','⚠️','Tamam',()=>{}); input.value=''; return; }
+    showConf('Bu içe aktarma MEVCUT TÜM VERİLERİN üzerine yazacak. Devam etmek istiyor musunuz?','⚠️','Evet, İçe Aktar',async()=>{
+      showLoad('İçe aktarılıyor…');
+      try{
+        await db.ref('/').set(data);
+        const val=data.students||{};
+        students=Object.values(val).sort((a,b)=>String(a.id).localeCompare(String(b.id)));
+        hideLoad();
+        go('s-list');
+      }catch(err){
+        hideLoad();
+        showConf('İçe aktarma başarısız: '+err.message,'⚠️','Tamam',()=>{});
+      }
+    });
+    input.value='';
+  };
+  reader.readAsText(file);
+}
+
 // ══ INIT ══════════════════════════════════════════════════════════════
 (function(){
   const now=new Date();
@@ -1597,22 +1855,33 @@ async function exportArchiveExcel(){
   document.getElementById('bulk-year').value=now.getFullYear();
 })();
 
-showLoad('Firebase\'e bağlanıyor…');
-db.ref('students').once('value').then(snap=>{
-  const val=snap.val()||{};
-  students=Object.values(val).sort((a,b)=>String(a.id).localeCompare(String(b.id)));
-  hideLoad();
-  renderList();
-  db.ref('students').on('value',snap2=>{
-    const val2=snap2.val()||{};
-    students=Object.values(val2).sort((a,b)=>String(a.id).localeCompare(String(b.id)));
-    const activeScreen=document.querySelector('.screen.active');
-    if(activeScreen&&activeScreen.id==='s-list') renderList();
+if(location.hash.indexOf('#veli=')===0){
+  try{
+    const encoded=location.hash.slice(6);
+    const data=JSON.parse(b64urlDecode(encoded));
+    renderVeliView(data);
+  }catch(err){
+    hideLoad();
+    document.body.innerHTML='<div style="padding:60px 20px;text-align:center;font-family:\'Nunito\',sans-serif;color:#4c4f8a"><div style="font-size:50px;margin-bottom:14px">⚠️</div><div style="font-weight:800;font-size:16px">Bağlantı okunamadı veya bozuk.</div><div style="font-size:13px;margin-top:8px;color:#7c82b8">Lütfen bağlantıyı gönderen kişiden yeni bir bağlantı isteyin.</div></div>';
+  }
+} else {
+  showLoad('Firebase\'e bağlanıyor…');
+  db.ref('students').once('value').then(snap=>{
+    const val=snap.val()||{};
+    students=Object.values(val).sort((a,b)=>String(a.id).localeCompare(String(b.id)));
+    hideLoad();
+    renderList();
+    db.ref('students').on('value',snap2=>{
+      const val2=snap2.val()||{};
+      students=Object.values(val2).sort((a,b)=>String(a.id).localeCompare(String(b.id)));
+      const activeScreen=document.querySelector('.screen.active');
+      if(activeScreen&&activeScreen.id==='s-list') renderList();
+    });
+  }).catch(err=>{
+    hideLoad();
+    alert('Firebase bağlantı hatası: '+err.message+'\n\nFirebase Realtime Database kurallarını kontrol edin.');
   });
-}).catch(err=>{
-  hideLoad();
-  alert('Firebase bağlantı hatası: '+err.message+'\n\nFirebase Realtime Database kurallarını kontrol edin.');
-});
+}
 </script>
 </body>
 </html>
