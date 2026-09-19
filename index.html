@@ -2072,9 +2072,19 @@ let _fiyatLoaded=false;
 function loadFiyatApp(){
   if(_fiyatLoaded)return;
   _fiyatLoaded=true;
-  const b64=document.getElementById('fiyat-app-data').textContent;
-  const frame=document.getElementById('fiyat-frame');
-  frame.src='data:text/html;charset=utf-8;base64,'+b64;
+  try{
+    const b64=document.getElementById('fiyat-app-data').textContent;
+    const binary=atob(b64);
+    const bytes=new Uint8Array(binary.length);
+    for(let i=0;i<binary.length;i++) bytes[i]=binary.charCodeAt(i);
+    const html=new TextDecoder('utf-8').decode(bytes);
+    const frame=document.getElementById('fiyat-frame');
+    frame.srcdoc=html;
+  }catch(err){
+    _fiyatLoaded=false;
+    const frame=document.getElementById('fiyat-frame');
+    frame.srcdoc='<div style="padding:40px;font-family:sans-serif;color:#991b1b">Fiyat Güncelleyici yüklenemedi: '+err.message+'</div>';
+  }
 }
 </script>
 </body>
