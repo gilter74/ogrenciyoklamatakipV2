@@ -348,6 +348,17 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
       <button class="btn btn-blue btn-sm" onclick="openDrive()">☁️ Drive</button>
     </div>
   </div>
+  <div class="card mb12" id="discount-card">
+    <div class="section-lbl">🏷️ %5 İndirim</div>
+    <label style="display:flex;align-items:center;gap:10px;cursor:pointer;margin-bottom:12px">
+      <input type="checkbox" id="disc-enabled" onchange="toggleDiscPreview()" style="width:20px;height:20px;accent-color:#7c3aed;cursor:pointer;flex-shrink:0">
+      <span style="font-weight:800;font-size:14px;color:var(--text)">Bu öğrenciye %5 indirim uygula</span>
+    </label>
+    <div id="disc-preview" style="display:none;background:#f0fdf4;border:2px solid #a7f3d0;border-radius:10px;padding:10px 13px;margin-bottom:12px;font-weight:800;font-size:13px;color:#065f46"></div>
+    <label class="lbl">İndirim Notu (hatırlatma) <span style="font-weight:600;text-transform:none;font-size:11px;color:var(--dim)" id="disc-count">0/250</span></label>
+    <textarea id="disc-note" maxlength="250" rows="3" placeholder="Bu indirimi neden verdiğinizi ve avantajlarını buraya yazabilirsiniz. Örn: Kardeş indirimi — aynı aileden 2. öğrenci; düzenli ve zamanında ödeme yaptığı için sadakat indirimi; yıllık peşin ödeme avantajı vb." oninput="updateDiscCount()" style="width:100%;padding:11px 14px;border-radius:10px;border:2px solid var(--border);font-family:'Nunito',sans-serif;font-size:14px;font-weight:600;color:var(--text);resize:vertical;outline:none;margin-bottom:12px"></textarea>
+    <button class="btn btn-purple btn-sm" onclick="saveDiscount()">💾 Kaydet</button>
+  </div>
   <div class="tab-bar">
     <button class="tab-btn tab-att" id="tbtn-att" onclick="switchTab('att')">📋 Yoklama Takvimi</button>
     <button class="tab-btn" id="tbtn-pay" onclick="switchTab('pay')">💰 Ödeme Takvimi</button>
@@ -587,7 +598,7 @@ const MONTHS=['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağust
 const DAYS=['Pt','Sa','Ça','Pe','Cu','Ct','Pz'];
 
 // ══ STATE ═════════════════════════════════════════════════════════════
-let students=[], curId=null, attData={}, payData=[], notesData={};
+let students=[], curId=null, attData={}, payData=[], notesData={}, discountData={};
 let curY=new Date().getFullYear(), curM=new Date().getMonth();
 let curTab='att', markC='came', confCB=null, payModalDate=null;
 
@@ -687,17 +698,19 @@ function delStudent(id){
     showLoad('Arşivleniyor…');
     const student=students.find(s=>s.id===id);
     if(student){
-      const [attSnap,paySnap,noteSnap]=await Promise.all([
+      const [attSnap,paySnap,noteSnap,discSnap]=await Promise.all([
         db.ref('attendance/'+id).once('value'),
         db.ref('payments/'+id).once('value'),
-        db.ref('notes/'+id).once('value')
+        db.ref('notes/'+id).once('value'),
+        db.ref('discount/'+id).once('value')
       ]);
       const archiveEntry={
         ...student,
         deletedAt:new Date().toISOString().split('T')[0],
         attendance:attSnap.val()||{},
         payments:paySnap.val()||{},
-        notes:noteSnap.val()||{}
+        notes:noteSnap.val()||{},
+        discount:discSnap.val()||{}
       };
       await fbSet('archived/'+id, archiveEntry);
     }
@@ -706,7 +719,8 @@ function delStudent(id){
       fbDel('students/'+id),
       fbDel('attendance/'+id),
       fbDel('payments/'+id),
-      fbDel('notes/'+id)
+      fbDel('notes/'+id),
+      fbDel('discount/'+id)
     ]);
     hideLoad();
     renderList();
@@ -815,14 +829,16 @@ async function openDet(id){
   curY=new Date().getFullYear();curM=new Date().getMonth();
   curTab='att';markC='came';
   showLoad('Yükleniyor…');
-  const [attVal,payVal,noteVal]=await Promise.all([
+  const [attVal,payVal,noteVal,discVal]=await Promise.all([
     fbGet('attendance/'+id),
     fbGet('payments/'+id),
-    fbGet('notes/'+id)
+    fbGet('notes/'+id),
+    fbGet('discount/'+id)
   ]);
   attData=attVal||{};
   payData=Object.values(payVal||{});
   notesData=noteVal||{};
+  discountData=discVal||{};
   hideLoad();
   go('s-detail');
 }
@@ -858,9 +874,49 @@ function renderDetail(){
     </div>`;
   document.getElementById('n-hw').value=notesData.homework||'';
   document.getElementById('n-grade').value=notesData.grade||'';
+  document.getElementById('disc-enabled').checked=!!discountData.enabled;
+  document.getElementById('disc-note').value=discountData.note||'';
+  updateDiscCount();
+  toggleDiscPreview();
   updateTabUI();
   renderCal();
   checkOverdue();
+}
+
+function effectiveFee(feeVal,discEnabled){
+  const f=parseFloat(feeVal||0);
+  if(!discEnabled||!f)return f;
+  return Math.round(f*0.95*100)/100;
+}
+
+function toggleDiscPreview(){
+  const s=students.find(x=>x.id===curId);
+  const on=document.getElementById('disc-enabled').checked;
+  const box=document.getElementById('disc-preview');
+  const fee=parseFloat(s&&s.fee||0);
+  if(on&&fee>0){
+    const eff=effectiveFee(fee,true);
+    box.style.display='block';
+    box.innerHTML='💰 '+fee.toLocaleString('tr-TR')+' ₺ → <b>'+eff.toLocaleString('tr-TR')+' ₺</b> (indirimli aylık ücret)';
+  } else {
+    box.style.display='none';
+  }
+}
+
+function updateDiscCount(){
+  const v=document.getElementById('disc-note').value;
+  document.getElementById('disc-count').textContent=v.length+'/250';
+}
+
+async function saveDiscount(){
+  const enabled=document.getElementById('disc-enabled').checked;
+  const note=document.getElementById('disc-note').value.trim().slice(0,250);
+  discountData={enabled,note,updatedAt:todays()};
+  setSyncing(true);
+  await fbSet('discount/'+curId,discountData);
+  setSyncing(false);
+  toggleDiscPreview();
+  showConf('İndirim ayarları kaydedildi!','✅','Tamam',()=>{});
 }
 
 async function saveNotes(){
@@ -1051,13 +1107,13 @@ function renderYearlyTable(){
   const card=document.getElementById('yearly-card');
   const s=students.find(x=>x.id===curId);
   if(!s||curTab!=='pay'){card.style.display='none';return;}
-  const fee=parseFloat(s.fee||0);
+  const fee=effectiveFee(s.fee,discountData.enabled);
   const now=new Date();
   const tableYear=curY;
   let regY=0,regM2=0;
   if(s.registeredAt){const p=s.registeredAt.split('-');regY=+p[0];regM2=+p[1]-1;}
   let carryover=0,hasData=false;
-  let html='<div style="font-weight:900;font-size:15px;color:var(--text);margin-bottom:4px">📋 '+tableYear+' Yılı Ödeme Tablosu</div>';
+  let html='<div style="font-weight:900;font-size:15px;color:var(--text);margin-bottom:4px">📋 '+tableYear+' Yılı Ödeme Tablosu'+(discountData.enabled?' <span style="font-size:11px;background:#ede9fe;color:#7c3aed;border-radius:8px;padding:2px 9px;vertical-align:middle">🏷️ %5 İndirimli</span>':'')+'</div>';
   if(s.registeredAt){const[ry,rm,rd]=s.registeredAt.split('-');html+='<div style="font-size:11px;color:var(--muted);font-weight:700;margin-bottom:12px">📅 Kayıt: '+rd+' '+MONTHS[+rm-1]+' '+ry+' tarihinden itibaren</div>';}
   else html+='<div style="margin-bottom:12px"></div>';
   html+='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px">';
@@ -1153,10 +1209,10 @@ function openReceipt(){
   const moPays=payData.filter(p=>p.date.startsWith(mk));
   const lp=[...moPays].sort((a,b)=>b.date.localeCompare(a.date))[0];
   const totalPaid=moPays.reduce((a,p)=>a+parseFloat(p.amount||0),0);
-  document.getElementById('rec-amount').value=lp?lp.amount:(s.fee||'');
+  const fee=effectiveFee(s.fee,discountData.enabled);
+  document.getElementById('rec-amount').value=lp?lp.amount:(fee||'');
   document.getElementById('rec-month').selectedIndex=curM;
   document.getElementById('rec-year').value=curY;
-  const fee=parseFloat(s.fee||0);
   let autoNote='';
   if(fee>0&&totalPaid>0){
     const bal=fee-totalPaid;
@@ -1581,12 +1637,13 @@ async function restoreStudent(id){
     showLoad('Geri alınıyor…');
     const s=archivedStudents.find(x=>x.id===id);
     if(!s)return hideLoad();
-    const {attendance,payments,notes,deletedAt,...studentData}=s;
+    const {attendance,payments,notes,discount,deletedAt,...studentData}=s;
     await Promise.all([
       fbSet('students/'+id, studentData),
       fbSet('attendance/'+id, attendance||{}),
       fbSet('payments/'+id, payments||{}),
-      fbSet('notes/'+id, notes||{})
+      fbSet('notes/'+id, notes||{}),
+      fbSet('discount/'+id, discount||{})
     ]);
     await fbDel('archived/'+id);
     students.push(studentData);
@@ -1673,29 +1730,49 @@ async function genVeliLink(){
   if(!id){showConf('Lütfen bir öğrenci seçin.','⚠️','Tamam',()=>{});return;}
   const s=students.find(x=>x.id===id);if(!s)return;
   showLoad('Bağlantı oluşturuluyor…');
-  const [attVal,payVal,noteVal]=await Promise.all([
+  const [attVal,payVal,noteVal,discVal]=await Promise.all([
     fbGet('attendance/'+id),
     fbGet('payments/'+id),
-    fbGet('notes/'+id)
+    fbGet('notes/'+id),
+    fbGet('discount/'+id)
   ]);
   const att=attVal||{};
   const pays=Object.values(payVal||{});
   const note=noteVal||{};
+  const disc=discVal||{};
   const now=new Date();
 
   // Son 3 ayın yoklama özeti
   const attSummary=[];
+  const last3Keys=[];
   for(let i=2;i>=0;i--){
     let m=now.getMonth()-i,y=now.getFullYear();
     while(m<0){m+=12;y--;}
     const mk=mkey(y,m);
+    last3Keys.push(mk);
     const came=Object.entries(att).filter(([k,v])=>k.startsWith(mk)&&v==='came').length;
     const absent=Object.entries(att).filter(([k,v])=>k.startsWith(mk)&&v==='absent').length;
     attSummary.push({l:MONTHS[m]+' '+y,c:came,a:absent});
   }
 
+  // Son 3 aydaki tüm ödemeler (zamanında / gecikmeli)
+  const payRange=parseRange(s.payDay);
+  const pay3=pays
+    .filter(p=>last3Keys.some(mk=>p.date.startsWith(mk)))
+    .sort((a,b)=>a.date.localeCompare(b.date))
+    .map(p=>{
+      const d=new Date(p.date+'T12:00:00');
+      const onTime=payRange?(d.getDate()>=payRange.a&&d.getDate()<=payRange.b):null;
+      return{
+        dl:d.getDate()+' '+MONTHS[d.getMonth()]+' '+d.getFullYear(),
+        amt:parseFloat(p.amount||0),
+        desc:p.desc||'',
+        st:onTime===null?'none':(onTime?'ontime':'late')
+      };
+    });
+
   // Kayıt tarihinden bugüne aylık ödeme takvimi (carryover dahil), en son 5 ay gösterilecek
-  const fee=parseFloat(s.fee||0);
+  const fee=effectiveFee(s.fee,disc.enabled);
   let regY=0,regM2=0;
   if(s.registeredAt){const p=s.registeredAt.split('-');regY=+p[0];regM2=+p[1]-1;}
   let cy=s.registeredAt?regY:now.getFullYear(), cm=s.registeredAt?regM2:now.getMonth();
@@ -1718,8 +1795,8 @@ async function genVeliLink(){
 
   const data={
     n:s.name+' '+s.surname, e:s.education||'', pr:s.program||'',
-    f:s.fee||'', pd:s.payDay||'', reg:s.registeredAt||'',
-    att:attSummary, last5:last5, bal:carryover,
+    f:fee||'', pd:s.payDay||'', reg:s.registeredAt||'',
+    att:attSummary, last5:last5, pay3:pay3, bal:carryover,
     hw:note.homework||'', gr:note.grade||'',
     gen:fmt(now.getFullYear(),now.getMonth(),now.getDate())
   };
@@ -1777,6 +1854,23 @@ function renderVeliView(data){
       <div style="font-size:11px;font-weight:700;margin-top:5px;line-height:1.4">Lütfen ödeme takvimi içinde yapmanızı rica ederiz.</div>
     </div>`;
   }).join('');
+  const pay3Html=(data.pay3||[]).map(p=>{
+    const badge=p.st==='ontime'
+      ?'<span style="background:var(--green-l);color:var(--green);border:2px solid #a7f3d0;border-radius:20px;padding:3px 11px;font-size:11px;font-weight:900;white-space:nowrap">✅ Zamanında</span>'
+      :p.st==='late'
+      ?'<span style="background:var(--red-l);color:var(--red);border:2px solid #fecaca;border-radius:20px;padding:3px 11px;font-size:11px;font-weight:900;white-space:nowrap">⚠️ Gecikmeli</span>'
+      :'';
+    return `<div class="pay-row">
+      <div style="min-width:0;flex:1">
+        <div style="font-size:14px;font-weight:700">📅 ${p.dl}</div>
+        ${p.desc?`<div style="font-size:12px;color:var(--muted);margin-top:2px;font-weight:600">💬 ${p.desc}</div>`:''}
+      </div>
+      <div style="display:flex;align-items:center;gap:9px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end">
+        ${badge}
+        <span style="font-weight:900;color:var(--green);font-size:15px">${p.amt.toLocaleString('tr-TR')} ₺</span>
+      </div>
+    </div>`;
+  }).join('');
   document.getElementById('veli-view-body').innerHTML=`
     <div class="app-hdr">
       <div style="font-size:44px">🎓</div>
@@ -1802,6 +1896,11 @@ function renderVeliView(data){
       <div class="section-lbl">📆 Son 5 Ay Ödeme Durumu</div>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px">${last5Html}</div>
     </div>`:''}
+    <div class="card mb12">
+      <div class="section-lbl">💳 Son 3 Ay Ödemeleriniz</div>
+      ${pay3Html||'<p style="color:var(--dim);font-size:13px;text-align:center">Bu dönemde kayıtlı ödeme bulunmuyor.</p>'}
+      <div style="margin-top:12px;background:#fefce8;border:2px solid #fde047;border-radius:11px;padding:11px 14px;font-weight:800;font-size:13px;color:#713f12;text-align:center">🔔 Lütfen ödemelerinizi zamanında yapmanızı rica ediyoruz.</div>
+    </div>
     <div class="card mb12">
       <div class="section-lbl">📅 Yoklama Özeti (Son 3 Ay)</div>
       ${attRows}
