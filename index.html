@@ -262,10 +262,16 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
         <span style="font-size:22px;font-weight:900;color:#059669;flex-shrink:0">₺</span>
       </div>
       <label class="lbl" style="color:#166534">Ders Başı Ücret (₺) <span style="font-weight:600;text-transform:none;letter-spacing:0;font-size:11px;color:#4ade80">— geldiği ders × bu ücret = hesaplama</span></label>
-      <div style="display:flex;align-items:center;gap:10px;margin-top:4px">
+      <div style="display:flex;align-items:center;gap:10px;margin-top:4px;margin-bottom:14px">
         <input id="r-lesson-fee" type="number" placeholder="Örn: 150" style="font-size:20px;font-weight:900;color:#059669;border-color:#86efac;background:#fff;flex:1">
         <span style="font-size:22px;font-weight:900;color:#059669;flex-shrink:0">₺</span>
       </div>
+      <label class="lbl" style="color:#166534">%20 KDV Durumu</label>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px" id="r-kdv-btns">
+        <button type="button" class="pr-btn" data-v="1" onclick="selKdv('r','1')">✅ KDV Dahil</button>
+        <button type="button" class="pr-btn" data-v="0" onclick="selKdv('r','0')">🚫 KDV Hariç</button>
+      </div>
+      <input type="hidden" id="r-kdv" value="0">
     </div>
     <div class="section-lbl">💳 Ödeme Taahhüdü</div>
     <div style="background:#fefce8;border:2px solid #fde047;border-radius:11px;padding:12px 13px;margin-bottom:16px">
@@ -338,10 +344,16 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
         <span style="font-size:22px;font-weight:900;color:#059669;flex-shrink:0">₺</span>
       </div>
       <label class="lbl" style="color:#166534">Ders Başı Ücret (₺)</label>
-      <div style="display:flex;align-items:center;gap:10px;margin-top:4px">
+      <div style="display:flex;align-items:center;gap:10px;margin-top:4px;margin-bottom:14px">
         <input id="e-lesson-fee" type="number" placeholder="Örn: 150" style="font-size:20px;font-weight:900;color:#059669;border-color:#86efac;background:#fff;flex:1">
         <span style="font-size:22px;font-weight:900;color:#059669;flex-shrink:0">₺</span>
       </div>
+      <label class="lbl" style="color:#166534">%20 KDV Durumu</label>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px" id="e-kdv-btns">
+        <button type="button" class="pr-btn" data-v="1" onclick="selKdv('e','1')">✅ KDV Dahil</button>
+        <button type="button" class="pr-btn" data-v="0" onclick="selKdv('e','0')">🚫 KDV Hariç</button>
+      </div>
+      <input type="hidden" id="e-kdv" value="0">
     </div>
     <div class="section-lbl">💳 Ödeme Taahhüdü</div>
     <div style="background:#fefce8;border:2px solid #fde047;border-radius:11px;padding:12px 13px;margin-bottom:16px">
@@ -467,6 +479,12 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
   <div class="card mb14" id="ana-compare-card">
     <div style="font-weight:900;font-size:14px;color:var(--text);margin-bottom:14px">🎵 Müzik vs ♟ Satranç Karşılaştırması</div>
     <div id="ana-compare"></div>
+  </div>
+
+  <!-- KDV summary -->
+  <div class="card mb14" id="ana-kdv-card">
+    <div style="font-weight:900;font-size:14px;color:var(--text);margin-bottom:14px">🧾 KDV (%20) Durumu</div>
+    <div id="ana-kdv"></div>
   </div>
 
   <!-- Per student payment table -->
@@ -1048,6 +1066,8 @@ function resetReg(){
     const el=document.getElementById(id);if(el)el.textContent='';
   });
   document.querySelectorAll('#r-pr-btns .pr-btn').forEach(b=>b.classList.remove('sel'));
+  const rKdv=document.getElementById('r-kdv');if(rKdv)rKdv.value='0';
+  document.querySelectorAll('#r-kdv-btns .pr-btn').forEach(b=>b.classList.remove('sel'));
   renderSchedRows('r',[]);
 }
 
@@ -1106,6 +1126,11 @@ function selPR(p,v){
   document.querySelectorAll('#'+p+'-pr-btns .pr-btn').forEach(b=>b.classList.toggle('sel',b.dataset.v===v));
 }
 
+function selKdv(p,v){
+  document.getElementById(p+'-kdv').value=v;
+  document.querySelectorAll('#'+p+'-kdv-btns .pr-btn').forEach(b=>b.classList.toggle('sel',b.dataset.v===v));
+}
+
 function readForm(p){
   return{
     name:document.getElementById(p+'-name').value.trim(),
@@ -1115,6 +1140,7 @@ function readForm(p){
     program:document.getElementById(p+'-prog').value,
     fee:document.getElementById(p+'-fee').value.trim(),
     lessonFee:document.getElementById(p+'-lesson-fee').value.trim(),
+    kdvDahil:document.getElementById(p+'-kdv').value==='1',
     payDay:document.getElementById(p+'-payday').value||'',
     momName:document.getElementById(p+'-mom-name').value.trim(),
     momPhone:document.getElementById(p+'-mom-phone').value.trim(),
@@ -1159,6 +1185,8 @@ function fillEdit(){
   document.getElementById('e-prog').value=s.program||'';
   document.getElementById('e-fee').value=s.fee||'';
   document.getElementById('e-lesson-fee').value=s.lessonFee||'';
+  document.getElementById('e-kdv').value=s.kdvDahil?'1':'0';
+  document.querySelectorAll('#e-kdv-btns .pr-btn').forEach(b=>b.classList.toggle('sel',b.dataset.v===(s.kdvDahil?'1':'0')));
   document.getElementById('e-payday').value=s.payDay||'';
   document.getElementById('e-mom-name').value=s.momName||'';
   document.getElementById('e-mom-phone').value=s.momPhone||'';
@@ -1221,6 +1249,7 @@ function renderDetail(){
           <span class="badge" style="background:var(--green-l);color:var(--green);border:2px solid #a7f3d0">⏱ ${s.program}</span>
           ${s.fee?'<span class="badge" style="background:var(--green-l);color:var(--green);border:2px solid #a7f3d0">💰 '+parseFloat(s.fee).toLocaleString('tr-TR')+' ₺/ay</span>':''}
           ${s.lessonFee?'<span class="badge" style="background:#f0fdf4;color:#166534;border:2px solid #86efac">📚 '+parseFloat(s.lessonFee).toLocaleString('tr-TR')+' ₺/ders</span>':''}
+          ${s.fee?(s.kdvDahil?'<span class="badge" style="background:#eff6ff;color:#1d4ed8;border:2px solid #bfdbfe">✅ KDV Dahil</span>':'<span class="badge" style="background:#f3f4f6;color:#4b5563;border:2px solid #d1d5db">🚫 KDV Hariç</span>'):''}
           ${rng?'<span class="badge" style="background:#fef9c3;color:#713f12;border:2px solid #fde047">💳 Her ay '+s.payDay+'. günler</span>':''}
           ${s.schedule&&s.schedule.length?'<span class="badge" style="background:#ecfdf5;color:#15803d;border:2px solid #86efac">📅 '+s.schedule.map(sl=>SCHED_DAYS[sl.day]+' '+sl.time).join(' · ')+'</span>':''}
         </div>
@@ -1863,10 +1892,41 @@ function renderAnalysis(){
     const pct2=periodExp>0?Math.min(100,Math.round(periodPays/periodExp*100)):null;
     const statusColor=thisMoPays>=fee&&fee>0?'#059669':bal>0?'#dc2626':'#7c82b8';
     const statusTxt=fee===0?'—':thisMoPays>=fee?'✅ Tam':thisMoPays>0?'⚠ Eksik':'❌ Yok';
-    return{s,periodPays,periodExp,pct2,statusTxt,statusColor};
+    return{s,periodPays,periodExp,pct2,statusTxt,statusColor,kdvDahil:!!s.kdvDahil};
   }).sort((a,b)=>b.periodPays-a.periodPays);
 
-  document.getElementById('ana-students').innerHTML=stuRows.map(({s,periodPays,periodExp,pct2,statusTxt,statusColor})=>`
+  // KDV split (%20 dahil ise: KDV tutarı = alınan tutar × 20/120)
+  const kdvRows=stuRows.filter(r=>r.kdvDahil);
+  const nonKdvRows=stuRows.filter(r=>!r.kdvDahil);
+  const kdvGross=kdvRows.reduce((a,r)=>a+r.periodPays,0);
+  const kdvNet=Math.round((kdvGross/1.2)*100)/100;
+  const kdvAmount=Math.round((kdvGross-kdvNet)*100)/100;
+  const nonKdvTotal=nonKdvRows.reduce((a,r)=>a+r.periodPays,0);
+
+  document.getElementById('ana-kdv').innerHTML=`
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+      <div class="sum-card" style="background:var(--blue-l);border-color:#bfdbfe">
+        <div class="sum-n" style="color:var(--blue);font-size:15px">${kdvRows.length}</div>
+        <div class="sum-l">✅ KDV Dahil Öğrenci</div>
+      </div>
+      <div class="sum-card" style="background:#f3f4f6;border-color:#d1d5db">
+        <div class="sum-n" style="color:#4b5563;font-size:15px">${nonKdvRows.length}</div>
+        <div class="sum-l">🚫 KDV Hariç Öğrenci</div>
+      </div>
+    </div>
+    <div style="background:#eff6ff;border:2px solid #bfdbfe;border-radius:11px;padding:12px 13px;margin-bottom:8px">
+      <div style="font-weight:800;font-size:12px;color:#1d4ed8;margin-bottom:8px">✅ KDV Dahil Öğrencilerden Alınan Tutar (Seçili Dönem)</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center">
+        <div><div style="font-weight:900;font-size:14px;color:#1d4ed8">${kdvGross.toLocaleString('tr-TR')} ₺</div><div style="font-size:10px;color:var(--muted);font-weight:700">Toplam (KDV Dahil)</div></div>
+        <div><div style="font-weight:900;font-size:14px;color:#059669">${kdvNet.toLocaleString('tr-TR')} ₺</div><div style="font-size:10px;color:var(--muted);font-weight:700">KDV Hariç Tutar</div></div>
+        <div><div style="font-weight:900;font-size:14px;color:#dc2626">${kdvAmount.toLocaleString('tr-TR')} ₺</div><div style="font-size:10px;color:var(--muted);font-weight:700">Hesaplanan %20 KDV</div></div>
+      </div>
+    </div>
+    <div style="background:#f3f4f6;border:2px solid #d1d5db;border-radius:11px;padding:10px 13px;font-size:12px;font-weight:800;color:#4b5563;display:flex;justify-content:space-between">
+      <span>🚫 KDV Hariç Öğrencilerden Alınan Tutar</span><span>${nonKdvTotal.toLocaleString('tr-TR')} ₺</span>
+    </div>`;
+
+  const stuRowHtml=({s,periodPays,periodExp,pct2,statusTxt,statusColor})=>`
     <div class="stu-pay-row">
       <div style="font-size:18px;flex-shrink:0">${eduIcon(s.education)}</div>
       <div style="flex:1;min-width:0">
@@ -1875,7 +1935,13 @@ function renderAnalysis(){
         ${pct2!==null?`<div class="prog-bar" style="margin-top:4px"><div class="prog-fill" style="width:${pct2}%;background:${pct2>=100?'#059669':pct2>=50?'#d97706':'#dc2626'}"></div></div>`:''}
       </div>
       <div style="font-weight:900;font-size:12px;color:${statusColor};flex-shrink:0;text-align:right">${statusTxt}</div>
-    </div>`).join('');
+    </div>`;
+
+  document.getElementById('ana-students').innerHTML=`
+    <div style="font-weight:900;font-size:12px;color:#1d4ed8;margin:6px 0 8px">✅ KDV Dahil Öğrenciler (${kdvRows.length})</div>
+    ${kdvRows.length?kdvRows.map(stuRowHtml).join(''):'<div style="font-size:12px;color:var(--muted);padding:6px 0">KDV dahil öğrenci yok.</div>'}
+    <div style="font-weight:900;font-size:12px;color:#4b5563;margin:14px 0 8px">🚫 KDV Hariç Öğrenciler (${nonKdvRows.length})</div>
+    ${nonKdvRows.length?nonKdvRows.map(stuRowHtml).join(''):'<div style="font-size:12px;color:var(--muted);padding:6px 0">KDV hariç öğrenci yok.</div>'}`;
 }
 
 function exportAnalysisExcel(){
