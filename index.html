@@ -70,6 +70,12 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
 #yf-table td{border:1px solid var(--border);padding:0;vertical-align:top}
 #yf-table td.yf-unpaid{background:#fecaca;border:2px solid #dc2626}
 #yf-table td.yf-unpaid .yf-tally{background:#fca5a5}
+#yf-table td.yf-unpaid.yf-forced{border-style:dashed}
+#yf-table td.yf-forced-clear{background:#f0fdf4}
+.yf-paidbtn{display:block;width:100%;border:none;border-top:1px dashed var(--border);background:#f3f4f6;color:var(--muted);font-size:9px;font-weight:800;padding:3px 4px;cursor:pointer;text-align:center}
+.yf-paidbtn:hover{background:#e5e7eb}
+#yf-table td.yf-unpaid .yf-paidbtn{background:#fca5a5;color:#7f1d1d;border-top-color:#dc2626}
+#yf-table td.yf-forced-clear .yf-paidbtn{background:#bbf7d0;color:#14532d}
 #yf-table .yf-cell{width:100%;min-height:72px;padding:7px;font-size:15px;line-height:1.35;font-family:'Nunito',sans-serif;font-weight:800;color:var(--text);white-space:pre-wrap;word-break:break-word;outline:none;cursor:text}
 #yf-table .yf-cell:focus{background:#fff;box-shadow:inset 0 0 0 2px var(--purple)}
 .yf-satranc{color:#ea580c;font-weight:900}
@@ -903,22 +909,47 @@ function yfIsPastDue(year,month){
 }
 function yfMatchStudent(name){
   const norm=(name||'').toLocaleUpperCase('tr');
-  return students.find(s=>normName(s.name)===norm);
+  const matches=students.filter(s=>normName(s.name)===norm);
+  // Aynı isimde birden fazla kayıtlı öğrenci varsa hangisi olduğu belli olmaz —
+  // yanlış öğrenciyi "ödemedi" diye işaretlememek için böyle durumlarda atlanır.
+  if(matches.length!==1)return null;
+  return matches[0];
 }
 function yfCellUnpaid(text){
   const my=parseInt(document.getElementById('yf-month').value,10);
   const yy=parseInt(document.getElementById('yf-year').value,10);
   if(!yfIsPastDue(yy,my))return false;
-  const mk=yy+'-'+String(my+1).padStart(2,'0');
   const names=yfDetectNames(text);
   for(const n of names){
     const st=yfMatchStudent(n);
     if(!st)continue;
     const pays=Object.values(yfPayments[st.id]||{});
-    const paid=pays.some(p=>p.date&&p.date.startsWith(mk));
+    const paid=pays.some(p=>{
+      if(!p||!p.date)return false;
+      const parts=p.date.split('-');
+      const py=parseInt(parts[0],10),pm=parseInt(parts[1],10);
+      return py===yy&&pm===(my+1);
+    });
     if(!paid)return true;
   }
   return false;
+}
+function yfOverrideKey(r,c){ return r+'_'+c; }
+function yfGetOverride(r,c){ return (yfData.overrides||{})[yfOverrideKey(r,c)]; }
+function yfToggleOverride(r,c){
+  yfData.overrides=yfData.overrides||{};
+  const key=yfOverrideKey(r,c);
+  const cur=yfData.overrides[key];
+  const next=cur==='red'?'clear':(cur==='clear'?null:'red');
+  if(next)yfData.overrides[key]=next; else delete yfData.overrides[key];
+  yfSave();
+  yfRenderCell(r,c);
+}
+function yfCellClass(r,c){
+  const ov=yfGetOverride(r,c);
+  if(ov==='red')return'yf-unpaid yf-forced';
+  if(ov==='clear')return'yf-forced-clear';
+  return yfCellUnpaid(yfData.rows[r][c]||'')?'yf-unpaid':'';
 }
 function yfCellInnerHTML(r,c){
   const text=yfData.rows[r][c]||'';
@@ -927,7 +958,10 @@ function yfCellInnerHTML(r,c){
     const esc=n.replace(/'/g,"\\'");
     return `<span class="yf-tag">${n}</span><button type="button" class="yf-plus" onclick="yfAddMark(${r},${c},'${esc}','+')">+</button><button type="button" class="yf-minus" onclick="yfAddMark(${r},${c},'${esc}','-')">−</button>`;
   }).join('')+'</div>'):'';
-  return `<div class="yf-cell" contenteditable="true" oninput="yfCellInput(this,${r},${c})" onblur="yfCellBlur(this,${r},${c})">${yfHighlight(text)}</div>${controls}`;
+  const ov=yfGetOverride(r,c);
+  const ovLabel=ov==='red'?'🔴 Elle kırmızı (kaldır)':(ov==='clear'?'⚪ Elle temiz (kaldır)':'🖱 Kırmızı yap');
+  const paidBar=`<button type="button" class="yf-paidbtn" onclick="yfToggleOverride(${r},${c})">${ovLabel}</button>`;
+  return `<div class="yf-cell" contenteditable="true" oninput="yfCellInput(this,${r},${c})" onblur="yfCellBlur(this,${r},${c})">${yfHighlight(text)}</div>${controls}${paidBar}`;
 }
 function yfRender(){
   const table=document.getElementById('yf-table');
@@ -936,7 +970,7 @@ function yfRender(){
   let html='<tr><th colspan="7" style="font-size:14px;padding:10px">'+mName+' '+yVal+' YOKLAMA</th></tr>';
   html+='<tr>'+YF_DAYS.map(d=>'<th>'+d+'</th>').join('')+'</tr>';
   yfData.rows.forEach((row,r)=>{
-    html+='<tr>'+row.map((cell,c)=>`<td data-r="${r}" data-c="${c}" class="${yfCellUnpaid(cell)?'yf-unpaid':''}">${yfCellInnerHTML(r,c)}</td>`).join('')+'</tr>';
+    html+='<tr>'+row.map((cell,c)=>`<td data-r="${r}" data-c="${c}" class="${yfCellClass(r,c)}">${yfCellInnerHTML(r,c)}</td>`).join('')+'</tr>';
   });
   table.innerHTML=html;
 }
@@ -944,7 +978,7 @@ function yfRenderCell(r,c){
   const td=table_yfTd(r,c);
   if(td){
     td.innerHTML=yfCellInnerHTML(r,c);
-    td.className=yfCellUnpaid(yfData.rows[r][c]||'')?'yf-unpaid':'';
+    td.className=yfCellClass(r,c);
   }
 }
 function table_yfTd(r,c){
