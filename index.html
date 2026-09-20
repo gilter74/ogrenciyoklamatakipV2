@@ -58,6 +58,14 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
 .s-row{background:#fff;border:2px solid var(--border);border-radius:14px;padding:12px 14px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:all .18s;margin-bottom:8px;box-shadow:var(--shadow)}
 .s-row:hover{border-color:var(--purple);transform:translateY(-2px)}
 .avatar{border-radius:14px;background:linear-gradient(135deg,#7c3aed,#6d28d9);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:22px}
+.week-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:8px}
+.week-table{display:inline-block;min-width:720px;width:100%}
+.week-row{display:grid;grid-template-columns:64px repeat(7,1fr);gap:5px;margin-bottom:5px}
+.week-head .week-day-col{background:#fff;border:2px solid var(--border);border-radius:9px;padding:6px 2px;font-weight:900;font-size:12px;text-align:center;color:var(--text)}
+.week-time-col{font-weight:900;font-size:12px;color:var(--muted);display:flex;align-items:center;justify-content:center;text-align:center}
+.week-cell{background:#fff;border:2px dashed var(--border);border-radius:9px;padding:4px;min-height:44px;display:flex;flex-direction:column;gap:3px}
+.week-chip{border-radius:7px;padding:4px 6px;font-size:11px;font-weight:800;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:transform .1s}
+.week-chip:active{transform:scale(.95)}
 .tab-bar{display:grid;grid-template-columns:1fr 1fr;background:#fff;border:2px solid var(--border);border-radius:13px;padding:4px;gap:4px;margin-bottom:12px;box-shadow:var(--shadow)}
 .tab-btn{border:none;border-radius:9px;padding:10px 8px;background:transparent;color:var(--dim);font-family:'Nunito',sans-serif;font-weight:800;font-size:14px;cursor:pointer;transition:all .18s}
 .tab-att{background:var(--blue-l);color:var(--blue)}
@@ -165,6 +173,7 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
     <button class="btn btn-purple" onclick="go('s-reg')">➕ Yeni Kayıt</button>
   </div>
   <button class="btn btn-blue" style="width:100%;justify-content:center;margin-bottom:14px;font-size:14px" onclick="openAnalysis()">📈 Gelir Analizi &amp; Ödeme Yönetimi</button>
+  <button class="btn" style="width:100%;justify-content:center;margin-bottom:14px;font-size:14px;background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;box-shadow:0 4px 14px rgba(22,163,74,.3)" onclick="go('s-week')">📅 Haftalık Program</button>
   <button class="btn" style="width:100%;justify-content:center;margin-bottom:14px;font-size:14px;background:linear-gradient(135deg,#0ea5e9,#0284c7);color:#fff;box-shadow:0 4px 14px rgba(14,165,233,.3)" onclick="go('s-veli-share')">👪 Veli Paylaşımı</button>
   <button class="btn" style="width:100%;justify-content:center;margin-bottom:14px;font-size:14px;background:linear-gradient(135deg,#A9791E,#7c5c14);color:#fff;box-shadow:0 4px 14px rgba(169,121,30,.3)" onclick="go('s-fiyat')">💵 Fiyat Güncelleyici</button>
   <button class="btn" style="width:100%;justify-content:center;margin-bottom:14px;font-size:14px;background:linear-gradient(135deg,#374151,#1f2937);color:#fff;box-shadow:0 4px 14px rgba(55,65,81,.3)" onclick="openArchive()">🗃️ Eski Kursiyer Arşivi</button>
@@ -221,6 +230,11 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
         <option>Aylık 30 dk × 2</option><option>Aylık 40 dk</option><option>Aylık 40 dk × 2</option>
       </select>
       <div class="err-msg" id="r-err-prog"></div>
+    </div>
+    <div class="mb20">
+      <label class="lbl">📅 Haftalık Ders Saatleri <span style="font-weight:600;text-transform:none;letter-spacing:0;font-size:11px;color:var(--dim)">(Haftalık Program ekranında görünür)</span></label>
+      <div id="r-sched-rows"></div>
+      <button type="button" class="btn-ghost" style="width:100%;justify-content:center;padding:9px;font-size:13px;margin-top:6px" onclick="addSchedRow('r')">➕ Saat Ekle</button>
     </div>
     <div class="section-lbl">💰 Ödeme Bilgileri</div>
     <div style="background:#f0fdf4;border:2px solid #86efac;border-radius:11px;padding:14px 15px;margin-bottom:16px">
@@ -292,6 +306,11 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
         <option>Aylık 30 dk × 2</option><option>Aylık 40 dk</option><option>Aylık 40 dk × 2</option>
       </select>
       <div class="err-msg" id="e-err-prog"></div>
+    </div>
+    <div class="mb20">
+      <label class="lbl">📅 Haftalık Ders Saatleri <span style="font-weight:600;text-transform:none;letter-spacing:0;font-size:11px;color:var(--dim)">(Haftalık Program ekranında görünür)</span></label>
+      <div id="e-sched-rows"></div>
+      <button type="button" class="btn-ghost" style="width:100%;justify-content:center;padding:9px;font-size:13px;margin-top:6px" onclick="addSchedRow('e')">➕ Saat Ekle</button>
     </div>
     <div class="section-lbl">💰 Ödeme Bilgileri</div>
     <div style="background:#f0fdf4;border:2px solid #86efac;border-radius:11px;padding:14px 15px;margin-bottom:16px">
@@ -511,6 +530,30 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
   <iframe id="fiyat-frame" title="Fiyat Güncelleyici" style="display:block;width:100%;height:calc(100vh - 70px);border:none;background:#F3F5F4"></iframe>
 </div>
 
+<!-- HAFTALIK PROGRAM / YOKLAMA -->
+<div id="s-week" class="screen">
+  <button class="btn-ghost mb14" onclick="go('s-list')">← Geri</button>
+  <div class="card mb14">
+    <h2 style="font-family:'Playfair Display',serif;font-size:20px;text-align:center;color:#15803d;margin-bottom:10px">📅 Haftalık Ders Programı</h2>
+    <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:8px">
+      <button class="btn-ghost" style="padding:8px 14px;font-size:14px" onclick="changeWeek(-1)">◀</button>
+      <div id="week-range" style="font-weight:900;font-size:14px;color:var(--text);min-width:180px;text-align:center"></div>
+      <button class="btn-ghost" style="padding:8px 14px;font-size:14px" onclick="changeWeek(1)">▶</button>
+    </div>
+    <div style="text-align:center;margin-bottom:4px">
+      <button class="btn-ghost" style="padding:6px 12px;font-size:12px" onclick="weekOffset=0;renderWeek()">Bu Hafta</button>
+    </div>
+    <div style="display:flex;justify-content:center;gap:14px;font-size:11px;font-weight:800;color:var(--muted);flex-wrap:wrap">
+      <span>🖱 Tıkla: Geldi → Gelmedi → Temizle</span>
+      <span style="display:inline-flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:50%;background:#16a34a;display:inline-block"></span>Geldi</span>
+      <span style="display:inline-flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:50%;background:#dc2626;display:inline-block"></span>Gelmedi</span>
+    </div>
+  </div>
+  <div class="week-wrap">
+    <div id="week-grid"></div>
+  </div>
+</div>
+
 <!-- CONFIRM -->
 <div class="modal-bg" id="conf-modal">
   <div class="modal-box" style="max-width:320px;text-align:center">
@@ -702,6 +745,7 @@ function go(id){
   if(id==='s-archive') renderArchive();
   if(id==='s-veli-share') renderVeliShare();
   if(id==='s-fiyat') loadFiyatApp();
+  if(id==='s-week') openWeek();
 }
 
 // ══ LIST ══════════════════════════════════════════════════════════════
@@ -771,6 +815,80 @@ function delStudent(id){
   });
 }
 
+// ══ HAFTALIK PROGRAM (Yoklama Takvimi) ═════════════════════════════════
+let weekOffset=0, weekAtt={}, _weekListenerOn=false;
+function weekMonday(offset){
+  const now=new Date();
+  const dow=(now.getDay()+6)%7; // 0=Pt..6=Pz
+  const monday=new Date(now.getFullYear(),now.getMonth(),now.getDate()-dow+offset*7);
+  return monday;
+}
+function weekDates(offset){
+  const monday=weekMonday(offset);
+  const arr=[];
+  for(let i=0;i<7;i++){const d=new Date(monday);d.setDate(monday.getDate()+i);arr.push(d);}
+  return arr;
+}
+function allSchedTimes(){
+  const set=new Set();
+  students.forEach(s=>(s.schedule||[]).forEach(sl=>{if(sl.time)set.add(sl.time);}));
+  return Array.from(set).sort();
+}
+function openWeek(){
+  if(!_weekListenerOn){
+    _weekListenerOn=true;
+    db.ref('attendance').on('value',snap=>{
+      weekAtt=snap.val()||{};
+      const activeScreen=document.querySelector('.screen.active');
+      if(activeScreen&&activeScreen.id==='s-week') renderWeek();
+    });
+  } else {
+    renderWeek();
+  }
+}
+function changeWeek(delta){ weekOffset+=delta; renderWeek(); }
+function renderWeek(){
+  const dates=weekDates(weekOffset);
+  document.getElementById('week-range').textContent=
+    dates[0].getDate()+' '+MONTHS[dates[0].getMonth()]+' – '+dates[6].getDate()+' '+MONTHS[dates[6].getMonth()]+' '+dates[6].getFullYear()
+    +(weekOffset===0?' (bu hafta)':'');
+  const times=allSchedTimes();
+  const el=document.getElementById('week-grid');
+  if(!times.length){
+    el.innerHTML='<div class="card empty"><div style="font-size:44px;margin-bottom:10px">📅</div><p style="color:var(--muted);font-size:15px">Henüz hiçbir öğrenciye haftalık ders saati atanmadı.<br>Öğrenci kaydı / düzenleme ekranından "📅 Haftalık Ders Saatleri" bölümüne saat ekleyin.</p></div>';
+    return;
+  }
+  let html='<div class="week-table">';
+  html+='<div class="week-row week-head"><div class="week-time-col"></div>'+
+    dates.map((d,i)=>`<div class="week-day-col">${SCHED_DAYS[i]}<br><span style="font-weight:700;font-size:11px;color:var(--muted)">${d.getDate()} ${MONTHS[d.getMonth()].slice(0,3)}</span></div>`).join('')+
+    '</div>';
+  times.forEach(t=>{
+    html+=`<div class="week-row"><div class="week-time-col">${t}</div>`;
+    dates.forEach((d,i)=>{
+      const dateStr=fmt(d.getFullYear(),d.getMonth(),d.getDate());
+      const matches=students.filter(s=>(s.schedule||[]).some(sl=>sl.day===i&&sl.time===t));
+      html+='<div class="week-cell">'+matches.map(s=>{
+        const c=eduColor(s.education);
+        const st=(weekAtt[s.id]||{})[dateStr];
+        const ring=st==='came'?'0 0 0 2px #16a34a inset':st==='absent'?'0 0 0 2px #dc2626 inset':'none';
+        return `<div class="week-chip" style="background:${c.bg};border:1px solid ${c.border};box-shadow:${ring}" onclick="toggleWeekAtt('${s.id}','${dateStr}')" title="${s.name} ${s.surname} · tıkla: geldi/gelmedi/temizle">${eduIcon(s.education)} ${s.name}</div>`;
+      }).join('')+'</div>';
+    });
+    html+='</div>';
+  });
+  html+='</div>';
+  el.innerHTML=html;
+}
+function toggleWeekAtt(id,dateStr){
+  weekAtt[id]=weekAtt[id]||{};
+  const cur=weekAtt[id][dateStr];
+  const next=cur==='came'?'absent':(cur==='absent'?null:'came');
+  if(next) weekAtt[id][dateStr]=next; else delete weekAtt[id][dateStr];
+  fbSet('attendance/'+id+'/'+dateStr, next);
+  if(curId===id){ if(next) attData[dateStr]=next; else delete attData[dateStr]; }
+  renderWeek();
+}
+
 // ══ REGISTER ══════════════════════════════════════════════════════════
 function resetReg(){
   ['r-name','r-surname','r-phone','r-edu','r-prog','r-fee','r-lesson-fee','r-payday',
@@ -781,6 +899,37 @@ function resetReg(){
     const el=document.getElementById(id);if(el)el.textContent='';
   });
   document.querySelectorAll('#r-pr-btns .pr-btn').forEach(b=>b.classList.remove('sel'));
+  renderSchedRows('r',[]);
+}
+
+// ══ HAFTALIK DERS SAATLERİ (schedule) ═══════════════════════════════════
+const SCHED_DAYS=['Pt','Sa','Ça','Pe','Cu','Ct','Pz'];
+function renderSchedRows(p,slots){
+  const wrap=document.getElementById(p+'-sched-rows');
+  if(!wrap)return;
+  wrap.innerHTML='';
+  (slots&&slots.length?slots:[]).forEach(sl=>addSchedRow(p,sl.day,sl.time));
+}
+function addSchedRow(p,day,time){
+  const wrap=document.getElementById(p+'-sched-rows');
+  if(!wrap)return;
+  const row=document.createElement('div');
+  row.className='sched-row';
+  row.style.cssText='display:flex;gap:6px;align-items:center;margin-bottom:6px';
+  const dayOpts=SCHED_DAYS.map((d,i)=>`<option value="${i}" ${i===day?'selected':''}>${d}</option>`).join('');
+  row.innerHTML=`
+    <select class="sched-day" style="flex:1;padding:9px 6px;font-size:13px;border-radius:9px;border:2px solid var(--border);font-weight:800">${dayOpts}</select>
+    <input type="time" class="sched-time" value="${time||'14:00'}" style="flex:1;padding:9px 6px;font-size:13px;border-radius:9px;border:2px solid var(--border);font-weight:800">
+    <button type="button" class="btn-del" style="flex-shrink:0" onclick="this.parentElement.remove()">Sil</button>`;
+  wrap.appendChild(row);
+}
+function collectSched(p){
+  const wrap=document.getElementById(p+'-sched-rows');
+  if(!wrap)return[];
+  return Array.from(wrap.querySelectorAll('.sched-row')).map(row=>({
+    day:parseInt(row.querySelector('.sched-day').value,10),
+    time:row.querySelector('.sched-time').value
+  })).filter(sl=>!isNaN(sl.day)&&sl.time);
 }
 
 function ce(iid,eid){
@@ -807,6 +956,7 @@ function readForm(p){
     momPhone:document.getElementById(p+'-mom-phone').value.trim(),
     dadName:document.getElementById(p+'-dad-name').value.trim(),
     dadPhone:document.getElementById(p+'-dad-phone').value.trim(),
+    schedule:collectSched(p),
   };
 }
 
@@ -851,6 +1001,7 @@ function fillEdit(){
   document.getElementById('e-dad-name').value=s.dadName||'';
   document.getElementById('e-dad-phone').value=s.dadPhone||'';
   document.querySelectorAll('#e-pr-btns .pr-btn').forEach(b=>b.classList.toggle('sel',b.dataset.v===(s.payDay||'')));
+  renderSchedRows('e',s.schedule||[]);
   ['e-err-name','e-err-surname','e-err-edu','e-err-prog'].forEach(id=>{
     const el=document.getElementById(id);if(el)el.textContent='';
   });
