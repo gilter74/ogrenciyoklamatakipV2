@@ -667,6 +667,27 @@ const eduIcon=e=>{
   if(e.includes('Şan'))return'🎤';if(e.includes('Satranç'))return'♟';
   return'🎼';
 };
+const eduColor=e=>{
+  if(!e)return{border:'#e2e8f0',bg:'#ffffff'};
+  if(e.includes('Satranç'))return{border:'#f97316',bg:'#fff7ed'};
+  if(e.includes('Piyano'))return{border:'#3b82f6',bg:'#eff6ff'};
+  if(e.includes('Gitar'))return{border:'#8b5cf6',bg:'#f5f3ff'};
+  if(e.includes('Bağlama'))return{border:'#eab308',bg:'#fefce8'};
+  if(e.includes('Ukulele'))return{border:'#22c55e',bg:'#f0fdf4'};
+  return{border:'#e2e8f0',bg:'#ffffff'};
+};
+const eduCategory=e=>{
+  if(!e)return'Diğer';
+  if(e.includes('Gitar'))return'🎸 Gitar';
+  if(e.includes('Bağlama'))return'🪕 Bağlama';
+  if(e.includes('Piyano'))return'🎹 Piyano';
+  if(e.includes('Ukulele'))return'🎵 Ukulele';
+  if(e.includes('Şan'))return'🎤 Şan';
+  if(e.includes('Müzik Okullarına Hazırlık'))return'🎼 Müzik Okullarına Hazırlık';
+  if(e.includes('Satranç'))return'♟ Satranç';
+  return'Diğer';
+};
+const EDU_CAT_ORDER=['🎸 Gitar','🪕 Bağlama','🎹 Piyano','🎵 Ukulele','🎤 Şan','🎼 Müzik Okullarına Hazırlık','♟ Satranç','Diğer'];
 
 // ══ SCREENS ═══════════════════════════════════════════════════════════
 function go(id){
@@ -691,8 +712,18 @@ function renderList(){
   if(!shown.length){
     el.innerHTML='<div class="card empty"><div style="font-size:50px;margin-bottom:12px">📋</div><p style="color:var(--muted);font-size:16px">Henüz öğrenci kaydı yok.</p></div>';
   } else {
-    el.innerHTML=shown.map(s=>`
-      <div class="s-row" onclick="openDet('${s.id}')">
+    const groups={};
+    shown.forEach(s=>{const cat=eduCategory(s.education);(groups[cat]=groups[cat]||[]).push(s);});
+    el.innerHTML=EDU_CAT_ORDER.filter(cat=>groups[cat]&&groups[cat].length).map(cat=>{
+      const list=groups[cat];
+      const dot=eduColor(list[0].education).border;
+      return `
+      <div style="display:flex;align-items:center;gap:8px;margin:18px 2px 8px">
+        <span style="width:11px;height:11px;border-radius:50%;background:${dot};display:inline-block;flex-shrink:0"></span>
+        <span style="font-weight:900;font-size:14px;color:#1e293b">${cat}</span>
+        <span style="font-size:12px;color:var(--muted);font-weight:700">(${list.length})</span>
+      </div>` + list.map(s=>{const c=eduColor(s.education);return`
+      <div class="s-row" style="border-color:${c.border};background:${c.bg}" onclick="openDet('${s.id}')">
         <div class="avatar" style="width:48px;height:48px">${eduIcon(s.education)}</div>
         <div style="flex:1;min-width:0">
           <div style="font-weight:900;font-size:15px">${s.name} ${s.surname}</div>
@@ -700,7 +731,8 @@ function renderList(){
           <div style="font-size:12px;color:var(--dim);margin-top:1px">${s.phone?'📞 '+s.phone:''}${s.momPhone?' · 👩 '+s.momPhone:''}</div>
         </div>
         <button class="btn-del" onclick="event.stopPropagation();delStudent('${s.id}')">Sil</button>
-      </div>`).join('');
+      </div>`;}).join('');
+    }).join('');
   }
   document.getElementById('tot-el').textContent='Toplam '+students.length+' öğrenci';
 }
