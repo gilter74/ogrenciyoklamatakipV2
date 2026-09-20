@@ -66,6 +66,10 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
 .week-cell{background:#fff;border:2px dashed var(--border);border-radius:9px;padding:4px;min-height:44px;display:flex;flex-direction:column;gap:3px}
 .week-chip{border-radius:7px;padding:4px 6px;font-size:11px;font-weight:800;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:transform .1s}
 .week-chip:active{transform:scale(.95)}
+#yf-table th{background:#b45309;color:#fff;font-size:12px;font-weight:900;padding:8px 4px;text-align:center;border:1px solid #92400e;min-width:110px}
+#yf-table td{border:1px solid var(--border);padding:0;vertical-align:top}
+#yf-table textarea{width:100%;min-height:64px;border:none;padding:6px;font-size:11px;font-family:'Nunito',sans-serif;font-weight:700;color:var(--text);resize:vertical;background:transparent}
+#yf-table textarea:focus{outline:2px solid var(--purple);background:#fff}
 .tab-bar{display:grid;grid-template-columns:1fr 1fr;background:#fff;border:2px solid var(--border);border-radius:13px;padding:4px;gap:4px;margin-bottom:12px;box-shadow:var(--shadow)}
 .tab-btn{border:none;border-radius:9px;padding:10px 8px;background:transparent;color:var(--dim);font-family:'Nunito',sans-serif;font-weight:800;font-size:14px;cursor:pointer;transition:all .18s}
 .tab-att{background:var(--blue-l);color:var(--blue)}
@@ -174,6 +178,7 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
   </div>
   <button class="btn btn-blue" style="width:100%;justify-content:center;margin-bottom:14px;font-size:14px" onclick="openAnalysis()">📈 Gelir Analizi &amp; Ödeme Yönetimi</button>
   <button class="btn" style="width:100%;justify-content:center;margin-bottom:14px;font-size:14px;background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;box-shadow:0 4px 14px rgba(22,163,74,.3)" onclick="go('s-week')">📅 Haftalık Program</button>
+  <button class="btn" style="width:100%;justify-content:center;margin-bottom:14px;font-size:14px;background:linear-gradient(135deg,#d97706,#b45309);color:#fff;box-shadow:0 4px 14px rgba(217,119,6,.3)" onclick="go('s-yform')">📋 Yoklama Formu</button>
   <button class="btn" style="width:100%;justify-content:center;margin-bottom:14px;font-size:14px;background:linear-gradient(135deg,#0ea5e9,#0284c7);color:#fff;box-shadow:0 4px 14px rgba(14,165,233,.3)" onclick="go('s-veli-share')">👪 Veli Paylaşımı</button>
   <button class="btn" style="width:100%;justify-content:center;margin-bottom:14px;font-size:14px;background:linear-gradient(135deg,#A9791E,#7c5c14);color:#fff;box-shadow:0 4px 14px rgba(169,121,30,.3)" onclick="go('s-fiyat')">💵 Fiyat Güncelleyici</button>
   <button class="btn" style="width:100%;justify-content:center;margin-bottom:14px;font-size:14px;background:linear-gradient(135deg,#374151,#1f2937);color:#fff;box-shadow:0 4px 14px rgba(55,65,81,.3)" onclick="openArchive()">🗃️ Eski Kursiyer Arşivi</button>
@@ -554,6 +559,36 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
   </div>
 </div>
 
+<!-- YOKLAMA FORMU (Excel'deki tablonun birebir kopyası) -->
+<div id="s-yform" class="screen" style="max-width:100%">
+  <div style="max-width:1100px;margin:0 auto">
+  <button class="btn-ghost mb14" onclick="go('s-list')">← Geri</button>
+  <div class="card mb14">
+    <h2 style="font-family:'Playfair Display',serif;font-size:20px;text-align:center;color:#b45309;margin-bottom:10px">📋 Yoklama Formu</h2>
+    <div style="display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+      <button class="btn-ghost" style="padding:8px 12px;font-size:14px" onclick="yfChangeMonth(-1)">◀</button>
+      <select id="yf-month" onchange="yfLoad()" style="padding:9px 8px;font-size:13px;border-radius:9px;border:2px solid var(--border);font-weight:800">
+        <option value="0">Ocak</option><option value="1">Şubat</option><option value="2">Mart</option>
+        <option value="3">Nisan</option><option value="4">Mayıs</option><option value="5">Haziran</option>
+        <option value="6">Temmuz</option><option value="7">Ağustos</option><option value="8">Eylül</option>
+        <option value="9">Ekim</option><option value="10">Kasım</option><option value="11">Aralık</option>
+      </select>
+      <input id="yf-year" type="number" style="width:80px;padding:9px 6px;font-size:13px;border-radius:9px;border:2px solid var(--border);font-weight:800;text-align:center" onchange="yfLoad()">
+      <button class="btn-ghost" style="padding:8px 12px;font-size:14px" onclick="yfChangeMonth(1)">▶</button>
+    </div>
+    <div style="display:flex;justify-content:center;gap:8px;flex-wrap:wrap">
+      <button class="btn-ghost" style="padding:8px 12px;font-size:13px" onclick="yfAddRow()">➕ Satır Ekle</button>
+      <button class="btn-ghost" style="padding:8px 12px;font-size:13px" onclick="yfRemoveRow()">➖ Satır Sil</button>
+      <button class="btn btn-green" style="padding:8px 12px;font-size:13px" onclick="yfExportExcel()">⬇️ Excel İndir</button>
+    </div>
+    <div style="text-align:center;font-size:11px;color:var(--dim);font-weight:700;margin-top:8px">Excel'deki formunla birebir aynı: her hücreye saat + isim + istediğin gibi not yazabilirsin. Otomatik kaydedilir, tüm cihazlarda senkron.</div>
+  </div>
+  <div class="week-wrap">
+    <table id="yf-table" style="border-collapse:collapse;width:100%;min-width:900px;background:#fff;border-radius:12px;overflow:hidden;box-shadow:var(--shadow)"></table>
+  </div>
+  </div>
+</div>
+
 <!-- CONFIRM -->
 <div class="modal-bg" id="conf-modal">
   <div class="modal-box" style="max-width:320px;text-align:center">
@@ -746,6 +781,7 @@ function go(id){
   if(id==='s-veli-share') renderVeliShare();
   if(id==='s-fiyat') loadFiyatApp();
   if(id==='s-week') openWeek();
+  if(id==='s-yform') openYForm();
 }
 
 // ══ LIST ══════════════════════════════════════════════════════════════
@@ -887,6 +923,81 @@ function toggleWeekAtt(id,dateStr){
   fbSet('attendance/'+id+'/'+dateStr, next);
   if(curId===id){ if(next) attData[dateStr]=next; else delete attData[dateStr]; }
   renderWeek();
+}
+
+// ══ YOKLAMA FORMU (Excel formunun birebir kopyası) ══════════════════════
+const YF_DAYS=['PTESİ','SALI','ÇARŞ','PERŞEMBE','CUMA','CTESİ','PAZAR'];
+let yfData=null, yfSaveTimer=null;
+function yfKey(){
+  const m=parseInt(document.getElementById('yf-month').value,10);
+  const y=parseInt(document.getElementById('yf-year').value,10);
+  return y+'-'+String(m+1).padStart(2,'0');
+}
+function openYForm(){
+  if(!document.getElementById('yf-year').value){
+    const now=new Date();
+    document.getElementById('yf-month').value=now.getMonth();
+    document.getElementById('yf-year').value=now.getFullYear();
+  }
+  yfLoad();
+}
+async function yfLoad(){
+  showLoad('Yoklama formu yükleniyor…');
+  const saved=await fbGet('yoklamaForm/'+yfKey());
+  if(saved&&Array.isArray(saved.rows)&&saved.rows.length){
+    yfData=saved;
+  } else {
+    yfData={rows:Array.from({length:10},()=>['','','','','','',''])};
+  }
+  hideLoad();
+  yfRender();
+}
+function yfRender(){
+  const table=document.getElementById('yf-table');
+  const mName=MONTHS[parseInt(document.getElementById('yf-month').value,10)].toUpperCase();
+  const yVal=document.getElementById('yf-year').value;
+  let html='<tr><th colspan="7" style="font-size:14px;padding:10px">'+mName+' '+yVal+' YOKLAMA</th></tr>';
+  html+='<tr>'+YF_DAYS.map(d=>'<th>'+d+'</th>').join('')+'</tr>';
+  yfData.rows.forEach((row,r)=>{
+    html+='<tr>'+row.map((cell,c)=>`<td><textarea oninput="yfCellInput(${r},${c},this.value)">${(cell||'').replace(/</g,'&lt;')}</textarea></td>`).join('')+'</tr>';
+  });
+  table.innerHTML=html;
+}
+function yfCellInput(r,c,val){
+  yfData.rows[r][c]=val;
+  clearTimeout(yfSaveTimer);
+  yfSaveTimer=setTimeout(yfSave,500);
+}
+function yfSave(){ fbSet('yoklamaForm/'+yfKey(), yfData); }
+function yfAddRow(){
+  yfData.rows.push(['','','','','','','']);
+  yfRender();
+  yfSave();
+}
+function yfRemoveRow(){
+  if(yfData.rows.length>1) yfData.rows.pop();
+  yfRender();
+  yfSave();
+}
+function yfChangeMonth(delta){
+  let m=parseInt(document.getElementById('yf-month').value,10);
+  let y=parseInt(document.getElementById('yf-year').value,10);
+  m+=delta;
+  if(m<0){m=11;y--;} else if(m>11){m=0;y++;}
+  document.getElementById('yf-month').value=m;
+  document.getElementById('yf-year').value=y;
+  yfLoad();
+}
+function yfExportExcel(){
+  const m=parseInt(document.getElementById('yf-month').value,10);
+  const y=document.getElementById('yf-year').value;
+  const ar=[[MONTHS[m].toUpperCase()+' '+y+' YOKLAMA'],YF_DAYS,...yfData.rows];
+  const wb=XLSX.utils.book_new();
+  const ws=XLSX.utils.aoa_to_sheet(ar);
+  ws['!cols']=YF_DAYS.map(()=>({wch:22}));
+  ws['!merges']=[{s:{r:0,c:0},e:{r:0,c:6}}];
+  XLSX.utils.book_append_sheet(wb,ws,MONTHS[m].slice(0,7)+y);
+  XLSX.writeFile(wb,'Yoklama_'+MONTHS[m]+'_'+y+'.xlsx');
 }
 
 // ══ REGISTER ══════════════════════════════════════════════════════════
