@@ -68,6 +68,8 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
 .week-chip:active{transform:scale(.95)}
 #yf-table th{background:#b45309;color:#fff;font-size:13px;font-weight:900;padding:9px 4px;text-align:center;border:1px solid #92400e;min-width:130px}
 #yf-table td{border:1px solid var(--border);padding:0;vertical-align:top}
+#yf-table td.yf-unpaid{background:#fecaca;border:2px solid #dc2626}
+#yf-table td.yf-unpaid .yf-tally{background:#fca5a5}
 #yf-table .yf-cell{width:100%;min-height:72px;padding:7px;font-size:15px;line-height:1.35;font-family:'Nunito',sans-serif;font-weight:800;color:var(--text);white-space:pre-wrap;word-break:break-word;outline:none;cursor:text}
 #yf-table .yf-cell:focus{background:#fff;box-shadow:inset 0 0 0 2px var(--purple)}
 .yf-satranc{color:#ea580c;font-weight:900}
@@ -835,7 +837,7 @@ function delStudent(id){
 const YF_DAYS=['PTESİ','SALI','ÇARŞ','PERŞEMBE','CUMA','CTESİ','PAZAR'];
 const YF_SEED={"2026-09":{"rows":[["11:00:00                        11:30","11:10                              11:40","11:20","11:10                       11:40","11:20","11:00ÇINAR3950+-+",""],["12:00                                   12:45ATA+-","12:00                                     12:40ATA+++","12:00                                12:30ATA+++","12:00","12:00","12:00                           12:40",""],["13:00","13:30","13:20","13:00","13:00","",""],["14:00                                 14:30KAAN  ekim","14:00:00                                                                 14:40LEYLA5600-++","14:00                                    14:40","14:00:00                                                  14:30KAAN  ekim","14:00                                                               14:40LEYLA+++","",""],["15:00KURAS++                                       15:30DOĞA++","15:10SELİN3900+++","15:10                                                 15:40","15:00KURAS5600-++                        15:30","15:10DOĞA+-+                                   15:40","",""],["16:00HAZAL7400++                                      16:50DENİZ6166++","16:00","16:10ZEHRA3950+++                                       16:50ELİF ekim","16:00                            16:40BİLGE4167+++","16:00HAZAL-++                                  16:30","",""],["17:20ARYA+-","17:00ELİF ekim                        17:40DENİZDR5600+++","17:00                                                    17:30:00ARYA+--","17:20ARYA+--","17:00DENİZ+++                                            17:30DENİZDR+++","",""],["18:00ATEŞ++                                           18:30GÖKTUĞ++","18:20HALİDE5600+++                       18:50SÜLEYMAN+++","18:10ATEŞ+++","18:00SOFİA+++                               18:30HALİDE+-+","18:00SÜLEYMAN+-+                                   18:30SOFİA5600+++","",""],["19:40ELA4000++","","19:00BİLGE4250+++                                   19:40CANDAN4000+++","19:00GÖKTUĞ5834-++","","",""],["20:20:00AMİNA(EKİMDE BAŞLAYACAK)","20:00KAAN(ekim)                                    20:30","","20:10NİLDA3950--+","20:00KAAN(ekim)                                  20:30","","13:000536 290 1770 ELİF 14 YAŞ  SATRANÇ"]]}}
 ;
-let yfData=null, yfSaveTimer=null;
+let yfData=null, yfSaveTimer=null, yfPayments={};
 function yfKey(){
   const m=parseInt(document.getElementById('yf-month').value,10);
   const y=parseInt(document.getElementById('yf-year').value,10);
@@ -852,7 +854,8 @@ function openYForm(){
 async function yfLoad(){
   showLoad('Yoklama formu yükleniyor…');
   const key=yfKey();
-  const saved=await fbGet('yoklamaForm/'+key);
+  const [saved,payVal]=await Promise.all([fbGet('yoklamaForm/'+key),fbGet('payments')]);
+  yfPayments=payVal||{};
   if(saved&&Array.isArray(saved.rows)&&saved.rows.length){
     yfData=saved;
   } else if(YF_SEED[key]){
@@ -891,6 +894,32 @@ function yfDetectNames(text){
   }
   return found;
 }
+function yfIsPastDue(year,month){
+  const now=new Date();
+  const cy=now.getFullYear(),cm=now.getMonth(),cd=now.getDate();
+  if(year<cy||(year===cy&&month<cm))return true;
+  if(year===cy&&month===cm)return cd>20;
+  return false;
+}
+function yfMatchStudent(name){
+  const norm=(name||'').toLocaleUpperCase('tr');
+  return students.find(s=>normName(s.name)===norm);
+}
+function yfCellUnpaid(text){
+  const my=parseInt(document.getElementById('yf-month').value,10);
+  const yy=parseInt(document.getElementById('yf-year').value,10);
+  if(!yfIsPastDue(yy,my))return false;
+  const mk=yy+'-'+String(my+1).padStart(2,'0');
+  const names=yfDetectNames(text);
+  for(const n of names){
+    const st=yfMatchStudent(n);
+    if(!st)continue;
+    const pays=Object.values(yfPayments[st.id]||{});
+    const paid=pays.some(p=>p.date&&p.date.startsWith(mk));
+    if(!paid)return true;
+  }
+  return false;
+}
 function yfCellInnerHTML(r,c){
   const text=yfData.rows[r][c]||'';
   const names=yfDetectNames(text);
@@ -907,13 +936,16 @@ function yfRender(){
   let html='<tr><th colspan="7" style="font-size:14px;padding:10px">'+mName+' '+yVal+' YOKLAMA</th></tr>';
   html+='<tr>'+YF_DAYS.map(d=>'<th>'+d+'</th>').join('')+'</tr>';
   yfData.rows.forEach((row,r)=>{
-    html+='<tr>'+row.map((cell,c)=>`<td data-r="${r}" data-c="${c}">${yfCellInnerHTML(r,c)}</td>`).join('')+'</tr>';
+    html+='<tr>'+row.map((cell,c)=>`<td data-r="${r}" data-c="${c}" class="${yfCellUnpaid(cell)?'yf-unpaid':''}">${yfCellInnerHTML(r,c)}</td>`).join('')+'</tr>';
   });
   table.innerHTML=html;
 }
 function yfRenderCell(r,c){
   const td=table_yfTd(r,c);
-  if(td)td.innerHTML=yfCellInnerHTML(r,c);
+  if(td){
+    td.innerHTML=yfCellInnerHTML(r,c);
+    td.className=yfCellUnpaid(yfData.rows[r][c]||'')?'yf-unpaid':'';
+  }
 }
 function table_yfTd(r,c){
   return document.querySelector('#yf-table td[data-r="'+r+'"][data-c="'+c+'"]');
