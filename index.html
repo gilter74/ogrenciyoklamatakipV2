@@ -539,7 +539,9 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
     <button class="btn btn-purple" style="width:100%;justify-content:center;padding:12px;margin-bottom:14px" onclick="genVeliLink()">🔗 Bağlantı Oluştur</button>
     <div id="veli-link-box" style="display:none">
       <label class="lbl">Veli Bağlantısı</label>
-      <input id="veli-link-input" readonly onclick="this.select()" style="margin-bottom:10px;font-size:12px;color:var(--text2)">
+      <div style="background:#f5f3ff;border:2px solid #ddd6fe;border-radius:12px;padding:14px;margin-bottom:10px;text-align:center">
+        <input id="veli-link-input" readonly onclick="this.select()" style="border:none;background:transparent;text-align:center;font-size:18px;font-weight:900;letter-spacing:.5px;color:#5b21b6;padding:4px;width:100%">
+      </div>
       <div style="display:flex;gap:8px">
         <button class="btn-ghost" style="flex:1;justify-content:center" onclick="copyVeliLink()">📋 Kopyala</button>
         <button class="btn btn-wa" style="flex:1;justify-content:center" onclick="sendVeliWA()">📲 WhatsApp'tan Gönder</button>
@@ -2324,13 +2326,22 @@ async function genVeliLink(){
     hw:note.homework||'', gr:note.grade||'',
     gen:fmt(now.getFullYear(),now.getMonth(),now.getDate())
   };
-  const encoded=b64urlEncode(JSON.stringify(data));
-  const url=location.origin+location.pathname+'#veli='+encoded;
+  const shortId=genShortId();
+  await fbSet('veliShare/'+shortId, data);
+  const url=location.origin+location.pathname+'#vid='+shortId;
   hideLoad();
   window._veliUrl=url;
   window._veliName=data.n;
   document.getElementById('veli-link-box').style.display='block';
   document.getElementById('veli-link-input').value=url;
+}
+
+// Kısa, karışıklığa yer vermeyen 6 karakterli bağlantı kodu
+function genShortId(){
+  const chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // karışan 0/O, 1/I hariç
+  let id='';
+  for(let i=0;i<6;i++)id+=chars[Math.floor(Math.random()*chars.length)];
+  return id;
 }
 
 function copyVeliLink(){
@@ -2499,14 +2510,24 @@ function importBackupFile(input){
   document.getElementById('bulk-year').value=now.getFullYear();
 })();
 
-if(location.hash.indexOf('#veli=')===0){
+function showVeliLinkError(){
+  hideLoad();
+  document.body.innerHTML='<div style="padding:60px 20px;text-align:center;font-family:\'Nunito\',sans-serif;color:#4c4f8a"><div style="font-size:50px;margin-bottom:14px">⚠️</div><div style="font-weight:800;font-size:16px">Bağlantı okunamadı veya bozuk.</div><div style="font-size:13px;margin-top:8px;color:#7c82b8">Lütfen bağlantıyı gönderen kişiden yeni bir bağlantı isteyin.</div></div>';
+}
+if(location.hash.indexOf('#vid=')===0){
+  const shortId=location.hash.slice(5);
+  showLoad('Bilgiler yükleniyor…');
+  fbGet('veliShare/'+shortId).then(data=>{
+    if(!data){showVeliLinkError();return;}
+    renderVeliView(data);
+  }).catch(showVeliLinkError);
+} else if(location.hash.indexOf('#veli=')===0){
   try{
     const encoded=location.hash.slice(6);
     const data=JSON.parse(b64urlDecode(encoded));
     renderVeliView(data);
   }catch(err){
-    hideLoad();
-    document.body.innerHTML='<div style="padding:60px 20px;text-align:center;font-family:\'Nunito\',sans-serif;color:#4c4f8a"><div style="font-size:50px;margin-bottom:14px">⚠️</div><div style="font-weight:800;font-size:16px">Bağlantı okunamadı veya bozuk.</div><div style="font-size:13px;margin-top:8px;color:#7c82b8">Lütfen bağlantıyı gönderen kişiden yeni bir bağlantı isteyin.</div></div>';
+    showVeliLinkError();
   }
 } else {
   showLoad('Firebase\'e bağlanıyor…');
