@@ -44,6 +44,8 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
 .btn-del:hover{background:#fecaca}
 .btn-edit2{background:var(--orange-l);color:var(--orange);border:2px solid #fde68a;border-radius:8px;padding:5px 11px;font-family:'Nunito',sans-serif;font-weight:800;font-size:13px;cursor:pointer}
 .card{background:#fff;border:2px solid var(--border);border-radius:18px;padding:16px 14px;box-shadow:var(--shadow);overflow:hidden;box-sizing:border-box;width:100%}
+@keyframes flashAlertAnim{0%,100%{box-shadow:var(--shadow);border-color:var(--border);background:#fff}50%{box-shadow:0 0 0 5px rgba(220,38,38,.45);border-color:#dc2626;background:#fef2f2}}
+.flash-alert{animation:flashAlertAnim .7s ease-in-out 6}
 @media(max-width:480px){.card{padding:12px 10px;border-radius:14px}.screen{padding:12px 8px}}
 .section-lbl{font-size:12px;font-weight:900;color:var(--purple);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;padding-bottom:7px;border-bottom:2px solid var(--purple-l)}
 .lbl{font-size:12px;font-weight:800;color:var(--text2);text-transform:uppercase;letter-spacing:.7px;display:block;margin-bottom:5px}
@@ -704,6 +706,65 @@ let students=[], curId=null, attData={}, payData=[], notesData={}, discountData=
 let curY=new Date().getFullYear(), curM=new Date().getMonth();
 let curTab='att', markC='came', confCB=null, payModalDate=null;
 
+// ══ BUGÜN DERSİ OLANLAR — 10dk geçince kaldırma + bildirim ══════════════
+let notifiedRemovals=new Set();
+try{
+  const _savedNotif=JSON.parse(localStorage.getItem('todaySchedNotified')||'[]');
+  const _todayStr0=new Date().toISOString().split('T')[0];
+  notifiedRemovals=new Set(_savedNotif.filter(k=>k.startsWith(_todayStr0)));
+}catch(e){}
+function saveNotifiedRemovals(){
+  try{localStorage.setItem('todaySchedNotified',JSON.stringify([...notifiedRemovals]));}catch(e){}
+}
+function requestNotifPermission(){
+  if('Notification' in window && Notification.permission==='default'){
+    Notification.requestPermission().catch(()=>{});
+  }
+}
+const ORIGINAL_PAGE_TITLE=document.title;
+let titleBlinkTimer=null;
+function stopTitleBlink(){
+  if(titleBlinkTimer){clearInterval(titleBlinkTimer);titleBlinkTimer=null;}
+  document.title=ORIGINAL_PAGE_TITLE;
+  document.removeEventListener('visibilitychange',stopTitleBlinkIfVisible);
+}
+function stopTitleBlinkIfVisible(){
+  if(document.visibilityState==='visible') stopTitleBlink();
+}
+function blinkPageTitle(msg,durationMs){
+  stopTitleBlink();
+  let on=false;
+  titleBlinkTimer=setInterval(()=>{
+    document.title=on?ORIGINAL_PAGE_TITLE:msg;
+    on=!on;
+  },900);
+  document.addEventListener('visibilitychange',stopTitleBlinkIfVisible);
+  setTimeout(stopTitleBlink,durationMs||20000);
+}
+function flashTodaySchedCard(){
+  const card=document.getElementById('today-sched-card');
+  if(!card)return;
+  card.classList.remove('flash-alert');
+  void card.offsetWidth; // restart animasyon
+  card.classList.add('flash-alert');
+  setTimeout(()=>card.classList.remove('flash-alert'),5000);
+}
+function notifyLessonRemoved(student,time){
+  const name=(student.name||'')+' '+(student.surname||'');
+  const body=name.trim()+' — saat '+time+' dersinin üzerinden 10 dakika geçti, bugünkü listeden kaldırıldı.';
+  flashTodaySchedCard();
+  blinkPageTitle('⏰ Ders Kaldırıldı!',20000);
+  if('Notification' in window){
+    if(Notification.permission==='granted'){
+      try{new Notification('📅 Bugünkü Ders Listesi',{body});}catch(e){}
+    } else if(Notification.permission==='default'){
+      Notification.requestPermission().then(p=>{
+        if(p==='granted'){try{new Notification('📅 Bugünkü Ders Listesi',{body});}catch(e){}}
+      }).catch(()=>{});
+    }
+  }
+}
+
 // ══ LOADING ═══════════════════════════════════════════════════════════
 function showLoad(msg='Yükleniyor…'){
   document.getElementById('loading-msg').textContent=msg;
@@ -804,14 +865,31 @@ function renderTodaySched(){
   const now=new Date();
   const todayIdx=(now.getDay()+6)%7; // JS getDay(): 0=Pazar → SCHED_DAYS index (0=Pt..6=Pz)
   const dayNames=['Pazartesi','Salı','Çarşamba','Perşembe','Cuma','Cumartesi','Pazar'];
+  const todayStr=now.toISOString().split('T')[0];
+  const nowMins=now.getHours()*60+now.getMinutes();
   titleEl.textContent='📅 Bugün ('+dayNames[todayIdx]+') Dersi Olanlar';
-  const today=[];
+  const all=[];
   students.forEach(s=>{
     (s.schedule||[]).forEach(sl=>{
-      if(sl.day===todayIdx&&sl.time){today.push({s,time:sl.time});}
+      if(sl.day===todayIdx&&sl.time){all.push({s,time:sl.time});}
     });
   });
-  today.sort((a,b)=>a.time.localeCompare(b.time));
+  all.sort((a,b)=>a.time.localeCompare(b.time));
+  const today=[];
+  all.forEach(({s,time})=>{
+    const parts=String(time).split(':').map(Number);
+    const lessonMins=(parts[0]||0)*60+(parts[1]||0);
+    if(nowMins>lessonMins+10){
+      const key=todayStr+'|'+s.id+'|'+time;
+      if(!notifiedRemovals.has(key)){
+        notifiedRemovals.add(key);
+        saveNotifiedRemovals();
+        notifyLessonRemoved(s,time);
+      }
+      return; // 10dk geçti → listeden kaldır
+    }
+    today.push({s,time});
+  });
   if(!today.length){
     listEl.innerHTML='<div style="font-size:12px;color:var(--muted);padding:4px 0">Bugün için tanımlı ders saati yok.</div>';
     return;
@@ -2509,6 +2587,14 @@ function importBackupFile(input){
   document.getElementById('bulk-month').value=now.getMonth();
   document.getElementById('bulk-year').value=now.getFullYear();
 })();
+
+// Bugün dersi olanlar listesini periyodik kontrol et (10dk geçince kaldır + bildirim)
+requestNotifPermission();
+document.addEventListener('click',requestNotifPermission,{once:true});
+setInterval(()=>{
+  const activeScreen=document.querySelector('.screen.active');
+  if(activeScreen&&activeScreen.id==='s-list') renderTodaySched();
+},20000);
 
 function showVeliLinkError(){
   hideLoad();
