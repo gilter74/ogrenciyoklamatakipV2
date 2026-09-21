@@ -192,6 +192,7 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
     <input id="search" type="text" placeholder="🔍 Öğrenci ara…" oninput="renderList()">
     <button class="btn btn-purple" onclick="go('s-reg')">➕ Yeni Kayıt</button>
   </div>
+  <div id="dup-name-warn" style="display:none"></div>
   <div class="card mb14" id="today-sched-card">
     <div style="font-weight:900;font-size:14px;color:var(--text);margin-bottom:10px" id="today-sched-title">📅 Bugün Dersi Olanlar</div>
     <div id="today-sched-list"></div>
@@ -894,25 +895,44 @@ function renderTodaySched(){
     listEl.innerHTML='<div style="font-size:12px;color:var(--muted);padding:4px 0">Bugün için tanımlı ders saati yok.</div>';
     return;
   }
+  const dupSet=fullNameDupSet();
   listEl.innerHTML=today.map(({s,time})=>{
     const c=eduColor(s.education);
+    const fn=((s.name||'')+' '+(s.surname||'')).trim().toLocaleUpperCase('tr').replace(/\s+/g,' ');
+    const dup=dupSet.has(fn);
+    const dupTag=dup?`<div style="font-size:11px;color:#dc2626;font-weight:900;margin-top:2px">⚠️ Aynı isimde başka öğrenci var — ${s.phone?'📞 '+s.phone:(s.momPhone?'👩 '+s.momPhone:'Kayıt no: '+s.id)}</div>`:'';
     return `
     <div class="s-row" style="border-color:${c.border};background:${c.bg}" onclick="openDetCal('${s.id}')">
       <div class="avatar" style="width:40px;height:40px;background:${c.border};font-size:18px">${eduIcon(s.education)}</div>
       <div style="flex:1;min-width:0">
         <div style="font-weight:900;font-size:14px">${s.name} ${s.surname}</div>
         <div style="font-size:11px;color:var(--muted);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${s.education} · ${s.program}</div>
+        ${dupTag}
       </div>
       <div style="font-weight:900;font-size:14px;color:${c.border};flex-shrink:0">⏰ ${time}</div>
     </div>`;
   }).join('');
 }
 
+function renderDupNameWarning(){
+  const box=document.getElementById('dup-name-warn');
+  if(!box)return;
+  const dupSet=fullNameDupSet();
+  if(!dupSet.size){box.innerHTML='';box.style.display='none';return;}
+  const names=[...dupSet].map(fn=>{
+    const t=fn.split(' ');
+    return t[0].charAt(0)+t[0].slice(1).toLocaleLowerCase('tr')+' '+(t[1]?t[1].charAt(0)+t[1].slice(1).toLocaleLowerCase('tr'):'');
+  });
+  box.style.display='block';
+  box.innerHTML='<div style="background:#fef2f2;border:2px solid #fecaca;border-radius:12px;padding:10px 12px;margin-bottom:12px;font-size:12px;font-weight:800;color:#991b1b">⚠️ Aynı isimde birden fazla kayıtlı öğrenci var: '+names.join(', ')+'. Yoklama ve ders programı eşleştirmelerinde karışıklık olmaması için bu isimler otomatik eşleştirmelerde atlanır — telefon numarasına göre ayırt edin.</div>';
+}
 function renderList(){
   renderTodaySched();
+  renderDupNameWarning();
   const q=(document.getElementById('search').value||'').toLowerCase();
   const shown=students.filter(s=>(s.name+' '+s.surname).toLowerCase().includes(q));
   const el=document.getElementById('list-el');
+  const dupSet=fullNameDupSet();
   if(!shown.length){
     el.innerHTML='<div class="card empty"><div style="font-size:50px;margin-bottom:12px">📋</div><p style="color:var(--muted);font-size:16px">Henüz öğrenci kaydı yok.</p></div>';
   } else {
@@ -926,13 +946,17 @@ function renderList(){
         <span style="width:11px;height:11px;border-radius:50%;background:${dot};display:inline-block;flex-shrink:0"></span>
         <span style="font-weight:900;font-size:14px;color:#1e293b">${cat}</span>
         <span style="font-size:12px;color:var(--muted);font-weight:700">(${list.length})</span>
-      </div>` + list.map(s=>{const c=eduColor(s.education);return`
-      <div class="s-row" style="border-color:${c.border};background:${c.bg}" onclick="openDet('${s.id}')">
+      </div>` + list.map(s=>{
+        const c=eduColor(s.education);
+        const fn=((s.name||'')+' '+(s.surname||'')).trim().toLocaleUpperCase('tr').replace(/\s+/g,' ');
+        const dup=dupSet.has(fn);
+        return`
+      <div class="s-row" style="border-color:${dup?'#dc2626':c.border};background:${c.bg}" onclick="openDet('${s.id}')">
         <div class="avatar" style="width:48px;height:48px;background:${c.border}">${eduIcon(s.education)}</div>
         <div style="flex:1;min-width:0">
-          <div style="font-weight:900;font-size:15px">${s.name} ${s.surname}</div>
+          <div style="font-weight:900;font-size:15px">${s.name} ${s.surname}${dup?' <span style="color:#dc2626;font-size:11px;font-weight:900">⚠️ aynı isim</span>':''}</div>
           <div style="font-size:12px;color:var(--muted);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${s.education} · ${s.program}</div>
-          <div style="font-size:12px;color:var(--dim);margin-top:1px">${s.phone?'📞 '+s.phone:''}${s.momPhone?' · 👩 '+s.momPhone:''}</div>
+          <div style="font-size:12px;color:var(--dim);margin-top:1px">${s.phone?'📞 '+s.phone:''}${s.momPhone?' · 👩 '+s.momPhone:''}${dup?' · Kayıt no: '+s.id:''}</div>
         </div>
         <button class="btn-del" onclick="event.stopPropagation();delStudent('${s.id}')">Sil</button>
       </div>`;}).join('');
@@ -1191,7 +1215,7 @@ function resetReg(){
 
 // ══ HAFTALIK DERS SAATLERİ (schedule) ═══════════════════════════════════
 const SCHED_DAYS=['Pt','Sa','Ça','Pe','Cu','Ct','Pz'];
-const SCHED_SEED={"ÇINAR":[{"day":5,"time":"11:00"}],"ATA":[{"day":0,"time":"12:45"},{"day":1,"time":"12:40"},{"day":2,"time":"12:30"}],"LEYLA":[{"day":1,"time":"14:40"},{"day":4,"time":"14:40"}],"KURAS":[{"day":0,"time":"15:00"},{"day":3,"time":"15:00"}],"DOĞA":[{"day":0,"time":"15:30"},{"day":4,"time":"15:10"}],"SELİN":[{"day":1,"time":"15:10"}],"HAZAL":[{"day":0,"time":"16:00"},{"day":4,"time":"16:00"}],"DENİZ":[{"day":0,"time":"16:50"},{"day":4,"time":"17:00"}],"ZEHRA":[{"day":2,"time":"16:10"}],"BİLGE":[{"day":3,"time":"16:40"},{"day":2,"time":"19:00"}],"ARYA":[{"day":0,"time":"17:20"},{"day":2,"time":"17:30"},{"day":3,"time":"17:20"}],"DENİZDR":[{"day":1,"time":"17:40"},{"day":4,"time":"17:30"}],"ATEŞ":[{"day":0,"time":"18:00"},{"day":2,"time":"18:10"}],"GÖKTUĞ":[{"day":0,"time":"18:30"},{"day":3,"time":"19:00"}],"HALİDE":[{"day":1,"time":"18:20"},{"day":3,"time":"18:30"}],"SÜLEYMAN":[{"day":1,"time":"18:50"},{"day":4,"time":"18:00"}],"SOFİA":[{"day":3,"time":"18:00"},{"day":4,"time":"18:30"}],"ELA":[{"day":0,"time":"19:40"}],"CANDAN":[{"day":2,"time":"19:40"}],"NİLDA":[{"day":3,"time":"20:10"}]}
+const SCHED_SEED={"ÇINAR":[{"day":5,"time":"11:00"}],"ATA":[{"day":0,"time":"12:45"},{"day":1,"time":"12:40"},{"day":2,"time":"12:30"}],"LEYLA":[{"day":1,"time":"14:40"},{"day":4,"time":"14:40"}],"KURAS":[{"day":0,"time":"15:00"},{"day":3,"time":"15:00"}],"DOĞA":[{"day":0,"time":"15:30"},{"day":4,"time":"15:10"}],"SELİN":[{"day":1,"time":"15:10"}],"HAZAL":[{"day":0,"time":"16:00"},{"day":4,"time":"16:00"}],"DENİZ":[{"day":0,"time":"16:50"},{"day":4,"time":"17:00"}],"ZEHRA":[{"day":2,"time":"16:10"}],"BİLGE":[{"day":3,"time":"16:40"},{"day":2,"time":"19:00"}],"ARYA":[{"day":0,"time":"17:20"},{"day":2,"time":"17:30"},{"day":3,"time":"17:20"}],"ATEŞ":[{"day":0,"time":"18:00"},{"day":2,"time":"18:10"}],"GÖKTUĞ":[{"day":0,"time":"18:30"},{"day":3,"time":"19:00"}],"HALİDE":[{"day":1,"time":"18:20"},{"day":3,"time":"18:30"}],"SÜLEYMAN":[{"day":1,"time":"18:50"},{"day":4,"time":"18:00"}],"SOFİA":[{"day":3,"time":"18:00"},{"day":4,"time":"18:30"}],"ELA":[{"day":0,"time":"19:40"}],"CANDAN":[{"day":2,"time":"19:40"}],"NİLDA":[{"day":3,"time":"20:10"}]}
 ; // Excel'deki Eylül 2026 çizelgesinden çıkarılan isim->saat eşlemesi
 function renderSchedRows(p,slots){
   const wrap=document.getElementById(p+'-sched-rows');
@@ -1223,11 +1247,31 @@ function collectSched(p){
 function normName(n){
   return (n||'').trim().split(/\s+/)[0].toLocaleUpperCase('tr');
 }
+function firstNameCounts(){
+  const counts={};
+  students.forEach(s=>{const k=normName(s.name);counts[k]=(counts[k]||0)+1;});
+  return counts;
+}
+function fullNameDupSet(){
+  const counts={};
+  students.forEach(s=>{
+    const fn=((s.name||'')+' '+(s.surname||'')).trim().toLocaleUpperCase('tr').replace(/\s+/g,' ');
+    if(fn)counts[fn]=(counts[fn]||0)+1;
+  });
+  return new Set(Object.keys(counts).filter(k=>counts[k]>1));
+}
+function isDupName(s){
+  const fn=((s.name||'')+' '+(s.surname||'')).trim().toLocaleUpperCase('tr').replace(/\s+/g,' ');
+  return fullNameDupSet().has(fn);
+}
 async function autoFillSchedules(){
+  const nameCounts=firstNameCounts();
   for(const s of students){
     if(s.schedule&&s.schedule.length)continue;
     const key=normName(s.name);
-    if(SCHED_SEED[key]){
+    // Aynı adı taşıyan birden fazla öğrenci varsa hangisine ait olduğu belli olmaz —
+    // yanlış öğrenciye yanlış ders programı atamamak için bu durumda otomatik doldurma atlanır.
+    if(SCHED_SEED[key] && nameCounts[key]===1){
       s.schedule=SCHED_SEED[key].map(x=>({day:x.day,time:x.time}));
       try{ await fbSet('students/'+s.id, s); }catch(e){}
     }
