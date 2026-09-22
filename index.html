@@ -68,7 +68,7 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
 .week-cell{background:#fff;border:2px dashed var(--border);border-radius:9px;padding:4px;min-height:44px;display:flex;flex-direction:column;gap:3px}
 .week-chip{border-radius:7px;padding:4px 6px;font-size:11px;font-weight:800;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:transform .1s}
 .week-chip:active{transform:scale(.95)}
-#yf-table th{background:#b45309;color:#fff;font-size:13px;font-weight:900;padding:9px 4px;text-align:center;border:1px solid #92400e;min-width:130px}
+#yf-table th{background:#b45309;color:#fff;font-size:13px;font-weight:900;padding:9px 4px;text-align:center;border:1px solid #92400e;min-width:172px}
 #yf-table td{border:1px solid var(--border);padding:0;vertical-align:top}
 #yf-table td.yf-unpaid{background:#fecaca;border:2px solid #dc2626}
 #yf-table td.yf-unpaid .yf-tally{background:#fca5a5}
@@ -91,8 +91,8 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
 .yf-tb-swatch:hover{transform:translateY(-1px);box-shadow:0 2px 6px rgba(0,0,0,.25)}
 .yf-tb-swatch.yf-tb-clear{background:#fff;position:relative}
 .yf-tb-swatch.yf-tb-clear::after{content:'';position:absolute;left:2px;right:2px;top:50%;height:2px;background:#dc2626;transform:rotate(-45deg)}
-.yf-tally{display:flex;flex-wrap:wrap;gap:3px;padding:4px 6px 6px;border-top:1px dashed var(--border);background:#fafafa}
-.yf-tag{font-size:10px;font-weight:800;color:var(--muted);align-self:center;margin-right:1px}
+.yf-tally{display:flex;flex-wrap:wrap;gap:4px;padding:4px 6px 6px;border-top:1px dashed var(--border);background:#fafafa}
+.yf-tag{font-size:10px;font-weight:800;color:var(--muted);align-self:center;margin-right:2px;white-space:nowrap}
 .yf-tally button{border:none;border-radius:5px;width:18px;height:18px;font-size:12px;font-weight:900;cursor:pointer;line-height:1;padding:0}
 .yf-tally button.yf-plus{background:#dcfce7;color:#166534}
 .yf-tally button.yf-minus{background:#fee2e2;color:#991b1b}
@@ -616,7 +616,7 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
     <div style="text-align:center;font-size:11px;color:var(--dim);font-weight:700;margin-top:8px">Excel'deki formunla birebir aynı: her hücreye saat + isim + istediğin gibi not yazabilirsin. Otomatik kaydedilir, tüm cihazlarda senkron. Bir ismi kalınlaştırmak/renklendirmek için hücrede seç, sonra yukarıdaki araç çubuğunu kullan.</div>
   </div>
   <div class="week-wrap">
-    <table id="yf-table" style="border-collapse:collapse;width:100%;min-width:900px;background:#fff;border-radius:12px;overflow:hidden;box-shadow:var(--shadow)"></table>
+    <table id="yf-table" style="border-collapse:collapse;width:100%;min-width:1200px;background:#fff;border-radius:12px;overflow:hidden;box-shadow:var(--shadow)"></table>
   </div>
   </div>
 </div>
