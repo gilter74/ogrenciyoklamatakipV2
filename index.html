@@ -81,6 +81,16 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
 #yf-table .yf-cell{width:100%;min-height:72px;padding:7px;font-size:15px;line-height:1.35;font-family:'Nunito',sans-serif;font-weight:800;color:var(--text);white-space:pre-wrap;word-break:break-word;outline:none;cursor:text}
 #yf-table .yf-cell:focus{background:#fff;box-shadow:inset 0 0 0 2px var(--purple)}
 .yf-satranc{color:#ea580c;font-weight:900}
+.yf-toolbar{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;background:var(--card2);border:2px solid var(--border);border-radius:12px;padding:8px 10px;margin-top:10px;position:sticky;top:0;z-index:20}
+.yf-tb-lbl{font-size:12px;font-weight:900;color:var(--text2);text-transform:uppercase;letter-spacing:.5px}
+.yf-tb-btn{border:2px solid var(--border);background:#fff;border-radius:9px;padding:6px 12px;font-family:'Nunito',sans-serif;font-weight:900;font-size:13px;cursor:pointer;color:var(--text)}
+.yf-tb-btn:hover{border-color:var(--purple)}
+.yf-tb-btn.active{background:var(--purple-l);border-color:var(--purple);color:var(--purple)}
+.yf-tb-colors{display:flex;align-items:center;gap:5px}
+.yf-tb-swatch{width:24px;height:24px;border-radius:7px;border:2px solid rgba(0,0,0,.15);cursor:pointer;padding:0}
+.yf-tb-swatch:hover{transform:translateY(-1px);box-shadow:0 2px 6px rgba(0,0,0,.25)}
+.yf-tb-swatch.yf-tb-clear{background:#fff;position:relative}
+.yf-tb-swatch.yf-tb-clear::after{content:'';position:absolute;left:2px;right:2px;top:50%;height:2px;background:#dc2626;transform:rotate(-45deg)}
 .yf-tally{display:flex;flex-wrap:wrap;gap:3px;padding:4px 6px 6px;border-top:1px dashed var(--border);background:#fafafa}
 .yf-tag{font-size:10px;font-weight:800;color:var(--muted);align-self:center;margin-right:1px}
 .yf-tally button{border:none;border-radius:5px;width:18px;height:18px;font-size:12px;font-weight:900;cursor:pointer;line-height:1;padding:0}
@@ -597,7 +607,13 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
       <button class="btn-ghost" style="padding:8px 12px;font-size:13px" onclick="yfRemoveRow()">➖ Satır Sil</button>
       <button class="btn btn-green" style="padding:8px 12px;font-size:13px" onclick="yfExportExcel()">⬇️ Excel İndir</button>
     </div>
-    <div style="text-align:center;font-size:11px;color:var(--dim);font-weight:700;margin-top:8px">Excel'deki formunla birebir aynı: her hücreye saat + isim + istediğin gibi not yazabilirsin. Otomatik kaydedilir, tüm cihazlarda senkron.</div>
+    <div class="yf-toolbar" id="yf-toolbar">
+      <span class="yf-tb-lbl">Biçim:</span>
+      <button type="button" class="yf-tb-btn" id="yf-tb-bold" onmousedown="event.preventDefault()" onclick="yfFormatBold()"><b>K</b> Kalın</button>
+      <span class="yf-tb-colors" id="yf-tb-colors"></span>
+      <button type="button" class="yf-tb-btn" onmousedown="event.preventDefault()" onclick="yfFormatClear()">✖ Temizle</button>
+    </div>
+    <div style="text-align:center;font-size:11px;color:var(--dim);font-weight:700;margin-top:8px">Excel'deki formunla birebir aynı: her hücreye saat + isim + istediğin gibi not yazabilirsin. Otomatik kaydedilir, tüm cihazlarda senkron. Bir ismi kalınlaştırmak/renklendirmek için hücrede seç, sonra yukarıdaki araç çubuğunu kullan.</div>
   </div>
   <div class="week-wrap">
     <table id="yf-table" style="border-collapse:collapse;width:100%;min-width:900px;background:#fff;border-radius:12px;overflow:hidden;box-shadow:var(--shadow)"></table>
@@ -1003,7 +1019,59 @@ function delStudent(id){
 const YF_DAYS=['PTESİ','SALI','ÇARŞ','PERŞEMBE','CUMA','CTESİ','PAZAR'];
 const YF_SEED={"2026-09":{"rows":[["11:00:00                        11:30","11:10                              11:40","11:20","11:10                       11:40","11:20","11:00ÇINAR3950+-+",""],["12:00                                   12:45ATA+-","12:00                                     12:40ATA+++","12:00                                12:30ATA+++","12:00","12:00","12:00                           12:40",""],["13:00","13:30","13:20","13:00","13:00","",""],["14:00                                 14:30KAAN  ekim","14:00:00                                                                 14:40LEYLA5600-++","14:00                                    14:40","14:00:00                                                  14:30KAAN  ekim","14:00                                                               14:40LEYLA+++","",""],["15:00KURAS++                                       15:30DOĞA++","15:10SELİN3900+++","15:10                                                 15:40","15:00KURAS5600-++                        15:30","15:10DOĞA+-+                                   15:40","",""],["16:00HAZAL7400++                                      16:50DENİZ6166++","16:00","16:10ZEHRA3950+++                                       16:50ELİF ekim","16:00                            16:40BİLGE4167+++","16:00HAZAL-++                                  16:30","",""],["17:20ARYA+-","17:00ELİF ekim                        17:40DENİZDR5600+++","17:00                                                    17:30:00ARYA+--","17:20ARYA+--","17:00DENİZ+++                                            17:30DENİZDR+++","",""],["18:00ATEŞ++                                           18:30GÖKTUĞ++","18:20HALİDE5600+++                       18:50SÜLEYMAN+++","18:10ATEŞ+++","18:00SOFİA+++                               18:30HALİDE+-+","18:00SÜLEYMAN+-+                                   18:30SOFİA5600+++","",""],["19:40ELA4000++","","19:00BİLGE4250+++                                   19:40CANDAN4000+++","19:00GÖKTUĞ5834-++","","",""],["20:20:00AMİNA(EKİMDE BAŞLAYACAK)","20:00KAAN(ekim)                                    20:30","","20:10NİLDA3950--+","20:00KAAN(ekim)                                  20:30","","13:000536 290 1770 ELİF 14 YAŞ  SATRANÇ"]]}}
 ;
-let yfData=null, yfSaveTimer=null, yfPayments={};
+let yfData=null, yfSaveTimer=null, yfPayments={}, yfActiveEl=null;
+const YF_COLORS=[
+  {name:'Siyah',hex:'#1e1b4b'},
+  {name:'Kırmızı',hex:'#dc2626'},
+  {name:'Turuncu',hex:'#ea580c'},
+  {name:'Yeşil',hex:'#059669'},
+  {name:'Mavi',hex:'#1d4ed8'},
+  {name:'Mor',hex:'#7c3aed'},
+  {name:'Pembe',hex:'#db2777'}
+];
+function yfInitToolbar(){
+  const wrap=document.getElementById('yf-tb-colors');
+  if(!wrap||wrap.children.length)return;
+  wrap.innerHTML=YF_COLORS.map(c=>`<button type="button" class="yf-tb-swatch" style="background:${c.hex}" title="${c.name}" onmousedown="event.preventDefault()" onclick="yfFormatColor('${c.hex}')"></button>`).join('');
+}
+function yfCellFocus(el){ yfActiveEl=el; }
+function yfPlainText(html){
+  const withBreaks=(html||'').replace(/<(br|div|p)[^>]*>/gi,'\n');
+  const div=document.createElement('div');
+  div.innerHTML=withBreaks;
+  return div.textContent||'';
+}
+function yfHasTags(html){ return /<[a-z][\s\S]*>/i.test(html||''); }
+function yfCellDisplayHTML(text){
+  return yfHasTags(text)?text:yfHighlight(text);
+}
+function yfSyncActiveCell(){
+  if(!yfActiveEl)return;
+  const td=yfActiveEl.closest('td');
+  if(!td)return;
+  const r=parseInt(td.getAttribute('data-r'),10), c=parseInt(td.getAttribute('data-c'),10);
+  yfData.rows[r][c]=yfActiveEl.innerHTML;
+  clearTimeout(yfSaveTimer);
+  yfSaveTimer=setTimeout(yfSave,500);
+}
+function yfFormatBold(){
+  if(!yfActiveEl)return;
+  yfActiveEl.focus();
+  document.execCommand('bold');
+  yfSyncActiveCell();
+}
+function yfFormatColor(hex){
+  if(!yfActiveEl)return;
+  yfActiveEl.focus();
+  document.execCommand('foreColor',false,hex);
+  yfSyncActiveCell();
+}
+function yfFormatClear(){
+  if(!yfActiveEl)return;
+  yfActiveEl.focus();
+  document.execCommand('removeFormat');
+  yfSyncActiveCell();
+}
 function yfKey(){
   const m=parseInt(document.getElementById('yf-month').value,10);
   const y=parseInt(document.getElementById('yf-year').value,10);
@@ -1109,11 +1177,12 @@ function yfCellClass(r,c){
   const ov=yfGetOverride(r,c);
   if(ov==='red')return'yf-unpaid yf-forced';
   if(ov==='clear')return'yf-forced-clear';
-  return yfCellUnpaid(yfData.rows[r][c]||'')?'yf-unpaid':'';
+  return yfCellUnpaid(yfPlainText(yfData.rows[r][c]||''))?'yf-unpaid':'';
 }
 function yfCellInnerHTML(r,c){
-  const text=yfData.rows[r][c]||'';
-  const names=yfDetectNames(text);
+  const raw=yfData.rows[r][c]||'';
+  const plain=yfPlainText(raw);
+  const names=yfDetectNames(plain);
   const controls=names.length?('<div class="yf-tally">'+names.map(n=>{
     const esc=n.replace(/'/g,"\\'");
     return `<span class="yf-tag">${n}</span><button type="button" class="yf-plus" onclick="yfAddMark(${r},${c},'${esc}','+')">+</button><button type="button" class="yf-minus" onclick="yfAddMark(${r},${c},'${esc}','-')">−</button>`;
@@ -1121,7 +1190,7 @@ function yfCellInnerHTML(r,c){
   const ov=yfGetOverride(r,c);
   const ovLabel=ov==='red'?'🔴 Elle kırmızı (kaldır)':(ov==='clear'?'⚪ Elle temiz (kaldır)':'🖱 Kırmızı yap');
   const paidBar=`<button type="button" class="yf-paidbtn" onclick="yfToggleOverride(${r},${c})">${ovLabel}</button>`;
-  return `<div class="yf-cell" contenteditable="true" oninput="yfCellInput(this,${r},${c})" onblur="yfCellBlur(this,${r},${c})">${yfHighlight(text)}</div>${controls}${paidBar}`;
+  return `<div class="yf-cell" contenteditable="true" onfocus="yfCellFocus(this)" oninput="yfCellInput(this,${r},${c})" onblur="yfCellBlur(this,${r},${c})">${yfCellDisplayHTML(raw)}</div>${controls}${paidBar}`;
 }
 function yfRender(){
   const table=document.getElementById('yf-table');
@@ -1133,6 +1202,8 @@ function yfRender(){
     html+='<tr>'+row.map((cell,c)=>`<td data-r="${r}" data-c="${c}" class="${yfCellClass(r,c)}">${yfCellInnerHTML(r,c)}</td>`).join('')+'</tr>';
   });
   table.innerHTML=html;
+  yfInitToolbar();
+  yfActiveEl=null;
 }
 function yfRenderCell(r,c){
   const td=table_yfTd(r,c);
@@ -1145,24 +1216,31 @@ function table_yfTd(r,c){
   return document.querySelector('#yf-table td[data-r="'+r+'"][data-c="'+c+'"]');
 }
 function yfCellInput(el,r,c){
-  yfData.rows[r][c]=el.innerText;
+  yfActiveEl=el;
+  yfData.rows[r][c]=el.innerHTML;
   clearTimeout(yfSaveTimer);
   yfSaveTimer=setTimeout(yfSave,500);
 }
 function yfCellBlur(el,r,c){
-  yfData.rows[r][c]=el.innerText;
+  yfData.rows[r][c]=el.innerHTML;
   yfSave();
   yfRenderCell(r,c);
 }
 function yfAddMark(r,c,name,mark){
-  let text=yfData.rows[r][c]||'';
-  const re=new RegExp('('+yfEscRe(name)+')(\\d*)([+\\-]*)','i');
-  if(re.test(text)){
-    text=text.replace(re,(full,n,digits,marks)=>n+digits+marks+mark);
+  let raw=yfData.rows[r][c]||'';
+  if(!yfHasTags(raw)){
+    // Düz metin — mevcut davranış: isme bitişik sayaç işaretini güncelle
+    const re=new RegExp('('+yfEscRe(name)+')(\\d*)([+\\-]*)','i');
+    if(re.test(raw)){
+      raw=raw.replace(re,(full,n,digits,marks)=>n+digits+marks+mark);
+    } else {
+      raw=(raw?raw+'  ':'')+name+mark;
+    }
   } else {
-    text=(text?text+'  ':'')+name+mark;
+    // Biçimlendirilmiş (kalın/renkli) metin — biçimi bozmamak için işareti sona ekle
+    raw=raw+(raw?'  ':'')+name+mark;
   }
-  yfData.rows[r][c]=text;
+  yfData.rows[r][c]=raw;
   yfSave();
   yfRenderCell(r,c);
 }
@@ -1189,7 +1267,8 @@ function yfChangeMonth(delta){
 function yfExportExcel(){
   const m=parseInt(document.getElementById('yf-month').value,10);
   const y=document.getElementById('yf-year').value;
-  const ar=[[MONTHS[m].toUpperCase()+' '+y+' YOKLAMA'],YF_DAYS,...yfData.rows];
+  const plainRows=yfData.rows.map(row=>row.map(cell=>yfPlainText(cell||'')));
+  const ar=[[MONTHS[m].toUpperCase()+' '+y+' YOKLAMA'],YF_DAYS,...plainRows];
   const wb=XLSX.utils.book_new();
   const ws=XLSX.utils.aoa_to_sheet(ar);
   ws['!cols']=YF_DAYS.map(()=>({wch:22}));
