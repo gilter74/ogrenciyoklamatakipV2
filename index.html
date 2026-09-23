@@ -1598,6 +1598,12 @@ async function saveNotes(){
   notesData={homework:hw,grade:gr,updatedAt:todays()};
   setSyncing(true);
   await fbSet('notes/'+curId,notesData);
+  // Veli paylaşımında son 3 ayın ödev/not geçmişini gösterebilmek için
+  // her kaydı tarihli bir geçmiş kaydı olarak da saklıyoruz (boş kayıt saklanmaz).
+  if(hw||gr){
+    const logKey=todays()+'_'+genShortId();
+    await fbSet('notesLog/'+curId+'/'+logKey,{date:todays(),hw,gr});
+  }
   setSyncing(false);
   showConf('Ödev ve not kaydedildi!','✅','Tamam',()=>{});
 }
@@ -2450,16 +2456,18 @@ async function genVeliLink(){
   if(!id){showConf('Lütfen bir öğrenci seçin.','⚠️','Tamam',()=>{});return;}
   const s=students.find(x=>x.id===id);if(!s)return;
   showLoad('Bağlantı oluşturuluyor…');
-  const [attVal,payVal,noteVal,discVal]=await Promise.all([
+  const [attVal,payVal,noteVal,discVal,logVal]=await Promise.all([
     fbGet('attendance/'+id),
     fbGet('payments/'+id),
     fbGet('notes/'+id),
-    fbGet('discount/'+id)
+    fbGet('discount/'+id),
+    fbGet('notesLog/'+id)
   ]);
   const att=attVal||{};
   const pays=Object.values(payVal||{});
   const note=noteVal||{};
   const disc=discVal||{};
+  const logs=Object.values(logVal||{});
   const now=new Date();
 
   // Son 3 ayın yoklama özeti
@@ -2520,11 +2528,20 @@ async function genVeliLink(){
   const last5=baseFee>0?schedule.slice(-5):[];
   const nextDiscount=policyOn&&schedule.length>0&&schedule[schedule.length-1].earlyPay;
 
+  // Son 3 aydaki tüm ödev/öğretmen notu kayıtları (tarih sırasına göre)
+  const hwLog=logs
+    .filter(l=>l&&l.date&&last3Keys.some(mk=>l.date.startsWith(mk)))
+    .sort((a,b)=>a.date.localeCompare(b.date))
+    .map(l=>{
+      const d=new Date(l.date+'T12:00:00');
+      return{dl:d.getDate()+' '+MONTHS[d.getMonth()]+' '+d.getFullYear(),hw:l.hw||'',gr:l.gr||''};
+    });
+
   const data={
     n:s.name+' '+s.surname, e:s.education||'', pr:s.program||'',
     f:baseFee||'', pd:s.payDay||'', reg:s.registeredAt||'',
     att:attSummary, last5:last5, pay3:pay3, bal:carryover, nd:nextDiscount,
-    hw:note.homework||'', gr:note.grade||'',
+    hw:note.homework||'', gr:note.grade||'', hwLog:hwLog,
     gen:fmt(now.getFullYear(),now.getMonth(),now.getDate())
   };
   const shortId=genShortId();
@@ -2651,11 +2668,20 @@ function renderVeliView(data){
       <div class="section-lbl">📅 Yoklama Özeti (Son 3 Ay)</div>
       ${attRows}
     </div>
-    ${(data.hw||data.gr)?`<div class="card mb12">
+    ${(data.hwLog&&data.hwLog.length)?`<div class="card mb12">
+      <div class="section-lbl">📚 Ödev &amp; Öğretmen Notu (Son 3 Ay)</div>
+      ${data.hwLog.map(l=>`<div class="pay-row">
+        <div style="min-width:0;flex:1">
+          <div style="font-size:13px;font-weight:900;color:var(--purple);margin-bottom:4px">📅 ${l.dl}</div>
+          ${l.hw?`<div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:3px"><span class="lbl" style="display:inline">Ödev: </span>${l.hw}</div>`:''}
+          ${l.gr?`<div style="font-size:14px;font-weight:700;color:var(--text)"><span class="lbl" style="display:inline">Not: </span>${l.gr}</div>`:''}
+        </div>
+      </div>`).join('')}
+    </div>`:((data.hw||data.gr)?`<div class="card mb12">
       <div class="section-lbl">📚 Ödev &amp; Öğretmen Notu</div>
       ${data.hw?`<div class="mb12"><span class="lbl">Ödev</span><div style="font-weight:700;font-size:14px;color:var(--text);margin-top:3px">${data.hw}</div></div>`:''}
       ${data.gr?`<div><span class="lbl">Not</span><div style="font-weight:700;font-size:14px;color:var(--text);margin-top:3px">${data.gr}</div></div>`:''}
-    </div>`:''}
+    </div>`:'')}
     <div style="text-align:center;font-size:11px;color:var(--dim);font-weight:700;margin:16px 0 8px">📅 Oluşturulma: ${data.gen||'—'}<br>RockJazz Müzik Aletleri ve Silifke Satranç Atölyesi</div>`;
 }
 
