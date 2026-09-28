@@ -406,6 +406,19 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
     <div class="mb14"><label class="lbl">Bu Haftanın Ödevi</label><textarea id="n-hw" rows="2" placeholder="Örn: Sayfa 12-14 tekrar, gam çalışması…" style="width:100%;padding:11px 14px;border-radius:10px;border:2px solid var(--border);font-family:'Nunito',sans-serif;font-size:14px;font-weight:600;color:var(--text);resize:vertical;outline:none"></textarea></div>
     <div class="mb14"><label class="lbl">Öğretmen Notu</label><textarea id="n-grade" rows="2" placeholder="Örn: Bu ay çok iyi ilerledi…" style="width:100%;padding:11px 14px;border-radius:10px;border:2px solid var(--border);font-family:'Nunito',sans-serif;font-size:14px;font-weight:600;color:var(--text);resize:vertical;outline:none"></textarea></div>
     <button class="btn btn-purple btn-sm" onclick="saveNotes()">💾 Kaydet</button>
+    <div style="margin-top:16px;padding-top:14px;border-top:2px dashed var(--border)">
+      <div class="section-lbl" style="margin-bottom:10px">📲 WhatsApp ile Gönder</div>
+      <label class="lbl">Kime gönderilsin?</label>
+      <select id="wa-hw-to" style="margin-bottom:10px"></select>
+      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;margin-bottom:12px;font-weight:700;font-size:13px;color:var(--text2)">
+        <input type="checkbox" id="wa-hw-link" style="width:auto;flex-shrink:0"> 🔗 Veli panel bağlantısını da ekle
+      </label>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-wa btn-sm" style="flex:1;justify-content:center" onclick="sendHwWA()">📲 WhatsApp'tan Gönder</button>
+        <button class="btn-ghost" style="flex:1;justify-content:center" onclick="copyHwMsg()">📋 Mesajı Kopyala</button>
+      </div>
+      <p style="font-size:11px;color:var(--muted);font-weight:600;margin-top:8px;line-height:1.5">Yukarıdaki ödev/not alanındaki güncel metin gönderilir (önce Kaydet'e basmak zorunda değilsin). Alıcı seçilmezse WhatsApp'ta kişiyi kendin seçersin.</p>
+    </div>
   </div>
   <div class="exp-bar">
     <div style="font-weight:800;font-size:14px;color:var(--text2)">📊 İşlemler</div>
@@ -1514,6 +1527,7 @@ function renderDetail(){
     </div>`;
   document.getElementById('n-hw').value=notesData.homework||'';
   document.getElementById('n-grade').value=notesData.grade||'';
+  fillHwRecipients();
   document.getElementById('disc-enabled').checked=!!discountData.enabled;
   document.getElementById('disc-note').value=discountData.note||'';
   updateDiscCount();
@@ -1593,6 +1607,10 @@ async function saveDiscount(){
 }
 
 async function saveNotes(){
+  await persistNotes();
+  showConf('Ödev ve not kaydedildi!','✅','Tamam',()=>{});
+}
+async function persistNotes(){
   const hw=document.getElementById('n-hw').value.trim();
   const gr=document.getElementById('n-grade').value.trim();
   notesData={homework:hw,grade:gr,updatedAt:todays()};
@@ -1605,7 +1623,66 @@ async function saveNotes(){
     await fbSet('notesLog/'+curId+'/'+logKey,{date:todays(),hw,gr});
   }
   setSyncing(false);
-  showConf('Ödev ve not kaydedildi!','✅','Tamam',()=>{});
+}
+
+// ── Ödev/Not WhatsApp gönderimi ─────────────────────────────────────
+function waPhone(raw){
+  let d=String(raw||'').replace(/\D/g,'');
+  if(!d)return '';
+  if(d.startsWith('00'))d=d.slice(2);
+  if(d.startsWith('90')&&d.length>=12)return d;
+  if(d.startsWith('0'))d=d.slice(1);
+  return '90'+d;
+}
+function fillHwRecipients(){
+  const sel=document.getElementById('wa-hw-to');
+  const s=students.find(x=>x.id===curId);
+  if(!sel||!s)return;
+  const opts=[];
+  if(s.momPhone)opts.push({v:s.momPhone,l:'👩 '+(s.momName||'Anne')+' — '+s.momPhone});
+  if(s.dadPhone)opts.push({v:s.dadPhone,l:'👨 '+(s.dadName||'Baba')+' — '+s.dadPhone});
+  if(s.phone)opts.push({v:s.phone,l:'🎓 Öğrenci — '+s.phone});
+  opts.push({v:'',l:'📇 Numara seçmeden aç (WhatsApp\'ta kişiyi seç)'});
+  sel.innerHTML=opts.map(o=>'<option value="'+o.v+'">'+o.l+'</option>').join('');
+}
+function buildHwMsg(url){
+  const s=students.find(x=>x.id===curId);if(!s)return '';
+  const hw=document.getElementById('n-hw').value.trim();
+  const gr=document.getElementById('n-grade').value.trim();
+  const sel=document.getElementById('wa-hw-to');
+  const toStudent=sel&&sel.selectedOptions[0]&&sel.selectedOptions[0].textContent.startsWith('🎓');
+  let m=toStudent?'Merhaba '+s.name+',\n\n':'Sayın Velimiz,\n\n';
+  m+='*'+s.name+' '+s.surname+'* için ödev ve öğretmen notu:\n';
+  if(hw)m+='\n📚 *Bu Haftanın Ödevi*\n'+hw+'\n';
+  if(gr)m+='\n📝 *Öğretmen Notu*\n'+gr+'\n';
+  if(url)m+='\n🔗 Ayrıntılı takip paneli:\n'+url+'\n';
+  m+='\nSaygılarımla,\nRockJazz Müzik Aletleri ve Silifke Satranç Atölyesi';
+  return m;
+}
+async function hwMsgReady(){
+  const hw=document.getElementById('n-hw').value.trim();
+  const gr=document.getElementById('n-grade').value.trim();
+  if(!hw&&!gr){showConf('Önce ödev veya öğretmen notu yazın.','⚠️','Tamam',()=>{});return null;}
+  let url='';
+  if(document.getElementById('wa-hw-link').checked){
+    await persistNotes(); // bağlantı güncel notu içersin
+    const r=await makeVeliUrl(curId,'Bağlantı hazırlanıyor…');
+    if(!r)return null;
+    url=r.url;
+  }
+  return buildHwMsg(url);
+}
+async function sendHwWA(){
+  const msg=await hwMsgReady();if(!msg)return;
+  const ph=waPhone(document.getElementById('wa-hw-to').value);
+  window.open('https://wa.me/'+ph+'?text='+encodeURIComponent(msg),'_blank');
+}
+async function copyHwMsg(){
+  const msg=await hwMsgReady();if(!msg)return;
+  const done=()=>showConf('Mesaj kopyalandı!','✅','Tamam',()=>{});
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(msg).then(done).catch(()=>{prompt('Mesajı kopyalayın:',msg);});
+  } else prompt('Mesajı kopyalayın:',msg);
 }
 
 function switchTab(t){curTab=t;updateTabUI();renderCal();}
@@ -2454,8 +2531,17 @@ function renderVeliShare(){
 async function genVeliLink(){
   const id=document.getElementById('veli-select').value;
   if(!id){showConf('Lütfen bir öğrenci seçin.','⚠️','Tamam',()=>{});return;}
-  const s=students.find(x=>x.id===id);if(!s)return;
-  showLoad('Bağlantı oluşturuluyor…');
+  const r=await makeVeliUrl(id,'Bağlantı oluşturuluyor…');
+  if(!r)return;
+  window._veliUrl=r.url;
+  window._veliName=r.name;
+  document.getElementById('veli-link-box').style.display='block';
+  document.getElementById('veli-link-input').value=r.url;
+}
+
+async function makeVeliUrl(id,loadMsg){
+  const s=students.find(x=>x.id===id);if(!s)return null;
+  showLoad(loadMsg||'Bağlantı oluşturuluyor…');
   const [attVal,payVal,noteVal,discVal,logVal]=await Promise.all([
     fbGet('attendance/'+id),
     fbGet('payments/'+id),
@@ -2548,10 +2634,7 @@ async function genVeliLink(){
   await fbSet('veliShare/'+shortId, data);
   const url=location.origin+location.pathname+'#vid='+shortId;
   hideLoad();
-  window._veliUrl=url;
-  window._veliName=data.n;
-  document.getElementById('veli-link-box').style.display='block';
-  document.getElementById('veli-link-input').value=url;
+  return {url:url,name:data.n};
 }
 
 // Kısa, karışıklığa yer vermeyen 6 karakterli bağlantı kodu
