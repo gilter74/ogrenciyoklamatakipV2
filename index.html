@@ -407,11 +407,20 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
     <div class="mb14"><label class="lbl">Öğretmen Notu</label><textarea id="n-grade" rows="2" placeholder="Örn: Bu ay çok iyi ilerledi…" style="width:100%;padding:11px 14px;border-radius:10px;border:2px solid var(--border);font-family:'Nunito',sans-serif;font-size:14px;font-weight:600;color:var(--text);resize:vertical;outline:none"></textarea></div>
     <button class="btn btn-purple btn-sm" onclick="saveNotes()">💾 Kaydet</button>
     <div style="margin-top:16px;padding-top:14px;border-top:2px dashed var(--border)">
+      <div class="section-lbl" style="margin-bottom:6px">📊 3 Aylık Gelişim Raporu</div>
+      <p style="font-size:11px;color:var(--muted);font-weight:600;line-height:1.5;margin-bottom:10px">Yoklama, ödev ve öğretmen notlarından her 3 ayda bir otomatik hazırlanır (1-5 puanlı). İstediğin zaman aşağıdan elle de hazırlayabilirsin.</p>
+      <div id="rep-card"></div>
+      <button class="btn btn-purple btn-sm" style="width:100%;justify-content:center" onclick="repPrepare(curId)">🧾 Rapor Hazırla (Manuel)</button>
+    </div>
+    <div style="margin-top:16px;padding-top:14px;border-top:2px dashed var(--border)">
       <div class="section-lbl" style="margin-bottom:10px">📲 WhatsApp ile Gönder</div>
       <label class="lbl">Kime gönderilsin?</label>
       <select id="wa-hw-to" style="margin-bottom:10px"></select>
       <label style="display:flex;align-items:center;gap:10px;cursor:pointer;margin-bottom:12px;font-weight:700;font-size:13px;color:var(--text2)">
         <input type="checkbox" id="wa-hw-link" style="width:auto;flex-shrink:0"> 🔗 Veli panel bağlantısını da ekle
+      </label>
+      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;margin-bottom:12px;font-weight:700;font-size:13px;color:var(--text2)">
+        <input type="checkbox" id="wa-hw-rep" style="width:auto;flex-shrink:0"> 📊 3 aylık gelişim raporunu da ekle
       </label>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn btn-wa btn-sm" style="flex:1;justify-content:center" onclick="sendHwWA()">📲 WhatsApp'tan Gönder</button>
@@ -562,6 +571,8 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
     <p style="font-size:13px;color:var(--text2);font-weight:600;line-height:1.6;margin-bottom:16px">Her öğrenci için şifresiz, doğrudan açılan bir bağlantı oluşturun. Veli bu adresten ders programını, bakiyesini, yoklama durumunu ve öğretmen notunu görür — sunucu gerekmez, bilgiler doğrudan bağlantının içinde taşınır. Bilgi güncellendiğinde (ödeme, yoklama, ödev/not vb.) bağlantıyı yeniden oluşturup tekrar göndermen gerekir.</p>
     <label class="lbl">Öğrenci Seç</label>
     <select id="veli-select" style="margin-bottom:14px"></select>
+    <button class="btn-ghost" style="width:100%;justify-content:center;padding:11px;margin-bottom:6px" onclick="repPrepareFromVeli()">📊 3 Aylık Gelişim Raporu Hazırla / Düzenle</button>
+    <p style="font-size:11px;color:var(--muted);font-weight:600;line-height:1.5;margin-bottom:14px">Rapor her 3 ayda bir otomatik hazırlanır. Oluşturulan veli bağlantısına öğrencinin son raporu (puanıyla) otomatik eklenir.</p>
     <button class="btn btn-purple" style="width:100%;justify-content:center;padding:12px;margin-bottom:14px" onclick="genVeliLink()">🔗 Bağlantı Oluştur</button>
     <div id="veli-link-box" style="display:none">
       <label class="lbl">Veli Bağlantısı</label>
@@ -631,6 +642,24 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
   <div class="week-wrap">
     <table id="yf-table" style="border-collapse:collapse;width:100%;min-width:1200px;background:#fff;border-radius:12px;overflow:hidden;box-shadow:var(--shadow)"></table>
   </div>
+  </div>
+</div>
+
+<!-- 3 AYLIK RAPOR MODAL -->
+<div class="modal-bg" id="rep-modal">
+  <div class="modal-box" style="max-width:480px;max-height:92vh;overflow-y:auto">
+    <div style="font-weight:900;font-size:17px;color:var(--purple);margin-bottom:2px">📊 3 Aylık Gelişim Raporu</div>
+    <div id="rep-m-sub" style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:12px"></div>
+    <label class="lbl">Gelişim Puanı (1-5)</label>
+    <div id="rep-m-stars" style="display:flex;gap:6px;margin-bottom:4px"></div>
+    <div id="rep-m-auto" style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:12px"></div>
+    <label class="lbl">Rapor Metni (düzenleyebilirsin)</label>
+    <textarea id="rep-m-text" rows="13" style="width:100%;padding:11px 14px;border-radius:10px;border:2px solid var(--border);font-family:'Nunito',sans-serif;font-size:13px;font-weight:600;color:var(--text);resize:vertical;outline:none;margin-bottom:12px;line-height:1.55"></textarea>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn-ghost" style="flex:1;justify-content:center;padding:10px" onclick="repRegen()">🔄 Yeniden Oluştur</button>
+      <button class="btn btn-purple" style="flex:1;justify-content:center;padding:10px" onclick="repSaveModal()">💾 Kaydet</button>
+    </div>
+    <button class="btn-ghost" style="width:100%;justify-content:center;padding:10px;margin-top:8px" onclick="repClose()">Kapat</button>
   </div>
 </div>
 
@@ -1470,12 +1499,14 @@ async function openDet(id){
   curY=new Date().getFullYear();curM=new Date().getMonth();
   curTab='att';markC='came';
   showLoad('Yükleniyor…');
-  const [attVal,payVal,noteVal,discVal]=await Promise.all([
+  const [attVal,payVal,noteVal,discVal,repVal]=await Promise.all([
     fbGet('attendance/'+id),
     fbGet('payments/'+id),
     fbGet('notes/'+id),
-    fbGet('discount/'+id)
+    fbGet('discount/'+id),
+    fbGet('reports/'+id)
   ]);
+  repCache[id]=repVal||{};
   attData=attVal||{};
   payData=Object.values(payVal||{});
   notesData=noteVal||{};
@@ -1528,6 +1559,7 @@ function renderDetail(){
   document.getElementById('n-hw').value=notesData.homework||'';
   document.getElementById('n-grade').value=notesData.grade||'';
   fillHwRecipients();
+  renderRepCard();
   document.getElementById('disc-enabled').checked=!!discountData.enabled;
   document.getElementById('disc-note').value=discountData.note||'';
   updateDiscCount();
@@ -1655,6 +1687,9 @@ function buildHwMsg(url){
   m+='*'+s.name+' '+s.surname+'* için ödev ve öğretmen notu:\n';
   if(hw)m+='\n📚 *Bu Haftanın Ödevi*\n'+hw+'\n';
   if(gr)m+='\n📝 *Öğretmen Notu*\n'+gr+'\n';
+  const wantRep=document.getElementById('wa-hw-rep')&&document.getElementById('wa-hw-rep').checked;
+  const lr=wantRep?repLatest(repCache[curId]):null;
+  if(lr)m+='\n━━━━━━━━━━\n📊 *3 Aylık Gelişim Raporu* ('+repDL(lr.from)+' – '+repDL(lr.to)+')\n\n'+repWAText(lr.text)+'\n';
   if(url)m+='\n🔗 Ayrıntılı takip paneli:\n'+url+'\n';
   m+='\nSaygılarımla,\nRockJazz Müzik Aletleri ve Silifke Satranç Atölyesi';
   return m;
@@ -1662,7 +1697,9 @@ function buildHwMsg(url){
 async function hwMsgReady(){
   const hw=document.getElementById('n-hw').value.trim();
   const gr=document.getElementById('n-grade').value.trim();
-  if(!hw&&!gr){showConf('Önce ödev veya öğretmen notu yazın.','⚠️','Tamam',()=>{});return null;}
+  const repChk=document.getElementById('wa-hw-rep')&&document.getElementById('wa-hw-rep').checked;
+  if(repChk&&!repLatest(repCache[curId])){showConf('Bu öğrenci için henüz rapor yok. Önce "Rapor Hazırla (Manuel)" ile oluşturun.','⚠️','Tamam',()=>{});return null;}
+  if(!hw&&!gr&&!repChk){showConf('Önce ödev veya öğretmen notu yazın.','⚠️','Tamam',()=>{});return null;}
   let url='';
   if(document.getElementById('wa-hw-link').checked){
     await persistNotes(); // bağlantı güncel notu içersin
@@ -2542,13 +2579,17 @@ async function genVeliLink(){
 async function makeVeliUrl(id,loadMsg){
   const s=students.find(x=>x.id===id);if(!s)return null;
   showLoad(loadMsg||'Bağlantı oluşturuluyor…');
-  const [attVal,payVal,noteVal,discVal,logVal]=await Promise.all([
+  const [attVal,payVal,noteVal,discVal,logVal,repVal]=await Promise.all([
     fbGet('attendance/'+id),
     fbGet('payments/'+id),
     fbGet('notes/'+id),
     fbGet('discount/'+id),
-    fbGet('notesLog/'+id)
+    fbGet('notesLog/'+id),
+    fbGet('reports/'+id)
   ]);
+  repCache[id]=repVal||{};
+  let lastRep=repLatest(repCache[id]);
+  if(!lastRep){ try{ lastRep=await repGenerate(s,repDefaultFrom(s),todays(),'auto'); }catch(e){ lastRep=null; } }
   const att=attVal||{};
   const pays=Object.values(payVal||{});
   const note=noteVal||{};
@@ -2628,6 +2669,7 @@ async function makeVeliUrl(id,loadMsg){
     f:baseFee||'', pd:s.payDay||'', reg:s.registeredAt||'',
     att:attSummary, last5:last5, pay3:pay3, bal:carryover, nd:nextDiscount,
     hw:note.homework||'', gr:note.grade||'', hwLog:hwLog,
+    rep:lastRep?{from:lastRep.from,to:lastRep.to,score:lastRep.score,text:lastRep.text,mode:lastRep.mode||'auto'}:null,
     gen:fmt(now.getFullYear(),now.getMonth(),now.getDate())
   };
   const shortId=genShortId();
@@ -2661,7 +2703,7 @@ function copyVeliLink(){
 function sendVeliWA(){
   const url=window._veliUrl;if(!url)return;
   const name=window._veliName||'';
-  const msg='Sayın Velimiz,\n\n'+name+' için öğrenci takip bağlantınız aşağıdadır. Bu bağlantıdan ders programını, bakiyesini, yoklama durumunu ve öğretmen notunu görebilirsiniz:\n\n'+url+'\n\nSaygılarımla,\nRockJazz Müzik Aletleri ve Silifke Satranç Atölyesi';
+  const msg='Sayın Velimiz,\n\n'+name+' için öğrenci takip bağlantınız aşağıdadır. Bu bağlantıdan ders programını, bakiyesini, yoklama durumunu, öğretmen notunu ve 3 aylık gelişim raporunu görebilirsiniz:\n\n'+url+'\n\nSaygılarımla,\nRockJazz Müzik Aletleri ve Silifke Satranç Atölyesi';
   window.open('https://wa.me/?text='+encodeURIComponent(msg),'_blank');
 }
 
@@ -2717,6 +2759,16 @@ function renderVeliView(data){
       <h1 style="font-size:23px">${data.n||''}</h1>
       <p>Veli Bilgilendirme Paneli</p>
     </div>
+    ${data.rep?`<div class="card mb12" style="border-color:#fde68a;background:linear-gradient(135deg,#fffbeb,#fff)">
+      <div class="section-lbl">📊 3 Aylık Gelişim Raporu</div>
+      <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:10px">📅 ${repDL(data.rep.from)} – ${repDL(data.rep.to)}</div>
+      <div style="text-align:center;background:#fff;border:2px solid #fde68a;border-radius:14px;padding:14px;margin-bottom:12px">
+        <div style="font-size:30px;letter-spacing:3px;color:#f59e0b;line-height:1.1">${repStars(data.rep.score)}</div>
+        <div style="font-weight:900;font-size:20px;color:var(--text);margin-top:4px">${data.rep.score}/5</div>
+        <div style="font-weight:800;font-size:13px;color:#b45309">${repLabel(data.rep.score)}</div>
+      </div>
+      <div style="white-space:pre-wrap;font-size:14px;font-weight:600;color:var(--text);line-height:1.65">${repEsc(data.rep.text)}</div>
+    </div>`:''}
     <div class="card mb12">
       <div class="section-lbl">📋 Ders Programı</div>
       <div style="display:flex;gap:6px;flex-wrap:wrap">
@@ -2767,6 +2819,273 @@ function renderVeliView(data){
     </div>`:'')}
     <div style="text-align:center;font-size:11px;color:var(--dim);font-weight:700;margin:16px 0 8px">📅 Oluşturulma: ${data.gen||'—'}<br>RockJazz Müzik Aletleri ve Silifke Satranç Atölyesi</div>`;
 }
+
+
+// ══ 3 AYLIK GELİŞİM RAPORU ════════════════════════════════════════════
+// Yoklama + ödev + öğretmen notlarından 1-5 puanlı, otomatik/manuel rapor.
+const repCache={};   // öğrenciId -> {to: rapor}
+let _repDraft=null;  // açık modaldaki taslak {id, rep, from, to}
+const REP_POS=['iyi','harika','başarı','mükemmel','gelişti','ilerledi','ilerleme','güzel','düzenli','istekli','çalışkan','dikkatli','tebrik','hızlı','kavradı','öğrendi','motive','pekiyi','süper','başardı'];
+const REP_NEG=['geliştirilmeli','tekrar etmeli','zayıf','eksik','yapmadı','yapmamış','çalışmadı','çalışmamış','dikkatsiz','dağınık','geri kaldı','yetersiz','sorun','aksatt','isteksiz','unuttu','getirmedi','düzensiz'];
+const REP_LABELS={1:'Gelişmesi Gerekiyor',2:'Orta Altı',3:'Orta / Gelişiyor',4:'İyi',5:'Çok İyi'};
+
+function repEsc(t){return String(t==null?'':t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function repStars(n){n=Math.max(0,Math.min(5,+n||0));return '★'.repeat(n)+'☆'.repeat(5-n);}
+function repLabel(n){return REP_LABELS[n]||'';}
+function repDL(ds){const d=new Date(ds+'T12:00:00');return d.getDate()+' '+MONTHS[d.getMonth()]+' '+d.getFullYear();}
+function repAddMonths(ds,n){const d=new Date(ds+'T12:00:00');d.setMonth(d.getMonth()+n);return fmt(d.getFullYear(),d.getMonth(),d.getDate());}
+function repAddDays(ds,n){const d=new Date(ds+'T12:00:00');d.setDate(d.getDate()+n);return fmt(d.getFullYear(),d.getMonth(),d.getDate());}
+function repLatest(map){
+  const arr=Object.values(map||{}).filter(r=>r&&r.to);
+  if(!arr.length)return null;
+  arr.sort((a,b)=>(b.to+(b.createdAt||'')).localeCompare(a.to+(a.createdAt||'')));
+  return arr[0];
+}
+// 3 ay geriye; öğrenci daha yeni kayıtlıysa kayıt tarihinden başlar
+function repDefaultFrom(s){
+  const thr=repAddMonths(todays(),-3);
+  return (s&&s.registeredAt&&s.registeredAt>thr)?s.registeredAt:thr;
+}
+function repNoteSentiment(txt){
+  let t=String(txt||'').toLocaleLowerCase('tr-TR');
+  let neg=0,pos=0;
+  REP_NEG.forEach(w=>{let i;while((i=t.indexOf(w))>=0){neg++;t=t.slice(0,i)+' '+t.slice(i+w.length);}});
+  if(t.indexOf('değil')>=0)neg++;
+  else REP_POS.forEach(w=>{let i;while((i=t.indexOf(w))>=0){pos++;t=t.slice(0,i)+' '+t.slice(i+w.length);}});
+  return {pos,neg};
+}
+async function repCollect(id,from,to){
+  const [attVal,logVal]=await Promise.all([fbGet('attendance/'+id),fbGet('notesLog/'+id)]);
+  let came=0,absent=0;
+  Object.entries(attVal||{}).forEach(([k,v])=>{
+    if(k>=from&&k<=to){if(v==='came')came++;else if(v==='absent')absent++;}
+  });
+  const logs=Object.values(logVal||{}).filter(l=>l&&l.date&&l.date>=from&&l.date<=to)
+    .sort((a,b)=>a.date.localeCompare(b.date));
+  return {came,absent,logs};
+}
+function repStats(d){
+  const total=d.came+d.absent;
+  const rate=total>0?Math.round(d.came*100/total):null;
+  const hws=d.logs.filter(l=>l.hw);
+  const grs=d.logs.filter(l=>l.gr);
+  let pos=0,neg=0;
+  grs.forEach(l=>{const r=repNoteSentiment(l.gr);pos+=r.pos;neg+=r.neg;});
+  return {came:d.came,absent:d.absent,total,rate,hwCount:hws.length,noteCount:grs.length,pos,neg};
+}
+// Puan: devam oranı (%50) + öğretmen notlarının olumlu/olumsuz dengesi (%50)
+function repScore(st){
+  let sum=0,w=0;
+  if(st.rate!==null){const r=st.rate;sum+=0.5*(r>=90?5:r>=80?4:r>=65?3:r>=50?2:1);w+=0.5;}
+  if(st.noteCount>0){
+    const net=(st.pos-st.neg)/st.noteCount;
+    sum+=0.5*Math.max(1,Math.min(5,Math.round(3+net*1.5)));w+=0.5;
+  }
+  if(!w)return null;
+  return Math.max(1,Math.min(5,Math.ceil(sum/w-0.5))); // .5'te aşağı yuvarla (temkinli)
+}
+function repTrim(t,n){t=String(t||'').replace(/\s+/g,' ').trim();return t.length>n?t.slice(0,n-1)+'…':t;}
+function repText(s,d,st,score){
+  const nm=s.name||'Öğrencimiz';
+  const parts=[];
+  if(st.total>0){
+    let sen;
+    if(st.rate>=90)sen='Derslere düzenli katılımı gelişimini olumlu destekliyor.';
+    else if(st.rate>=80)sen='Devamlılığı genel olarak iyi; bu düzenin korunması önemli.';
+    else if(st.rate>=65)sen='Devamsızlıklar öğrenme sürekliliğini etkileyebiliyor; düzenli katılımı destekleyebilirsiniz.';
+    else sen='Sık devamsızlık gelişimi yavaşlatıyor; düzenli katılım için desteğinizi rica ederiz.';
+    parts.push('📅 Devam Durumu\n'+nm+' bu dönemde '+st.came+' derse katıldı, '+st.absent+' derse gelmedi (devam oranı %'+st.rate+'). '+sen);
+  }
+  if(st.hwCount>0){
+    const hws=d.logs.filter(l=>l.hw).slice(-3).map(l=>repTrim(l.hw,90));
+    parts.push('📚 Ödev ve Çalışma\nDönem boyunca '+st.hwCount+' ödev/çalışma kaydı verildi. Son verilen çalışmalar: '+hws.join('; ')+'.');
+  }
+  if(st.noteCount>0){
+    const grs=d.logs.filter(l=>l.gr).slice(-3).map(l=>'• '+repDL(l.date)+': '+repTrim(l.gr,160));
+    parts.push('📝 Öğretmen Gözlemleri\n'+grs.join('\n'));
+  }
+  const rec={
+    5:nm+' bu dönemde çok başarılı bir gelişim gösterdi. Aynı istek ve düzenle devam etmesini bekliyoruz.',
+    4:nm+' bu dönemde iyi bir gelişim gösterdi. Düzenli tekrarlarla daha da ilerleyecektir.',
+    3:nm+' gelişim gösteriyor; ev çalışmalarının ve derse düzenli katılımın artması ilerlemesini hızlandıracaktır.',
+    2:nm+'\'nin gelişimi için düzenli ders katılımı ve ev tekrarları önem taşıyor. Birlikte destek olabiliriz.',
+    1:nm+'\'nin gelişimi için düzenli katılım ve ev tekrarı şart görünüyor. Sizinle görüşmek isteriz.'
+  }[score];
+  parts.push('⭐ Gelişim Puanı: '+score+'/5 — '+repLabel(score)+'\n'+repStars(score)+'\n'+rec);
+  return parts.join('\n\n');
+}
+async function repGenerate(s,from,to,mode,save){
+  const d=await repCollect(s.id,from,to);
+  const st=repStats(d);
+  const score=repScore(st);
+  if(score===null)return null; // yeterli veri yok
+  const rep={from,to,score,autoScore:score,text:repText(s,d,st,score),mode:mode||'auto',createdAt:todays(),stats:st};
+  if(save!==false){
+    await fbSet('reports/'+s.id+'/'+to,rep);
+    repCache[s.id]=repCache[s.id]||{};
+    repCache[s.id][to]=rep;
+  }
+  return rep;
+}
+function repWAText(t){return String(t||'').replace(/^(📅|📚|📝|⭐) (.*)$/gm,'*$1 $2*');}
+
+// ── Otomatik: 3 ayda bir, uygulama açıldığında günde en fazla 1 kez kontrol ──
+async function autoQuarterReports(){
+  if(window._repAutoRunning)return;
+  const today=todays();
+  try{ if(localStorage.getItem('repAutoLast')===today)return; }catch(e){}
+  window._repAutoRunning=true;
+  try{
+    const all=(await fbGet('reports'))||{};
+    const made=[];
+    for(const s of students){
+      const latest=repLatest(all[s.id]);
+      const thr=repAddMonths(today,-3);
+      let from;
+      if(latest){
+        if(today<repAddMonths(latest.to,3))continue;
+        from=repAddDays(latest.to,1);
+        if(from<thr)from=thr;
+      }else{
+        if(s.registeredAt&&s.registeredAt>thr)continue; // henüz 3 ay dolmadı
+        from=thr;
+      }
+      const r=await repGenerate(s,from,today,'auto');
+      if(r)made.push(s.name+' '+s.surname);
+    }
+    try{ localStorage.setItem('repAutoLast',today); }catch(e){}
+    if(made.length){
+      showConf(made.length+' öğrenci için 3 aylık gelişim raporu otomatik hazırlandı: '+made.slice(0,8).join(', ')+(made.length>8?' …':'')+'. Öğrenci detayından inceleyip veliye gönderebilirsin.','📊','Tamam',()=>{});
+    }
+  }catch(err){ console.warn('Otomatik rapor hatası',err); }
+  window._repAutoRunning=false;
+}
+
+// ── Detay ekranındaki kart ──
+function renderRepCard(){
+  const box=document.getElementById('rep-card');
+  if(!box)return;
+  const r=repLatest(repCache[curId]);
+  if(!r){
+    box.innerHTML='<div style="background:var(--bg);border:2px dashed var(--border);border-radius:10px;padding:11px;font-size:12px;font-weight:700;color:var(--muted);text-align:center;margin-bottom:10px">Henüz rapor yok. 3 ay dolunca otomatik hazırlanır veya aşağıdan elle hazırlayabilirsin.</div>';
+    return;
+  }
+  const next=repAddMonths(r.to,3);
+  box.innerHTML=`<div style="background:linear-gradient(135deg,#fffbeb,#fff);border:2px solid #fde68a;border-radius:12px;padding:12px 14px;margin-bottom:10px">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">
+      <div style="font-size:22px;letter-spacing:2px;color:#f59e0b">${repStars(r.score)} <span style="font-size:15px;font-weight:900;color:var(--text);letter-spacing:0">${r.score}/5 · ${repLabel(r.score)}</span></div>
+      <span class="badge" style="background:${r.mode==='manual'?'#dbeafe':'#ede9fe'};color:${r.mode==='manual'?'#1d4ed8':'#7c3aed'}">${r.mode==='manual'?'✍️ Manuel':'🤖 Otomatik'}</span>
+    </div>
+    <div style="font-size:11px;font-weight:700;color:var(--muted);margin:4px 0 8px">📅 ${repDL(r.from)} – ${repDL(r.to)} · Sonraki otomatik rapor: ${repDL(next)}</div>
+    <div style="white-space:pre-wrap;font-size:13px;font-weight:600;color:var(--text);line-height:1.55;max-height:190px;overflow-y:auto">${repEsc(r.text)}</div>
+    <div style="display:flex;gap:7px;flex-wrap:wrap;margin-top:10px">
+      <button class="btn-ghost" style="flex:1;justify-content:center;padding:8px" onclick="repEditLatest()">✏️ Düzenle</button>
+      <button class="btn btn-wa btn-sm" style="flex:1;justify-content:center" onclick="repSendWA()">📲 WhatsApp</button>
+      <button class="btn-ghost" style="flex:1;justify-content:center;padding:8px" onclick="repCopy()">📋 Kopyala</button>
+    </div>
+  </div>`;
+}
+function repFullMsg(){
+  const s=students.find(x=>x.id===curId);const r=repLatest(repCache[curId]);
+  if(!s||!r)return '';
+  const sel=document.getElementById('wa-hw-to');
+  const toStudent=sel&&sel.selectedOptions[0]&&sel.selectedOptions[0].textContent.startsWith('🎓');
+  return (toStudent?'Merhaba '+s.name+',\n\n':'Sayın Velimiz,\n\n')+
+    '*'+s.name+' '+s.surname+'* için '+repDL(r.from)+' – '+repDL(r.to)+' dönemine ait 3 aylık genel değerlendirme raporu:\n\n'+
+    repWAText(r.text)+'\n\nSaygılarımla,\nRockJazz Müzik Aletleri ve Silifke Satranç Atölyesi';
+}
+function repSendWA(){
+  const m=repFullMsg();if(!m)return;
+  const ph=waPhone(document.getElementById('wa-hw-to').value);
+  window.open('https://wa.me/'+ph+'?text='+encodeURIComponent(m),'_blank');
+}
+function repCopy(){
+  const m=repFullMsg();if(!m)return;
+  const done=()=>showConf('Rapor mesajı kopyalandı!','✅','Tamam',()=>{});
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(m).then(done).catch(()=>{prompt('Mesajı kopyalayın:',m);});
+  else prompt('Mesajı kopyalayın:',m);
+}
+
+// ── Manuel hazırlama / düzenleme modalı ──
+async function repPrepare(id){
+  const s=students.find(x=>x.id===id);
+  if(!s){showConf('Önce bir öğrenci seçin.','⚠️','Tamam',()=>{});return;}
+  showLoad('Rapor hazırlanıyor…');
+  try{
+    const from=repDefaultFrom(s),to=todays();
+    const d=await repCollect(id,from,to);
+    const st=repStats(d);
+    let score=repScore(st);
+    hideLoad();
+    if(score===null){
+      showConf('Bu dönemde yoklama veya öğretmen notu kaydı bulunamadı; puan 3 olarak başlatıldı. Metni ve puanı elle düzenleyebilirsin.','ℹ️','Tamam',()=>{});
+      score=3;
+    }
+    const rep={from,to,score,autoScore:score,text:repText(s,d,st,score),mode:'manual',createdAt:todays(),stats:st};
+    repOpenModal(id,rep);
+  }catch(err){hideLoad();showConf('Rapor hazırlanamadı: '+err.message,'⚠️','Tamam',()=>{});}
+}
+function repPrepareFromVeli(){
+  const id=document.getElementById('veli-select').value;
+  if(!id){showConf('Lütfen önce bir öğrenci seçin.','⚠️','Tamam',()=>{});return;}
+  curId=id;
+  repPrepare(id);
+}
+function repEditLatest(){
+  const r=repLatest(repCache[curId]);if(!r)return;
+  repOpenModal(curId,JSON.parse(JSON.stringify(r)));
+}
+function repOpenModal(id,rep){
+  _repDraft={id,rep};
+  const s=students.find(x=>x.id===id);
+  document.getElementById('rep-m-sub').textContent=(s?s.name+' '+s.surname+' · ':'')+repDL(rep.from)+' – '+repDL(rep.to);
+  document.getElementById('rep-m-text').value=rep.text;
+  document.getElementById('rep-m-auto').textContent='Otomatik önerilen puan: '+rep.autoScore+'/5 (devam oranı ve öğretmen notlarına göre). İstersen değiştirebilirsin.';
+  repDrawStars();
+  document.getElementById('rep-modal').classList.add('open');
+}
+function repDrawStars(){
+  const sc=_repDraft.rep.score;
+  document.getElementById('rep-m-stars').innerHTML=[1,2,3,4,5].map(n=>
+    '<button onclick="repSetScore('+n+')" style="flex:1;padding:9px 0;border-radius:10px;border:2px solid '+(n===sc?'#f59e0b':'var(--border)')+';background:'+(n===sc?'#fef3c7':'#fff')+';font-family:\'Nunito\',sans-serif;font-weight:900;font-size:15px;color:'+(n<=sc?'#d97706':'var(--dim)')+';cursor:pointer">'+n+' ★</button>').join('');
+}
+function repSetScore(n){_repDraft.rep.score=n;repDrawStars();}
+async function repRegen(){
+  if(!_repDraft)return;
+  const s=students.find(x=>x.id===_repDraft.id);if(!s)return;
+  const {from,to}=_repDraft.rep;
+  showLoad('Yeniden oluşturuluyor…');
+  try{
+    const d=await repCollect(s.id,from,to);
+    const st=repStats(d);
+    const sc=repScore(st)||_repDraft.rep.score;
+    _repDraft.rep.score=sc;_repDraft.rep.autoScore=sc;_repDraft.rep.stats=st;
+    _repDraft.rep.text=repText(s,d,st,sc);
+    document.getElementById('rep-m-text').value=_repDraft.rep.text;
+    document.getElementById('rep-m-auto').textContent='Otomatik önerilen puan: '+sc+'/5 (devam oranı ve öğretmen notlarına göre). İstersen değiştirebilirsin.';
+    repDrawStars();
+  }catch(err){showConf('Yeniden oluşturulamadı: '+err.message,'⚠️','Tamam',()=>{});}
+  hideLoad();
+}
+async function repSaveModal(){
+  if(!_repDraft)return;
+  const {id,rep}=_repDraft;
+  rep.text=document.getElementById('rep-m-text').value.trim();
+  if(!rep.text){showConf('Rapor metni boş olamaz.','⚠️','Tamam',()=>{});return;}
+  rep.mode='manual';rep.createdAt=todays();
+  showLoad('Kaydediliyor…');
+  try{
+    await fbSet('reports/'+id+'/'+rep.to,rep);
+    repCache[id]=repCache[id]||{};
+    repCache[id][rep.to]=rep;
+    hideLoad();
+    repClose();
+    if(id===curId)renderRepCard();
+    showConf('Rapor kaydedildi. Veli bağlantısını yeniden oluşturursan yeni rapor bağlantıya eklenir.','✅','Tamam',()=>{});
+  }catch(err){hideLoad();showConf('Kaydedilemedi: '+err.message,'⚠️','Tamam',()=>{});}
+}
+function repClose(){document.getElementById('rep-modal').classList.remove('open');_repDraft=null;}
+document.getElementById('rep-modal').addEventListener('click',function(e){if(e.target===this)repClose();});
 
 // ══ YEDEKLEME ═════════════════════════════════════════════════════════
 async function exportBackup(){
@@ -2855,6 +3174,7 @@ if(location.hash.indexOf('#vid=')===0){
     hideLoad();
     renderList();
     autoFillSchedules();
+    setTimeout(autoQuarterReports,2500); // 3 ayda bir otomatik rapor kontrolü
     db.ref('students').on('value',snap2=>{
       const val2=snap2.val()||{};
       students=Object.values(val2).sort((a,b)=>String(a.id).localeCompare(String(b.id)));
