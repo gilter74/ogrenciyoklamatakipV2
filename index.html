@@ -1009,7 +1009,7 @@ function renderList(){
         const fn=((s.name||'')+' '+(s.surname||'')).trim().toLocaleUpperCase('tr').replace(/\s+/g,' ');
         const dup=dupSet.has(fn);
         return`
-      <div class="s-row" style="border-color:${dup?'#dc2626':c.border};background:${c.bg}" onclick="openDet('${s.id}')">
+      <div class="s-row" style="border-color:${dup?'#dc2626':c.border};background:${c.bg}" onclick="openDetNewWin('${s.id}')">
         <div class="avatar" style="width:48px;height:48px;background:${c.border}">${eduIcon(s.education)}</div>
         <div style="flex:1;min-width:0">
           <div style="font-weight:900;font-size:15px">${s.name} ${s.surname}${dup?' <span style="color:#dc2626;font-size:11px;font-weight:900">⚠️ aynı isim</span>':''}</div>
@@ -1021,6 +1021,13 @@ function renderList(){
     }).join('');
   }
   document.getElementById('tot-el').textContent='Toplam '+students.length+' öğrenci';
+}
+
+// Öğrenci adına tıklayınca detay yeni pencerede (sekmede) açılsın
+function openDetNewWin(id){
+  const url=location.href.split('#')[0]+'#ogr='+encodeURIComponent(id);
+  const w=window.open(url,'_blank');
+  if(!w) openDet(id); // açılır pencere engellendiyse aynı pencerede aç
 }
 
 function delStudent(id){
@@ -3173,6 +3180,11 @@ if(location.hash.indexOf('#vid=')===0){
     students=Object.values(val).sort((a,b)=>String(a.id).localeCompare(String(b.id)));
     hideLoad();
     renderList();
+    // Yeni pencerede #ogr=ID ile açıldıysa doğrudan öğrenci detayına git
+    if(location.hash.indexOf('#ogr=')===0){
+      const oid=decodeURIComponent(location.hash.slice(5));
+      if(students.some(x=>x.id===oid)) openDet(oid);
+    }
     autoFillSchedules();
     setTimeout(autoQuarterReports,2500); // 3 ayda bir otomatik rapor kontrolü
     db.ref('students').on('value',snap2=>{
