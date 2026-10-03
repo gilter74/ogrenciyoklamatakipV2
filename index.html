@@ -1572,7 +1572,7 @@ async function openDet(id){
       const hw0=notesData.homework||'', gr0=notesData.grade||'', d0=notesData.updatedAt;
       const has=Object.values(notesLogData).some(l=>l&&l.date===d0&&(l.hw||'')===hw0&&(l.gr||'')===gr0);
       if(!has){
-        notesLogData[d0]={date:d0,hw:hw0,gr:gr0};
+        notesLogData[d0]={date:d0,hw:hw0,gr:gr0,time:notesData.updatedTime||''};
         await fbSet('notesLog/'+id+'/'+d0,notesLogData[d0]);
       }
       await fbDel('notes/'+id);
@@ -1718,7 +1718,9 @@ async function persistNotes(){
   const hw=document.getElementById('n-hw').value.trim();
   const gr=document.getElementById('n-grade').value.trim();
   const t=todays();
-  notesData={homework:hw,grade:gr,updatedAt:t};
+  const _n=new Date();
+  const tm=String(_n.getHours()).padStart(2,'0')+':'+String(_n.getMinutes()).padStart(2,'0');
+  notesData={homework:hw,grade:gr,updatedAt:t,updatedTime:tm};
   setSyncing(true);
   await fbSet('notes/'+curId,notesData);
   // Her gün için tek bir tarihli kayıt (aynı gün tekrar kaydedilirse güncellenir).
@@ -1727,7 +1729,7 @@ async function persistNotes(){
     if(l&&l.date===t&&k!==t){ await fbDel('notesLog/'+curId+'/'+k); delete notesLogData[k]; }
   }
   if(hw||gr){
-    notesLogData[t]={date:t,hw,gr};
+    notesLogData[t]={date:t,hw,gr,time:tm};
     await fbSet('notesLog/'+curId+'/'+t,notesLogData[t]);
   } else if(notesLogData[t]){
     await fbDel('notesLog/'+curId+'/'+t);
@@ -1744,7 +1746,7 @@ function renderHwArchive(){
   const cnt=document.getElementById('hwarc-count');
   const items=Object.entries(notesLogData||{})
     .filter(([k,l])=>l&&l.date&&(l.hw||l.gr))
-    .map(([k,l])=>({k,date:l.date,hw:l.hw||'',gr:l.gr||''}))
+    .map(([k,l])=>({k,date:l.date,time:l.time||'',hw:l.hw||'',gr:l.gr||''}))
     .sort((a,b)=>b.date.localeCompare(a.date));
   if(cnt)cnt.textContent=items.length?'('+items.length+' kayıt)':'';
   if(!items.length){
@@ -1758,7 +1760,7 @@ function renderHwArchive(){
     const isToday=it.date===today;
     return '<div style="background:var(--bg);border:2px solid var(--border);border-radius:12px;padding:10px 12px;margin-bottom:8px">'+
       '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px">'+
-        '<div style="font-weight:900;font-size:12px;color:var(--purple)">📅 '+dl+(isToday?' <span style="background:#dcfce7;color:#166534;border-radius:6px;padding:1px 6px;font-size:10px;margin-left:4px">Bugün</span>':'')+'</div>'+
+        '<div style="font-weight:900;font-size:12px;color:var(--purple)">📅 '+dl+(it.time?' · 🕒 '+it.time:'')+(isToday?' <span style="background:#dcfce7;color:#166534;border-radius:6px;padding:1px 6px;font-size:10px;margin-left:4px">Bugün</span>':'')+'</div>'+
         '<button onclick="deleteHwLog(\''+it.k.replace(/'/g,'')+'\')" title="Kaydı sil" style="background:#fee2e2;color:#dc2626;border:none;border-radius:7px;padding:3px 8px;font-size:12px;font-weight:800;cursor:pointer">🗑️</button>'+
       '</div>'+
       (it.hw?'<div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:'+(it.gr?'6':'0')+'px;white-space:pre-wrap"><span style="font-weight:900;color:var(--text2)">📚 Ödev:</span> '+hwEsc(it.hw)+'</div>':'')+
