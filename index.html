@@ -415,7 +415,7 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
     <div class="mb14"><label class="lbl">Bu Haftanın Ödevi</label><textarea id="n-hw" rows="2" placeholder="Örn: Sayfa 12-14 tekrar, gam çalışması…" style="width:100%;padding:11px 14px;border-radius:10px;border:2px solid var(--border);font-family:'Nunito',sans-serif;font-size:14px;font-weight:600;color:var(--text);resize:vertical;outline:none"></textarea></div>
     <div class="mb14"><label class="lbl">Öğretmen Notu</label><textarea id="n-grade" rows="2" placeholder="Örn: Bu ay çok iyi ilerledi…" style="width:100%;padding:11px 14px;border-radius:10px;border:2px solid var(--border);font-family:'Nunito',sans-serif;font-size:14px;font-weight:600;color:var(--text);resize:vertical;outline:none"></textarea></div>
     <button class="btn btn-purple btn-sm" onclick="saveNotes()">💾 Kaydet</button>
-    <p style="font-size:11px;color:var(--muted);font-weight:600;margin-top:8px;line-height:1.5">Yazdığınız ödev/not o günün kaydı olarak saklanır; gün bitince bu alandan kalkar ve aşağıdaki arşive tarihiyle geçer.</p>
+    <p style="font-size:11px;color:var(--muted);font-weight:600;margin-top:8px;line-height:1.5">WhatsApp'tan gönderdiğiniz ödev/not, gönderme saatiyle arşive kaydedilir (gün içinde en son gönderilen kalır). Gün bitince bu alan boşalır.</p>
     <div style="margin-top:16px;padding-top:14px;border-top:2px dashed var(--border)">
       <div class="section-lbl" style="margin-bottom:10px">🗂️ Ödev &amp; Not Arşivi <span id="hwarc-count" style="color:var(--muted);font-weight:700;text-transform:none;letter-spacing:0"></span></div>
       <div id="hwarc-list" style="max-height:420px;overflow-y:auto;padding-right:2px"></div>
@@ -1728,9 +1728,13 @@ async function persistNotes(){
   for(const [k,l] of Object.entries(notesLogData||{})){
     if(l&&l.date===t&&k!==t){ await fbDel('notesLog/'+curId+'/'+k); delete notesLogData[k]; }
   }
-  if(hw||gr){
-    notesLogData[t]={date:t,hw,gr,time:tm};
-    await fbSet('notesLog/'+curId+'/'+t,notesLogData[t]);
+  const prev=notesLogData[t]||{};
+  const hasSent=!!(prev.sentHw||prev.sentGr);
+  if(hw||gr||hasSent){
+    const rec={date:t,hw,gr,time:tm};
+    if(hasSent){rec.sentHw=prev.sentHw||'';rec.sentGr=prev.sentGr||'';rec.sentTime=prev.sentTime||'';}
+    notesLogData[t]=rec;
+    await fbSet('notesLog/'+curId+'/'+t,rec);
   } else if(notesLogData[t]){
     await fbDel('notesLog/'+curId+'/'+t);
     delete notesLogData[t];
@@ -1745,12 +1749,12 @@ function renderHwArchive(){
   const el=document.getElementById('hwarc-list');if(!el)return;
   const cnt=document.getElementById('hwarc-count');
   const items=Object.entries(notesLogData||{})
-    .filter(([k,l])=>l&&l.date&&(l.hw||l.gr))
-    .map(([k,l])=>({k,date:l.date,time:l.time||'',hw:l.hw||'',gr:l.gr||''}))
+    .filter(([k,l])=>l&&l.date&&(l.sentHw||l.sentGr))
+    .map(([k,l])=>({k,date:l.date,time:l.sentTime||'',hw:l.sentHw||'',gr:l.sentGr||''}))
     .sort((a,b)=>b.date.localeCompare(a.date));
   if(cnt)cnt.textContent=items.length?'('+items.length+' kayıt)':'';
   if(!items.length){
-    el.innerHTML='<div style="text-align:center;padding:16px;color:var(--muted);font-size:13px;font-weight:700;background:var(--bg);border-radius:10px">Henüz arşivlenmiş ödev/not yok.</div>';
+    el.innerHTML='<div style="text-align:center;padding:16px;color:var(--muted);font-size:13px;font-weight:700;background:var(--bg);border-radius:10px">Henüz WhatsApp ile gönderilmiş ödev/not yok.</div>';
     return;
   }
   const today=todays();
@@ -1760,7 +1764,7 @@ function renderHwArchive(){
     const isToday=it.date===today;
     return '<div style="background:var(--bg);border:2px solid var(--border);border-radius:12px;padding:10px 12px;margin-bottom:8px">'+
       '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px">'+
-        '<div style="font-weight:900;font-size:12px;color:var(--purple)">📅 '+dl+(it.time?' · 🕒 '+it.time:'')+(isToday?' <span style="background:#dcfce7;color:#166534;border-radius:6px;padding:1px 6px;font-size:10px;margin-left:4px">Bugün</span>':'')+'</div>'+
+        '<div style="font-weight:900;font-size:12px;color:var(--purple)">📅 '+dl+(it.time?' · 🕒 '+it.time+' (gönderildi)':'')+(isToday?' <span style="background:#dcfce7;color:#166534;border-radius:6px;padding:1px 6px;font-size:10px;margin-left:4px">Bugün</span>':'')+'</div>'+
         '<button onclick="deleteHwLog(\''+it.k.replace(/'/g,'')+'\')" title="Kaydı sil" style="background:#fee2e2;color:#dc2626;border:none;border-radius:7px;padding:3px 8px;font-size:12px;font-weight:800;cursor:pointer">🗑️</button>'+
       '</div>'+
       (it.hw?'<div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:'+(it.gr?'6':'0')+'px;white-space:pre-wrap"><span style="font-weight:900;color:var(--text2)">📚 Ödev:</span> '+hwEsc(it.hw)+'</div>':'')+
@@ -1770,20 +1774,31 @@ function renderHwArchive(){
 }
 function deleteHwLog(k){
   const l=notesLogData[k];if(!l)return;
-  showConf('Bu tarihli ödev/not kaydı silinsin mi?','🗑️','Evet, Sil',async()=>{
+  showConf('Bu kayıt arşivden kaldırılsın mı?','🗑️','Evet, Kaldır',async()=>{
     setSyncing(true);
-    await fbDel('notesLog/'+curId+'/'+k);
-    const wasToday=l.date===todays();
-    delete notesLogData[k];
-    if(wasToday){
-      notesData={};
-      await fbDel('notes/'+curId);
-      document.getElementById('n-hw').value='';
-      document.getElementById('n-grade').value='';
-    }
+    const rec={...l};
+    delete rec.sentHw;delete rec.sentGr;delete rec.sentTime;
+    if(rec.hw||rec.gr){notesLogData[k]=rec;await fbSet('notesLog/'+curId+'/'+k,rec);}
+    else{delete notesLogData[k];await fbDel('notesLog/'+curId+'/'+k);}
     setSyncing(false);
     renderHwArchive();
   });
+}
+// WhatsApp'tan gönderilen ödev/notu o günün arşiv kaydı olarak sakla (gün içinde en son gönderilen kalır)
+async function markHwSent(){
+  const hw=document.getElementById('n-hw').value.trim();
+  const gr=document.getElementById('n-grade').value.trim();
+  if(!hw&&!gr)return;
+  await persistNotes();
+  const t=todays();
+  const n=new Date();
+  const tm=String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');
+  const rec={...(notesLogData[t]||{date:t,hw,gr}),sentHw:hw,sentGr:gr,sentTime:tm};
+  notesLogData[t]=rec;
+  setSyncing(true);
+  await fbSet('notesLog/'+curId+'/'+t,rec);
+  setSyncing(false);
+  renderHwArchive();
 }
 
 // ── Ödev/Not WhatsApp gönderimi ─────────────────────────────────────
@@ -1842,6 +1857,7 @@ async function sendHwWA(){
   const msg=await hwMsgReady();if(!msg)return;
   const ph=waPhone(document.getElementById('wa-hw-to').value);
   window.open('https://wa.me/'+ph+'?text='+encodeURIComponent(msg),'_blank');
+  try{await markHwSent();}catch(e){console.warn('markHwSent',e);}
 }
 async function copyHwMsg(){
   const msg=await hwMsgReady();if(!msg)return;
