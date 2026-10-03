@@ -415,7 +415,7 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
     <div class="mb14"><label class="lbl">Bu Haftanın Ödevi</label><textarea id="n-hw" rows="2" placeholder="Örn: Sayfa 12-14 tekrar, gam çalışması…" style="width:100%;padding:11px 14px;border-radius:10px;border:2px solid var(--border);font-family:'Nunito',sans-serif;font-size:14px;font-weight:600;color:var(--text);resize:vertical;outline:none"></textarea></div>
     <div class="mb14"><label class="lbl">Öğretmen Notu</label><textarea id="n-grade" rows="2" placeholder="Örn: Bu ay çok iyi ilerledi…" style="width:100%;padding:11px 14px;border-radius:10px;border:2px solid var(--border);font-family:'Nunito',sans-serif;font-size:14px;font-weight:600;color:var(--text);resize:vertical;outline:none"></textarea></div>
     <button class="btn btn-purple btn-sm" onclick="saveNotes()">💾 Kaydet</button>
-    <p style="font-size:11px;color:var(--muted);font-weight:600;margin-top:8px;line-height:1.5">Yazdığınız ödev/not o günün kaydı olarak saklanır; gün bitince bu alandan kalkar ve aşağıdaki arşive tarihiyle geçer.</p>
+    <p style="font-size:11px;color:var(--muted);font-weight:600;margin-top:8px;line-height:1.5">Kaydettiğiniz ödev/not, kaydetme saatiyle arşive girer; aynı gün tekrar kaydederseniz sadece en son kaydedilen görünür. Gün bitince bu alan boşalır.</p>
     <div style="margin-top:16px;padding-top:14px;border-top:2px dashed var(--border)">
       <div class="section-lbl" style="margin-bottom:10px">🗂️ Ödev &amp; Not Arşivi <span id="hwarc-count" style="color:var(--muted);font-weight:700;text-transform:none;letter-spacing:0"></span></div>
       <div id="hwarc-list" style="max-height:420px;overflow-y:auto;padding-right:2px"></div>
@@ -614,10 +614,16 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
       <div style="background:#f5f3ff;border:2px solid #ddd6fe;border-radius:12px;padding:14px;margin-bottom:10px;text-align:center">
         <input id="veli-link-input" readonly onclick="this.select()" style="border:none;background:transparent;text-align:center;font-size:18px;font-weight:900;letter-spacing:.5px;color:#5b21b6;padding:4px;width:100%">
       </div>
-      <div style="display:flex;gap:8px">
-        <button class="btn-ghost" style="flex:1;justify-content:center" onclick="copyVeliLink()">📋 Kopyala</button>
+      <div style="display:flex;gap:8px;margin-bottom:16px">
+        <button class="btn-ghost" style="flex:1;justify-content:center" onclick="copyVeliLink()">📋 Bağlantıyı Kopyala</button>
+      </div>
+      <label class="lbl">Veliye Gidecek Mesaj <span style="text-transform:none;font-weight:700;color:var(--muted)">(ödemeler + ödev/not arşivi tarih ve saatiyle; göndermeden önce düzenleyebilirsiniz)</span></label>
+      <textarea id="veli-msg" rows="16" style="width:100%;padding:11px 14px;border-radius:10px;border:2px solid var(--border);font-family:'Nunito',sans-serif;font-size:13px;font-weight:600;color:var(--text);resize:vertical;outline:none;margin-bottom:10px"></textarea>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn-ghost" style="flex:1;justify-content:center" onclick="copyVeliMsg()">📋 Mesajı Kopyala</button>
         <button class="btn btn-wa" style="flex:1;justify-content:center" onclick="sendVeliWA()">📲 WhatsApp'tan Gönder</button>
       </div>
+      <p style="font-size:11px;color:var(--muted);font-weight:600;margin-top:8px;line-height:1.5">Arşivde değişiklik yaptıysanız "Bağlantı Oluştur"a yeniden basın; mesaj güncel arşivden yeniden hazırlanır.</p>
     </div>
   </div>
   <div class="card">
@@ -1728,9 +1734,13 @@ async function persistNotes(){
   for(const [k,l] of Object.entries(notesLogData||{})){
     if(l&&l.date===t&&k!==t){ await fbDel('notesLog/'+curId+'/'+k); delete notesLogData[k]; }
   }
-  if(hw||gr){
-    notesLogData[t]={date:t,hw,gr,time:tm};
-    await fbSet('notesLog/'+curId+'/'+t,notesLogData[t]);
+  const prev=notesLogData[t]||{};
+  const hasSent=!!(prev.sentHw||prev.sentGr);
+  if(hw||gr||hasSent){
+    const rec={date:t,hw,gr,time:tm};
+    if(hasSent){rec.sentHw=prev.sentHw||'';rec.sentGr=prev.sentGr||'';rec.sentTime=prev.sentTime||'';}
+    notesLogData[t]=rec;
+    await fbSet('notesLog/'+curId+'/'+t,rec);
   } else if(notesLogData[t]){
     await fbDel('notesLog/'+curId+'/'+t);
     delete notesLogData[t];
@@ -1744,13 +1754,19 @@ function hwEsc(x){return String(x==null?'':x).replace(/&/g,'&amp;').replace(/</g
 function renderHwArchive(){
   const el=document.getElementById('hwarc-list');if(!el)return;
   const cnt=document.getElementById('hwarc-count');
-  const items=Object.entries(notesLogData||{})
+  const items0=Object.entries(notesLogData||{})
     .filter(([k,l])=>l&&l.date&&(l.hw||l.gr))
-    .map(([k,l])=>({k,date:l.date,time:l.time||'',hw:l.hw||'',gr:l.gr||''}))
-    .sort((a,b)=>b.date.localeCompare(a.date));
+    .map(([k,l])=>({k,date:l.date,time:l.time||'',hw:l.hw||'',gr:l.gr||''}));
+  // Her gün için sadece en son kaydedilen görünsün
+  const byDate={};
+  items0.forEach(it=>{
+    const c=byDate[it.date];
+    if(!c||(it.time||'')>(c.time||'')||((it.time||'')===(c.time||'')&&it.k===it.date))byDate[it.date]=it;
+  });
+  const items=Object.values(byDate).sort((a,b)=>b.date.localeCompare(a.date));
   if(cnt)cnt.textContent=items.length?'('+items.length+' kayıt)':'';
   if(!items.length){
-    el.innerHTML='<div style="text-align:center;padding:16px;color:var(--muted);font-size:13px;font-weight:700;background:var(--bg);border-radius:10px">Henüz arşivlenmiş ödev/not yok.</div>';
+    el.innerHTML='<div style="text-align:center;padding:16px;color:var(--muted);font-size:13px;font-weight:700;background:var(--bg);border-radius:10px">Henüz kaydedilmiş ödev/not yok.</div>';
     return;
   }
   const today=todays();
@@ -1758,7 +1774,9 @@ function renderHwArchive(){
     const d=new Date(it.date+'T12:00:00');
     const dl=d.getDate()+' '+MONTHS[d.getMonth()]+' '+d.getFullYear()+' · '+HW_DAYS[d.getDay()];
     const isToday=it.date===today;
-    return '<div style="background:var(--bg);border:2px solid var(--border);border-radius:12px;padding:10px 12px;margin-bottom:8px">'+
+    const latest=it===items[0];
+    return '<div style="background:'+(latest?'#faf5ff':'var(--bg)')+';border:2px solid '+(latest?'#c4b5fd':'var(--border)')+';border-radius:12px;padding:10px 12px;margin-bottom:8px">'+
+      (latest?'<div style="font-size:10px;font-weight:900;color:#7c3aed;margin-bottom:4px">⭐ EN SON KAYDEDİLEN</div>':'')+
       '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px">'+
         '<div style="font-weight:900;font-size:12px;color:var(--purple)">📅 '+dl+(it.time?' · 🕒 '+it.time:'')+(isToday?' <span style="background:#dcfce7;color:#166534;border-radius:6px;padding:1px 6px;font-size:10px;margin-left:4px">Bugün</span>':'')+'</div>'+
         '<button onclick="deleteHwLog(\''+it.k.replace(/'/g,'')+'\')" title="Kaydı sil" style="background:#fee2e2;color:#dc2626;border:none;border-radius:7px;padding:3px 8px;font-size:12px;font-weight:800;cursor:pointer">🗑️</button>'+
@@ -1770,20 +1788,34 @@ function renderHwArchive(){
 }
 function deleteHwLog(k){
   const l=notesLogData[k];if(!l)return;
-  showConf('Bu tarihli ödev/not kaydı silinsin mi?','🗑️','Evet, Sil',async()=>{
+  showConf('Bu tarihli kayıt arşivden silinsin mi?','🗑️','Evet, Sil',async()=>{
     setSyncing(true);
-    await fbDel('notesLog/'+curId+'/'+k);
-    const wasToday=l.date===todays();
-    delete notesLogData[k];
-    if(wasToday){
-      notesData={};
-      await fbDel('notes/'+curId);
-      document.getElementById('n-hw').value='';
-      document.getElementById('n-grade').value='';
+    for(const [kk,ll] of Object.entries(notesLogData)){
+      if(ll&&ll.date===l.date){await fbDel('notesLog/'+curId+'/'+kk);delete notesLogData[kk];}
+    }
+    if(l.date===todays()){
+      notesData={};await fbDel('notes/'+curId);
+      document.getElementById('n-hw').value='';document.getElementById('n-grade').value='';
     }
     setSyncing(false);
     renderHwArchive();
   });
+}
+// WhatsApp'tan gönderilen ödev/notu o günün arşiv kaydı olarak sakla (gün içinde en son gönderilen kalır)
+async function markHwSent(){
+  const hw=document.getElementById('n-hw').value.trim();
+  const gr=document.getElementById('n-grade').value.trim();
+  if(!hw&&!gr)return;
+  await persistNotes();
+  const t=todays();
+  const n=new Date();
+  const tm=String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');
+  const rec={...(notesLogData[t]||{date:t,hw,gr}),sentHw:hw,sentGr:gr,sentTime:tm};
+  notesLogData[t]=rec;
+  setSyncing(true);
+  await fbSet('notesLog/'+curId+'/'+t,rec);
+  setSyncing(false);
+  renderHwArchive();
 }
 
 // ── Ödev/Not WhatsApp gönderimi ─────────────────────────────────────
@@ -1842,6 +1874,7 @@ async function sendHwWA(){
   const msg=await hwMsgReady();if(!msg)return;
   const ph=waPhone(document.getElementById('wa-hw-to').value);
   window.open('https://wa.me/'+ph+'?text='+encodeURIComponent(msg),'_blank');
+  try{await persistNotes();}catch(e){console.warn('persistNotes',e);}
 }
 async function copyHwMsg(){
   const msg=await hwMsgReady();if(!msg)return;
@@ -3043,6 +3076,46 @@ async function genVeliLink(){
   window._veliName=r.name;
   document.getElementById('veli-link-box').style.display='block';
   document.getElementById('veli-link-input').value=r.url;
+  document.getElementById('veli-msg').value=buildVeliFullMsg(r.data,r.url);
+}
+
+function buildVeliFullMsg(d,url){
+  let m='Sayın Velimiz,\n\n*'+d.n+'* için son 3 aylık bilgilendirme:\n';
+  // Ödemeler
+  m+='\n💰 *Ödemeler (Son 3 Ay)*\n';
+  if(d.pay3&&d.pay3.length){
+    d.pay3.forEach(p=>{
+      m+='• '+p.dl+' — '+fmtTL(p.amt)+' ₺'+(p.st==='ontime'?' (zamanında)':p.st==='late'?' (gecikmeli)':'')+(p.desc?' — '+p.desc:'')+'\n';
+    });
+  } else m+='Bu dönemde kayıtlı ödeme bulunmuyor.\n';
+  if(d.bal>0)m+='Güncel bakiye: *'+fmtTL(d.bal)+' ₺*\n';
+  // Yoklama
+  if(d.att&&d.att.length){
+    m+='\n📅 *Yoklama*\n';
+    d.att.forEach(a=>{m+='• '+a.l+': '+a.c+' geldi, '+a.a+' gelmedi\n';});
+  }
+  // Ödev & not arşivi (tarih + saat)
+  if(d.hwLog&&d.hwLog.length){
+    m+='\n📚 *Ödev & Öğretmen Notları*\n';
+    d.hwLog.forEach(l=>{
+      m+='\n📅 '+l.dl+(l.tm?' · 🕒 '+l.tm:'')+'\n';
+      if(l.hw)m+='Ödev: '+l.hw+'\n';
+      if(l.gr)m+='Not: '+l.gr+'\n';
+    });
+  }
+  // Gelişim raporu
+  if(d.rep&&d.rep.text){
+    m+='\n━━━━━━━━━━\n📊 *3 Aylık Gelişim Raporu* ('+repDL(d.rep.from)+' – '+repDL(d.rep.to)+')\n\n'+repWAText(d.rep.text)+'\n';
+  }
+  m+='\n🔗 Ayrıntılı takip paneli:\n'+url+'\n\nSaygılarımla,\nRockJazz Müzik Aletleri ve Silifke Satranç Atölyesi';
+  return m;
+}
+function copyVeliMsg(){
+  const v=document.getElementById('veli-msg').value;if(!v)return;
+  const done=()=>showConf('Mesaj kopyalandı!','✅','Tamam',()=>{});
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(v).then(done).catch(()=>{prompt('Mesajı kopyalayın:',v);});
+  } else prompt('Mesajı kopyalayın:',v);
 }
 
 async function makeVeliUrl(id,loadMsg){
@@ -3125,12 +3198,16 @@ async function makeVeliUrl(id,loadMsg){
   const nextDiscount=policyOn&&schedule.length>0&&schedule[schedule.length-1].earlyPay;
 
   // Son 3 aydaki tüm ödev/öğretmen notu kayıtları (tarih sırasına göre)
-  const hwLog=logs
-    .filter(l=>l&&l.date&&last3Keys.some(mk=>l.date.startsWith(mk)))
+  const hwDay={};
+  logs.filter(l=>l&&l.date&&last3Keys.some(mk=>l.date.startsWith(mk))&&(l.hw||l.gr)).forEach(l=>{
+    const c=hwDay[l.date];
+    if(!c||(l.time||'')>=(c.time||''))hwDay[l.date]=l;
+  });
+  const hwLog=Object.values(hwDay)
     .sort((a,b)=>a.date.localeCompare(b.date))
     .map(l=>{
       const d=new Date(l.date+'T12:00:00');
-      return{dl:d.getDate()+' '+MONTHS[d.getMonth()]+' '+d.getFullYear(),hw:l.hw||'',gr:l.gr||''};
+      return{dl:d.getDate()+' '+MONTHS[d.getMonth()]+' '+d.getFullYear(),tm:l.time||'',hw:l.hw||'',gr:l.gr||''};
     });
 
   const data={
@@ -3145,7 +3222,7 @@ async function makeVeliUrl(id,loadMsg){
   await fbSet('veliShare/'+shortId, data);
   const url=location.origin+location.pathname+'#vid='+shortId;
   hideLoad();
-  return {url:url,name:data.n};
+  return {url:url,name:data.n,data:data};
 }
 
 // Kısa, karışıklığa yer vermeyen 6 karakterli bağlantı kodu
@@ -3171,8 +3248,8 @@ function copyVeliLink(){
 
 function sendVeliWA(){
   const url=window._veliUrl;if(!url)return;
-  const name=window._veliName||'';
-  const msg='Sayın Velimiz,\n\n'+name+' için öğrenci takip bağlantınız aşağıdadır. Bu bağlantıdan ders programını, bakiyesini, yoklama durumunu, öğretmen notunu ve 3 aylık gelişim raporunu görebilirsiniz:\n\n'+url+'\n\nSaygılarımla,\nRockJazz Müzik Aletleri ve Silifke Satranç Atölyesi';
+  let msg=(document.getElementById('veli-msg')||{}).value||'';
+  if(!msg.trim())msg='Sayın Velimiz,\n\n'+(window._veliName||'')+' için öğrenci takip bağlantınız aşağıdadır:\n\n'+url+'\n\nSaygılarımla,\nRockJazz Müzik Aletleri ve Silifke Satranç Atölyesi';
   window.open('https://wa.me/?text='+encodeURIComponent(msg),'_blank');
 }
 
@@ -3276,7 +3353,7 @@ function renderVeliView(data){
       <div class="section-lbl">📚 Ödev &amp; Öğretmen Notu (Son 3 Ay)</div>
       ${data.hwLog.map(l=>`<div class="pay-row">
         <div style="min-width:0;flex:1">
-          <div style="font-size:13px;font-weight:900;color:var(--purple);margin-bottom:4px">📅 ${l.dl}</div>
+          <div style="font-size:13px;font-weight:900;color:var(--purple);margin-bottom:4px">📅 ${l.dl}${l.tm?' · 🕒 '+l.tm:''}</div>
           ${l.hw?`<div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:3px"><span class="lbl" style="display:inline">Ödev: </span>${l.hw}</div>`:''}
           ${l.gr?`<div style="font-size:14px;font-weight:700;color:var(--text)"><span class="lbl" style="display:inline">Not: </span>${l.gr}</div>`:''}
         </div>
