@@ -219,6 +219,7 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
   </div>
   <button class="btn" style="width:100%;justify-content:center;margin-bottom:14px;font-size:14px;background:linear-gradient(135deg,#059669,#047857);color:#fff;box-shadow:0 4px 14px rgba(5,150,105,.3)" onclick="go('s-week')">🗓️ Haftalık Program</button>
   <button class="btn btn-blue" style="width:100%;justify-content:center;margin-bottom:14px;font-size:14px" onclick="openAnalysis()">📈 Gelir Analizi &amp; Ödeme Yönetimi</button>
+  <button class="btn" style="width:100%;justify-content:center;margin-bottom:14px;font-size:16px;padding:15px;background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#fff;box-shadow:0 4px 14px rgba(37,99,235,.35)" onclick="go('s-daily')">✅ Günlük Yoklama</button>
   <button class="btn" style="width:100%;justify-content:center;margin-bottom:14px;font-size:14px;background:linear-gradient(135deg,#d97706,#b45309);color:#fff;box-shadow:0 4px 14px rgba(217,119,6,.3)" onclick="go('s-yform')">📋 Yoklama Formu</button>
   <button class="btn" style="width:100%;justify-content:center;margin-bottom:14px;font-size:14px;background:linear-gradient(135deg,#0ea5e9,#0284c7);color:#fff;box-shadow:0 4px 14px rgba(14,165,233,.3)" onclick="go('s-veli-share')">👪 Veli Paylaşımı</button>
   <button class="btn" style="width:100%;justify-content:center;margin-bottom:14px;font-size:14px;background:linear-gradient(135deg,#A9791E,#7c5c14);color:#fff;box-shadow:0 4px 14px rgba(169,121,30,.3)" onclick="go('s-fiyat')">💵 Fiyat Güncelleyici</button>
@@ -657,6 +658,27 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
   </div>
 </div>
 
+<!-- GÜNLÜK YOKLAMA -->
+<div id="s-daily" class="screen">
+  <button class="btn-ghost mb14" onclick="go('s-list')">← Geri</button>
+  <div class="card mb14">
+    <div class="section-lbl">✅ Günlük Yoklama</div>
+    <div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:12px">
+      <button class="btn-ghost" style="padding:9px 14px;font-size:15px" onclick="ydShift(-1)">◀</button>
+      <input id="yd-date" type="date" onchange="renderDaily()" style="padding:9px 10px;font-size:14px;border-radius:9px;border:2px solid var(--border);font-weight:800;text-align:center">
+      <button class="btn-ghost" style="padding:9px 14px;font-size:15px" onclick="ydShift(1)">▶</button>
+    </div>
+    <div id="yd-title" style="text-align:center;font-weight:900;font-size:15px;color:var(--text);margin-bottom:10px"></div>
+    <div id="yd-stats" style="display:flex;gap:8px;margin-bottom:12px"></div>
+    <button class="btn btn-green" style="width:100%;justify-content:center;padding:11px;font-size:14px" onclick="ydAllCame()">✅ Bekleyenlerin Hepsi Geldi</button>
+  </div>
+  <div id="yd-list"></div>
+  <div class="card mb14" id="yd-extra-card">
+    <div style="font-weight:900;font-size:13px;color:var(--text2);margin-bottom:8px">➕ Programda olmayan öğrenci ekle (telafi / ek ders)</div>
+    <div style="display:flex;gap:8px"><select id="yd-extra-sel" style="flex:1"></select><button class="btn btn-purple btn-sm" onclick="ydAddExtra()">Ekle</button></div>
+  </div>
+</div>
+
 <!-- HAFTALIK PROGRAM -->
 <div id="s-week" class="screen">
   <button class="btn-ghost mb14" onclick="go('s-list')">← Geri</button>
@@ -990,6 +1012,7 @@ function go(id){
   if(id==='s-fiyat') loadFiyatApp();
   if(id==='s-yform') openYForm();
   if(id==='s-week') renderWeek();
+  if(id==='s-daily') openDaily();
 }
 
 // ══ LIST ══════════════════════════════════════════════════════════════
@@ -3011,6 +3034,128 @@ async function renderLevelBanner(){
 async function openLvlFor(id){
   await openDet(id);
   setTimeout(()=>{const c=document.getElementById('lvl-card');if(c)c.scrollIntoView({behavior:'smooth',block:'start'});},80);
+}
+
+
+// ══ GÜNLÜK YOKLAMA (tek dokunuş, öğrenci kartındaki takvimle senkron) ══
+let ydStatus={}, ydExtra=[], ydDate='';
+const YD_DAYS=['Pazartesi','Salı','Çarşamba','Perşembe','Cuma','Cumartesi','Pazar'];
+function ydDateObj(ds){return new Date(ds+'T12:00:00');}
+function ydShift(n){
+  const el=document.getElementById('yd-date');
+  const d=ydDateObj(el.value||todays());d.setDate(d.getDate()+n);
+  el.value=fmt(d.getFullYear(),d.getMonth(),d.getDate());
+  renderDaily();
+}
+function openDaily(){
+  const el=document.getElementById('yd-date');
+  if(!el.value)el.value=todays();
+  renderDaily();
+}
+function ydLessons(ds){
+  const idx=(ydDateObj(ds).getDay()+6)%7;
+  const map={};
+  students.forEach(s=>{
+    (s.schedule||[]).forEach(sl=>{
+      if(sl.day===idx&&sl.time){(map[s.id]=map[s.id]||{s,times:[]}).times.push(sl.time);}
+    });
+  });
+  ydExtra.forEach(id=>{
+    const s=students.find(x=>x.id===id);
+    if(s&&!map[id])map[id]={s,times:[]};
+  });
+  return Object.values(map).map(o=>({s:o.s,times:o.times.sort(),first:o.times.sort()[0]||'99:99'}))
+    .sort((a,b)=>a.first.localeCompare(b.first)||(a.s.name||'').localeCompare(b.s.name||'','tr'));
+}
+async function renderDaily(){
+  const ds=document.getElementById('yd-date').value||todays();
+  if(ydDate!==ds){ydDate=ds;ydExtra=[];}
+  const items=ydLessons(ds);
+  const d=ydDateObj(ds);
+  document.getElementById('yd-title').textContent=d.getDate()+' '+MONTHS[d.getMonth()]+' '+d.getFullYear()+' · '+YD_DAYS[(d.getDay()+6)%7]+(ds===todays()?'  (Bugün)':'');
+  // durumları oku
+  const need=items.filter(it=>!(it.s.id in ydStatus)||ydStatus[it.s.id].ds!==ds);
+  if(need.length){
+    showLoad('Yoklama yükleniyor…');
+    await Promise.all(need.map(async it=>{
+      const v=await fbGet('attendance/'+it.s.id+'/'+ds);
+      ydStatus[it.s.id]={ds,v:v||''};
+    }));
+    hideLoad();
+  }
+  drawDaily(items,ds);
+}
+function ydSt(id,ds){const o=ydStatus[id];return o&&o.ds===ds?o.v:'';}
+function drawDaily(items,ds){
+  let came=0,abs=0,wait=0;
+  items.forEach(it=>{const v=ydSt(it.s.id,ds);if(v==='came')came++;else if(v==='absent')abs++;else wait++;});
+  document.getElementById('yd-stats').innerHTML=
+    '<div class="stat" style="flex:1;background:var(--blue-l);border:2px solid #bfdbfe"><div class="n" style="color:var(--blue)">'+came+'</div><div class="l" style="color:var(--blue)">Geldi</div></div>'+
+    '<div class="stat" style="flex:1;background:var(--red-l);border:2px solid #fecaca"><div class="n" style="color:var(--red)">'+abs+'</div><div class="l" style="color:var(--red)">Gelmedi</div></div>'+
+    '<div class="stat" style="flex:1;background:#f3f4f6;border:2px solid #e5e7eb"><div class="n" style="color:#4b5563">'+wait+'</div><div class="l" style="color:#4b5563">Bekliyor</div></div>';
+  const list=document.getElementById('yd-list');
+  if(!items.length){list.innerHTML='<div class="card mb14" style="text-align:center;color:var(--muted);font-weight:700;font-size:13px">Bu gün için programlı ders yok. Aşağıdan öğrenci ekleyebilirsiniz.</div>';}
+  else list.innerHTML=items.map(it=>{
+    const s=it.s,v=ydSt(s.id,ds),c=eduColor(s.education);
+    const bd=v==='came'?'#93c5fd':v==='absent'?'#fca5a5':c.border;
+    const bg=v==='came'?'#eff6ff':v==='absent'?'#fef2f2':'#fff';
+    const bs='flex:1;padding:14px 8px;border-radius:12px;font-family:\'Nunito\',sans-serif;font-weight:900;font-size:16px;cursor:pointer;border:2px solid ';
+    return '<div style="background:'+bg+';border:2px solid '+bd+';border-radius:16px;padding:12px;margin-bottom:10px">'+
+      '<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px" onclick="openDet(\''+s.id+'\')">'+
+        '<div class="avatar" style="width:40px;height:40px;background:'+c.border+';font-size:18px;flex-shrink:0">'+eduIcon(s.education)+'</div>'+
+        '<div style="flex:1;min-width:0"><div style="font-weight:900;font-size:16px">'+hwEsc(s.name+' '+s.surname)+'</div>'+
+        '<div style="font-size:12px;color:var(--muted);font-weight:700">'+(it.times.length?'🕒 '+it.times.join(' · ')+' · ':'➕ Ek ders · ')+hwEsc(s.education||'')+'</div></div>'+
+      '</div>'+
+      '<div style="display:flex;gap:8px">'+
+        '<button onclick="ydMark(\''+s.id+'\',\'came\')" style="'+bs+(v==='came'?'#1d4ed8;background:#1d4ed8;color:#fff':'#bfdbfe;background:#fff;color:#1d4ed8')+'">✅ Geldi</button>'+
+        '<button onclick="ydMark(\''+s.id+'\',\'absent\')" style="'+bs+(v==='absent'?'#dc2626;background:#dc2626;color:#fff':'#fecaca;background:#fff;color:#dc2626')+'">❌ Gelmedi</button>'+
+      '</div>'+
+      (v==='absent'?'<button onclick="ydNotify(\''+s.id+'\')" style="width:100%;margin-top:8px;padding:10px;border-radius:10px;border:none;background:#25d366;color:#fff;font-family:\'Nunito\',sans-serif;font-weight:900;font-size:14px;cursor:pointer">📲 Veliye Bildir</button>':'')+
+    '</div>';
+  }).join('');
+  // ek öğrenci seçici
+  const ids=new Set(items.map(it=>it.s.id));
+  document.getElementById('yd-extra-sel').innerHTML='<option value="">— Öğrenci seçin —</option>'+
+    students.filter(s=>!ids.has(s.id)).slice().sort((a,b)=>(a.name||'').localeCompare(b.name||'','tr')).map(s=>'<option value="'+s.id+'">'+hwEsc(s.name+' '+s.surname)+'</option>').join('');
+}
+async function ydMark(id,mark){
+  const ds=ydDate||todays();
+  const cur=ydSt(id,ds);
+  const nv=cur===mark?'':mark; // aynı butona tekrar basınca geri al
+  ydStatus[id]={ds,v:nv};
+  drawDaily(ydLessons(ds),ds);
+  setSyncing(true);
+  try{
+    if(nv)await fbSet('attendance/'+id+'/'+ds,nv); else await fbDel('attendance/'+id+'/'+ds);
+    // Açık öğrenci kartındaki bellek verisini de güncelle (eski veriyle ezilmesin)
+    if(curId===id&&attData){ if(nv)attData[ds]=nv; else delete attData[ds]; }
+  }catch(e){
+    showConf('Kaydedilemedi: '+e.message,'⚠️','Tamam',()=>{});
+  }
+  setSyncing(false);
+}
+function ydAllCame(){
+  const ds=ydDate||todays();
+  const items=ydLessons(ds).filter(it=>!ydSt(it.s.id,ds));
+  if(!items.length){showConf('Bekleyen öğrenci yok.','ℹ️','Tamam',()=>{});return;}
+  showConf(items.length+' öğrenci "Geldi" olarak işaretlensin mi?','✅','Evet, İşaretle',async()=>{
+    for(const it of items)await ydMark(it.s.id,'came');
+  });
+}
+function ydAddExtra(){
+  const id=document.getElementById('yd-extra-sel').value;if(!id)return;
+  if(!ydExtra.includes(id))ydExtra.push(id);
+  renderDaily();
+}
+function ydNotify(id){
+  const s=students.find(x=>x.id===id);if(!s)return;
+  const ds=ydDate||todays();
+  const d=ydDateObj(ds);
+  const it=ydLessons(ds).find(x=>x.s.id===id);
+  const tm=it&&it.times.length?' saat '+it.times[0]:'';
+  const to=s.momPhone||s.dadPhone||s.phone||'';
+  const msg='Sayın Velimiz,\n\n*'+s.name+' '+s.surname+'* bugün ('+d.getDate()+' '+MONTHS[d.getMonth()]+' '+d.getFullYear()+')'+tm+' dersine katılmadı. Telafi dersi için bizimle iletişime geçebilirsiniz.\n\nSaygılarımla,\nRockJazz Müzik Aletleri ve Silifke Satranç Atölyesi';
+  window.open('https://wa.me/'+waPhone(to)+'?text='+encodeURIComponent(msg),'_blank');
 }
 
 // ══ HAFTALIK PROGRAM ══════════════════════════════════════════════════
