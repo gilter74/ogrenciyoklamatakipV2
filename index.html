@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Öğrenci Takip</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><defs><linearGradient id='grad' x1='0%' y1='0%' x2='100%' y2='100%'><stop offset='0%' stop-color='%23ec4899'/><stop offset='50%' stop-color='%238b5cf6'/><stop offset='100%' stop-color='%233b82f6'/></linearGradient><filter id='glow'><feDropShadow dx='0' dy='2' stdDeviation='3' flood-color='%23000' flood-opacity='0.3'/></filter></defs><rect width='100' height='100' rx='28' fill='url(%23grad)' filter='url(%23glow)'/><text x='50' y='68' font-size='52' text-anchor='middle'>🎓</text></svg>">
-<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -13,99 +13,99 @@
 *{box-sizing:border-box;margin:0;padding:0}
 html{overflow-x:hidden}
 :root{
-  --bg:#f0f4ff;--card:#fff;--card2:#f5f7ff;--border:#d0d8ff;
+  --bg:#eef0f5;--card:#fff;--card2:#f5f7ff;--border:#dfe3ec;
   --shadow:0 2px 16px rgba(99,102,241,.10);
-  --purple:#7c3aed;--purple-l:#ede9fe;
+  --purple:#2f3f73;--purple-l:#e9ecf5;
   --green:#059669;--green-l:#d1fae5;
   --blue:#1d4ed8;--blue-l:#dbeafe;
   --red:#dc2626;--red-l:#fee2e2;
   --orange:#d97706;--orange-l:#fef3c7;
-  --text:#1e1b4b;--text2:#4c4f8a;--muted:#7c82b8;--dim:#a5aad4;
+  --text:#1b2340;--text2:#4a5470;--muted:#7a8399;--dim:#a3abbd;
 }
-body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:15px;overflow-x:hidden}
+body{font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:15px;overflow-x:hidden}
 .screen{display:none;max-width:660px;margin:0 auto;padding:20px 14px;box-sizing:border-box;width:100%}
 .screen.active{display:block}
-input,select{width:100%;padding:11px 14px;border-radius:10px;border:2px solid var(--border);background:#fff;color:var(--text);font-family:'Nunito',sans-serif;font-size:15px;font-weight:600;outline:none;transition:border .2s}
+input,select{width:100%;padding:11px 14px;border-radius:10px;border:1px solid var(--border);background:#fff;color:var(--text);font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;font-size:15px;font-weight:600;outline:none;transition:border .2s}
 input:focus,select:focus{border-color:var(--purple);box-shadow:0 0 0 3px rgba(124,58,237,.1)}
 input.err,select.err{border-color:var(--red)}
 select{cursor:pointer;appearance:none}
 input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
-.btn{border:none;border-radius:12px;padding:11px 20px;font-family:'Nunito',sans-serif;font-weight:800;font-size:15px;cursor:pointer;transition:all .18s;display:inline-flex;align-items:center;gap:6px}
+.btn{border:none;border-radius:12px;padding:11px 20px;font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;font-weight:600;font-size:15px;cursor:pointer;transition:all .18s;display:inline-flex;align-items:center;gap:6px}
 .btn:hover{transform:translateY(-1px)}
-.btn-purple{background:linear-gradient(135deg,#7c3aed,#6d28d9);color:#fff;box-shadow:0 4px 16px rgba(124,58,237,.35)}
+.btn-purple{background:linear-gradient(135deg,#2f3f73,#26335e);color:#fff;box-shadow:0 4px 16px rgba(124,58,237,.35)}
 .btn-green{background:linear-gradient(135deg,#059669,#047857);color:#fff;box-shadow:0 4px 14px rgba(5,150,105,.3)}
 .btn-blue{background:linear-gradient(135deg,#1d4ed8,#1e40af);color:#fff;box-shadow:0 4px 14px rgba(29,78,216,.3)}
 .btn-orange{background:linear-gradient(135deg,#d97706,#b45309);color:#fff;box-shadow:0 4px 14px rgba(217,119,6,.3)}
 .btn-wa{background:linear-gradient(135deg,#25d366,#128c7e);color:#fff;box-shadow:0 4px 14px rgba(37,211,102,.3)}
-.btn-ghost{background:#fff;color:var(--purple);border:2px solid var(--border);border-radius:10px;padding:9px 18px;font-family:'Nunito',sans-serif;font-weight:800;font-size:14px;cursor:pointer;transition:.18s}
+.btn-ghost{background:#fff;color:var(--purple);border:1px solid var(--border);border-radius:10px;padding:9px 18px;font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;font-weight:600;font-size:14px;cursor:pointer;transition:.18s}
 .btn-ghost:hover{border-color:var(--purple);background:var(--purple-l)}
 .btn-sm{padding:7px 14px;font-size:13px;border-radius:9px}
-.btn-del{background:var(--red-l);color:var(--red);border:2px solid #fecaca;border-radius:8px;padding:5px 11px;font-family:'Nunito',sans-serif;font-weight:800;font-size:13px;cursor:pointer}
+.btn-del{background:var(--red-l);color:var(--red);border:1px solid #fecaca;border-radius:8px;padding:5px 11px;font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;font-weight:600;font-size:13px;cursor:pointer}
 .btn-del:hover{background:#fecaca}
-.btn-edit2{background:var(--orange-l);color:var(--orange);border:2px solid #fde68a;border-radius:8px;padding:5px 11px;font-family:'Nunito',sans-serif;font-weight:800;font-size:13px;cursor:pointer}
-.card{background:#fff;border:2px solid var(--border);border-radius:18px;padding:16px 14px;box-shadow:var(--shadow);overflow:hidden;box-sizing:border-box;width:100%}
+.btn-edit2{background:var(--orange-l);color:var(--orange);border:1px solid #fde68a;border-radius:8px;padding:5px 11px;font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;font-weight:600;font-size:13px;cursor:pointer}
+.card{background:#fff;border:1px solid var(--border);border-radius:18px;padding:16px 14px;box-shadow:var(--shadow);overflow:hidden;box-sizing:border-box;width:100%}
 @keyframes flashAlertAnim{0%,100%{box-shadow:var(--shadow);border-color:var(--border);background:#fff}50%{box-shadow:0 0 0 5px rgba(220,38,38,.45);border-color:#dc2626;background:#fef2f2}}
 .flash-alert{animation:flashAlertAnim .7s ease-in-out 6}
 @media(max-width:480px){.card{padding:12px 10px;border-radius:14px}.screen{padding:12px 8px}}
-.section-lbl{font-size:12px;font-weight:900;color:var(--purple);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;padding-bottom:7px;border-bottom:2px solid var(--purple-l)}
-.lbl{font-size:12px;font-weight:800;color:var(--text2);text-transform:uppercase;letter-spacing:.7px;display:block;margin-bottom:5px}
+.section-lbl{font-size:12px;font-weight:700;color:var(--purple);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;padding-bottom:7px;border-bottom:1px solid var(--purple-l)}
+.lbl{font-size:12px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.7px;display:block;margin-bottom:5px}
 .err-msg{color:var(--red);font-size:12px;margin-top:3px;font-weight:700;min-height:15px}
-.badge{display:inline-block;border-radius:20px;padding:4px 12px;font-size:12px;font-weight:800}
+.badge{display:inline-block;border-radius:20px;padding:4px 12px;font-size:12px;font-weight:600}
 .mb12{margin-bottom:12px}.mb14{margin-bottom:14px}.mb20{margin-bottom:20px}.mb24{margin-bottom:24px}
 .g2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .pg{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:6px}
-.app-hdr{background:linear-gradient(135deg,#7c3aed,#4f46e5);padding:26px 20px 22px;text-align:center;border-radius:18px;margin-bottom:18px;box-shadow:0 8px 32px rgba(124,58,237,.3)}
-.app-hdr h1{font-family:'Playfair Display',serif;font-size:28px;color:#fff;margin:6px 0 4px}
+.app-hdr{background:linear-gradient(135deg,#2f3f73,#26335e);padding:26px 20px 22px;text-align:center;border-radius:18px;margin-bottom:18px;box-shadow:0 8px 32px rgba(124,58,237,.3)}
+.app-hdr h1{font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;font-size:28px;color:#fff;margin:6px 0 4px}
 .app-hdr p{font-size:12px;color:rgba(255,255,255,.7);font-weight:700;letter-spacing:2px;text-transform:uppercase}
-.s-row{background:#fff;border:2px solid var(--border);border-radius:14px;padding:12px 14px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:all .18s;margin-bottom:8px;box-shadow:var(--shadow)}
+.s-row{background:#fff;border:1px solid var(--border);border-radius:14px;padding:12px 14px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:all .18s;margin-bottom:8px;box-shadow:var(--shadow)}
 .s-row:hover{border-color:var(--purple);transform:translateY(-2px)}
-.avatar{border-radius:14px;background:linear-gradient(135deg,#7c3aed,#6d28d9);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:22px}
+.avatar{border-radius:14px;background:linear-gradient(135deg,#2f3f73,#26335e);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:22px}
 .week-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:8px}
 .week-table{display:inline-block;min-width:720px;width:100%}
 .week-row{display:grid;grid-template-columns:64px repeat(7,1fr);gap:5px;margin-bottom:5px}
-.week-head .week-day-col{background:#fff;border:2px solid var(--border);border-radius:9px;padding:6px 2px;font-weight:900;font-size:12px;text-align:center;color:var(--text)}
-.week-time-col{font-weight:900;font-size:12px;color:var(--muted);display:flex;align-items:center;justify-content:center;text-align:center}
-.week-cell{background:#fff;border:2px dashed var(--border);border-radius:9px;padding:4px;min-height:44px;display:flex;flex-direction:column;gap:3px}
-.week-chip{border-radius:7px;padding:4px 6px;font-size:11px;font-weight:800;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:transform .1s}
+.week-head .week-day-col{background:#fff;border:1px solid var(--border);border-radius:9px;padding:6px 2px;font-weight:700;font-size:12px;text-align:center;color:var(--text)}
+.week-time-col{font-weight:700;font-size:12px;color:var(--muted);display:flex;align-items:center;justify-content:center;text-align:center}
+.week-cell{background:#fff;border:1px dashed var(--border);border-radius:9px;padding:4px;min-height:44px;display:flex;flex-direction:column;gap:3px}
+.week-chip{border-radius:7px;padding:4px 6px;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:transform .1s}
 .week-chip:active{transform:scale(.95)}
-#yf-table th{background:#b45309;color:#fff;font-size:13px;font-weight:900;padding:9px 4px;text-align:center;border:1px solid #92400e;min-width:172px}
+#yf-table th{background:#b45309;color:#fff;font-size:13px;font-weight:700;padding:9px 4px;text-align:center;border:1px solid #92400e;min-width:172px}
 #yf-table td{border:1px solid var(--border);padding:0;vertical-align:top}
-#yf-table td.yf-unpaid{background:#fecaca;border:2px solid #dc2626}
+#yf-table td.yf-unpaid{background:#fecaca;border:1px solid #dc2626}
 #yf-table td.yf-unpaid .yf-tally{background:#fca5a5}
 #yf-table td.yf-unpaid.yf-forced{border-style:dashed}
 #yf-table td.yf-forced-clear{background:#f0fdf4}
-.yf-paidbtn{display:block;width:100%;border:none;border-top:1px dashed var(--border);background:#f3f4f6;color:var(--muted);font-size:9px;font-weight:800;padding:3px 4px;cursor:pointer;text-align:center}
+.yf-paidbtn{display:block;width:100%;border:none;border-top:1px dashed var(--border);background:#f3f4f6;color:var(--muted);font-size:9px;font-weight:600;padding:3px 4px;cursor:pointer;text-align:center}
 .yf-paidbtn:hover{background:#e5e7eb}
 #yf-table td.yf-unpaid .yf-paidbtn{background:#fca5a5;color:#7f1d1d;border-top-color:#dc2626}
 #yf-table td.yf-forced-clear .yf-paidbtn{background:#bbf7d0;color:#14532d}
-#yf-table .yf-cell{width:100%;min-height:72px;padding:7px;font-size:15px;line-height:1.35;font-family:'Nunito',sans-serif;font-weight:800;color:var(--text);white-space:pre-wrap;word-break:break-word;outline:none;cursor:text}
+#yf-table .yf-cell{width:100%;min-height:72px;padding:7px;font-size:15px;line-height:1.35;font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;font-weight:600;color:var(--text);white-space:pre-wrap;word-break:break-word;outline:none;cursor:text}
 #yf-table .yf-cell:focus{background:#fff;box-shadow:inset 0 0 0 2px var(--purple)}
-.yf-satranc{color:#ea580c;font-weight:900}
-.yf-toolbar{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;background:var(--card2);border:2px solid var(--border);border-radius:12px;padding:8px 10px;margin-top:10px;position:sticky;top:0;z-index:20}
-.yf-tb-lbl{font-size:12px;font-weight:900;color:var(--text2);text-transform:uppercase;letter-spacing:.5px}
-.yf-tb-btn{border:2px solid var(--border);background:#fff;border-radius:9px;padding:6px 12px;font-family:'Nunito',sans-serif;font-weight:900;font-size:13px;cursor:pointer;color:var(--text)}
+.yf-satranc{color:#ea580c;font-weight:700}
+.yf-toolbar{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:8px 10px;margin-top:10px;position:sticky;top:0;z-index:20}
+.yf-tb-lbl{font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.5px}
+.yf-tb-btn{border:1px solid var(--border);background:#fff;border-radius:9px;padding:6px 12px;font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;font-weight:700;font-size:13px;cursor:pointer;color:var(--text)}
 .yf-tb-btn:hover{border-color:var(--purple)}
 .yf-tb-btn.active{background:var(--purple-l);border-color:var(--purple);color:var(--purple)}
 .yf-tb-colors{display:flex;align-items:center;gap:5px}
-.yf-tb-swatch{width:24px;height:24px;border-radius:7px;border:2px solid rgba(0,0,0,.15);cursor:pointer;padding:0}
+.yf-tb-swatch{width:24px;height:24px;border-radius:7px;border:1px solid rgba(0,0,0,.15);cursor:pointer;padding:0}
 .yf-tb-swatch:hover{transform:translateY(-1px);box-shadow:0 2px 6px rgba(0,0,0,.25)}
 .yf-tb-swatch.yf-tb-clear{background:#fff;position:relative}
 .yf-tb-swatch.yf-tb-clear::after{content:'';position:absolute;left:2px;right:2px;top:50%;height:2px;background:#dc2626;transform:rotate(-45deg)}
 .yf-tally{display:flex;flex-wrap:wrap;gap:4px;padding:4px 6px 6px;border-top:1px dashed var(--border);background:#fafafa}
-.yf-tag{font-size:10px;font-weight:800;color:var(--muted);align-self:center;margin-right:2px;white-space:nowrap}
-.yf-tally button{border:none;border-radius:5px;width:18px;height:18px;font-size:12px;font-weight:900;cursor:pointer;line-height:1;padding:0}
+.yf-tag{font-size:10px;font-weight:600;color:var(--muted);align-self:center;margin-right:2px;white-space:nowrap}
+.yf-tally button{border:none;border-radius:5px;width:18px;height:18px;font-size:12px;font-weight:700;cursor:pointer;line-height:1;padding:0}
 .yf-tally button.yf-plus{background:#dcfce7;color:#166534}
 .yf-tally button.yf-minus{background:#fee2e2;color:#991b1b}
-.tab-bar{display:grid;grid-template-columns:1fr 1fr;background:#fff;border:2px solid var(--border);border-radius:13px;padding:4px;gap:4px;margin-bottom:12px;box-shadow:var(--shadow)}
-.tab-btn{border:none;border-radius:9px;padding:10px 8px;background:transparent;color:var(--dim);font-family:'Nunito',sans-serif;font-weight:800;font-size:14px;cursor:pointer;transition:all .18s}
+.tab-bar{display:grid;grid-template-columns:1fr 1fr;background:#fff;border:1px solid var(--border);border-radius:13px;padding:4px;gap:4px;margin-bottom:12px;box-shadow:var(--shadow)}
+.tab-btn{border:none;border-radius:9px;padding:10px 8px;background:transparent;color:var(--dim);font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;font-weight:600;font-size:14px;cursor:pointer;transition:all .18s}
 .tab-att{background:var(--blue-l);color:var(--blue)}
 .tab-pay{background:var(--green-l);color:var(--green)}
-.cal-card{background:#fff;border:2px solid var(--border);border-radius:16px;padding:12px 10px;box-shadow:var(--shadow);overflow:hidden;width:100%;box-sizing:border-box;margin-bottom:12px}
+.cal-card{background:#fff;border:1px solid var(--border);border-radius:16px;padding:12px 10px;box-shadow:var(--shadow);overflow:hidden;width:100%;box-sizing:border-box;margin-bottom:12px}
 .cal-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
-.cal-nav{width:36px;height:36px;border-radius:8px;background:var(--bg);border:2px solid var(--border);color:var(--purple);font-size:18px;font-weight:900;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.cal-nav{width:36px;height:36px;border-radius:8px;background:var(--bg);border:1px solid var(--border);color:var(--purple);font-size:18px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center}
 .day-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:2px;width:100%}
-.day-hdr{text-align:center;font-size:10px;font-weight:900;color:var(--dim);padding:3px 0;overflow:hidden}
-.day-cell{border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:12px;font-weight:800;cursor:pointer;border:1.5px solid transparent;background:var(--card2);color:var(--text2);user-select:none;transition:background .1s,border .1s;overflow:hidden;min-width:0;min-height:0;padding:6px 2px}
+.day-hdr{text-align:center;font-size:10px;font-weight:700;color:var(--dim);padding:3px 0;overflow:hidden}
+.day-cell{border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid transparent;background:var(--card2);color:var(--text2);user-select:none;transition:background .1s,border .1s;overflow:hidden;min-width:0;min-height:0;padding:6px 2px}
 .day-cell:active{opacity:.7}
 .day-cell.empty{opacity:0;pointer-events:none}
 .day-cell.came{background:#1d4ed8;color:#fff;border-color:#3b82f6}
@@ -113,9 +113,9 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
 .day-cell.paid{background:#059669!important;color:#fff!important;border-color:#10b981!important}
 .day-cell.payday{background:#fef9c3;color:#713f12;border-color:#fde047}
 .day-cell.today-r{border-color:var(--orange)!important;border-width:2px}
-.pay-amt{font-size:7px;font-weight:900;line-height:1;max-width:100%;overflow:hidden}
+.pay-amt{font-size:7px;font-weight:700;line-height:1;max-width:100%;overflow:hidden}
 .mark-row{display:flex;gap:6px;justify-content:center;margin-bottom:10px;overflow:hidden}
-.mark-btn{flex:1;max-width:160px;padding:8px 10px;border-radius:20px;border:2px solid transparent;background:var(--card2);color:var(--text2);font-family:'Nunito',sans-serif;font-weight:800;font-size:13px;cursor:pointer;text-align:center;white-space:nowrap}
+.mark-btn{flex:1;max-width:160px;padding:8px 10px;border-radius:20px;border:1px solid transparent;background:var(--card2);color:var(--text2);font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;font-weight:600;font-size:13px;cursor:pointer;text-align:center;white-space:nowrap}
 .mark-came{background:#1d4ed8;color:#fff;border-color:#1d4ed8}
 .mark-absent{background:#dc2626;color:#fff;border-color:#dc2626}
 .legend{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:8px;overflow:hidden}
@@ -123,17 +123,17 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
 .dot{width:9px;height:9px;border-radius:2px;display:inline-block;flex-shrink:0}
 .stats{display:flex;gap:6px;margin-top:12px;overflow:hidden}
 .stat{flex:1;border-radius:10px;padding:8px 4px;text-align:center;min-width:0;overflow:hidden}
-.stat .n{font-size:18px;font-weight:900;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.stat .n{font-size:18px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .stat .l{font-size:10px;margin-top:2px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.pay-row{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:2px solid var(--border)}
+.pay-row{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border)}
 .modal-bg{display:none;position:fixed;inset:0;background:rgba(30,27,74,.5);backdrop-filter:blur(5px);align-items:center;justify-content:center;z-index:999;padding:16px}
 .modal-bg.open{display:flex}
-.modal-box{background:#fff;border:2px solid var(--border);border-radius:20px;padding:24px;max-width:360px;width:100%;box-shadow:0 20px 60px rgba(99,102,241,.2)}
-.overdue{display:none;background:#fef2f2;border:2px solid #fecaca;border-radius:13px;padding:13px 15px;margin-bottom:12px}
+.modal-box{background:#fff;border:1px solid var(--border);border-radius:20px;padding:24px;max-width:360px;width:100%;box-shadow:0 20px 60px rgba(99,102,241,.2)}
+.overdue{display:none;background:#fef2f2;border:1px solid #fecaca;border-radius:13px;padding:13px 15px;margin-bottom:12px}
 .overdue.show{display:block}
-.exp-bar{background:#fff;border:2px solid var(--border);border-radius:13px;padding:12px 15px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;box-shadow:var(--shadow)}
-.tip{text-align:center;font-size:13px;font-weight:700;background:var(--orange-l);border:2px solid #fde68a;border-radius:9px;padding:7px 12px;margin-bottom:10px}
-.pr-btn{padding:9px 8px;border-radius:9px;border:2px solid #fde047;background:#fff;color:#713f12;font-family:'Nunito',sans-serif;font-weight:800;font-size:13px;cursor:pointer;transition:.18s;text-align:center}
+.exp-bar{background:#fff;border:1px solid var(--border);border-radius:13px;padding:12px 15px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;box-shadow:var(--shadow)}
+.tip{text-align:center;font-size:13px;font-weight:700;background:var(--orange-l);border:1px solid #fde68a;border-radius:9px;padding:7px 12px;margin-bottom:10px}
+.pr-btn{padding:9px 8px;border-radius:9px;border:1px solid #fde047;background:#fff;color:#713f12;font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;font-weight:600;font-size:13px;cursor:pointer;transition:.18s;text-align:center}
 .pr-btn:hover{background:#fef9c3}
 .pr-btn.sel{background:#f59e0b;color:#fff;border-color:#d97706}
 .rec-bg{display:none;position:fixed;inset:0;background:rgba(30,27,74,.55);backdrop-filter:blur(6px);z-index:1100;overflow-y:auto;padding:18px 14px}
@@ -141,15 +141,15 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
 .rec-wrap{max-width:540px;margin:0 auto}
 .rec-acts{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
 #rec-card{background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 8px 40px rgba(30,27,74,.2)}
-.rec-hdr{background:linear-gradient(135deg,#1e1b4b,#4338ca);padding:26px 26px 20px;text-align:center;color:#fff}
+.rec-hdr{background:linear-gradient(135deg,#1b2340,#26335e);padding:26px 26px 20px;text-align:center;color:#fff}
 .rec-body{padding:20px 24px}
-.rec-row{display:flex;align-items:flex-start;padding:9px 0;border-bottom:1.5px solid #f0f4ff;gap:12px}
+.rec-row{display:flex;align-items:flex-start;padding:9px 0;border-bottom:1.5px solid #eef0f5;gap:12px}
 .rec-row:last-child{border-bottom:none}
-.rec-lbl{font-size:11px;font-weight:900;color:#7c82b8;text-transform:uppercase;letter-spacing:.7px;min-width:100px;padding-top:4px;flex-shrink:0}
+.rec-lbl{font-size:11px;font-weight:700;color:#7a8399;text-transform:uppercase;letter-spacing:.7px;min-width:100px;padding-top:4px;flex-shrink:0}
 .rec-val{flex:1}
-.rec-val input,.rec-val select{border:none;border-bottom:2px solid #e0e7ff;border-radius:0;padding:3px 2px;font-size:14px;font-weight:700;color:#1e1b4b;background:transparent;outline:none;appearance:none}
-.rec-fix{font-size:14px;font-weight:800;color:#1e1b4b;padding-top:4px;display:block}
-.rec-foot{background:#f8f7ff;padding:13px 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;border-top:2px solid #e0e7ff}
+.rec-val input,.rec-val select{border:none;border-bottom:1px solid #e3e6ee;border-radius:0;padding:3px 2px;font-size:14px;font-weight:700;color:#1b2340;background:transparent;outline:none;appearance:none}
+.rec-fix{font-size:14px;font-weight:600;color:#1b2340;padding-top:4px;display:block}
+.rec-foot{background:#f7f8fb;padding:13px 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;border-top:1px solid #e3e6ee}
 @media print{body>*{display:none!important}.rec-bg{display:block!important;position:static;background:none;padding:0}.rec-acts{display:none!important}.rec-wrap{max-width:100%}#rec-card{box-shadow:none;border-radius:0}}
 .search-row{display:flex;gap:10px;margin-bottom:14px}
 .empty{text-align:center;padding:36px 16px}
@@ -164,76 +164,149 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
 .sync-dot.syncing{background:#f59e0b;animation:pulse 1s infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 /* analysis */
-.per-btn{padding:8px 14px;border-radius:20px;border:2px solid var(--border);background:#fff;color:var(--text2);font-family:'Nunito',sans-serif;font-weight:800;font-size:13px;cursor:pointer;transition:.15s}
+.per-btn{padding:8px 14px;border-radius:20px;border:1px solid var(--border);background:#fff;color:var(--text2);font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;font-weight:600;font-size:13px;cursor:pointer;transition:.15s}
 .per-btn:hover{border-color:var(--purple);color:var(--purple)}
 .per-btn.sel{background:var(--purple);color:#fff;border-color:var(--purple)}
-.sum-card{border-radius:12px;padding:12px 10px;text-align:center;border:2px solid transparent;flex:1;min-width:0}
-.sum-n{font-size:18px;font-weight:900;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sum-card{border-radius:12px;padding:12px 10px;text-align:center;border:1px solid transparent;flex:1;min-width:0}
+.sum-n{font-size:18px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .sum-l{font-size:10px;margin-top:3px;font-weight:700;color:var(--text2)}
 .bar-wrap{display:flex;align-items:flex-end;gap:3px;height:120px;width:100%;min-width:240px}
 .bar-col{display:flex;flex-direction:column;align-items:center;flex:1;min-width:0;gap:2px;height:100%}
 .bar-lbl{font-size:9px;font-weight:700;color:var(--muted);margin-top:4px;text-align:center;white-space:nowrap;overflow:hidden;width:100%}
-.bar-val{font-size:8px;font-weight:900;color:var(--text2);text-align:center;min-height:10px}
+.bar-val{font-size:8px;font-weight:700;color:var(--text2);text-align:center;min-height:10px}
 .bar-pair{display:flex;gap:1px;align-items:flex-end;flex:1;width:100%}
 .bar-r{flex:1;border-radius:3px 3px 0 0;min-height:2px;transition:height .3s}
 .stu-pay-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1.5px solid var(--border)}
 .prog-bar{flex:1;height:8px;background:#e5e7eb;border-radius:4px;overflow:hidden}
 .prog-fill{height:100%;border-radius:4px;transition:width .3s}
 /* archive */
-.arc-card{background:#fff;border:2px solid #e5e7eb;border-radius:14px;padding:14px;margin-bottom:10px;box-shadow:0 2px 8px rgba(0,0,0,.06)}
-.arc-del-badge{display:inline-block;background:#f3f4f6;color:#6b7280;border-radius:20px;padding:3px 10px;font-size:11px;font-weight:800;margin-top:4px}
-.rec-item{border:2px solid #fed7aa;background:#fff7ed;border-radius:12px;padding:11px 12px;margin-bottom:9px}
+.arc-card{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:14px;margin-bottom:10px;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.arc-del-badge{display:inline-block;background:#f3f4f6;color:#6b7280;border-radius:20px;padding:3px 10px;font-size:11px;font-weight:600;margin-top:4px}
+.rec-item{border:1px solid #fed7aa;background:#fff7ed;border-radius:12px;padding:11px 12px;margin-bottom:9px}
 .rec-item.due{border-color:#dc2626;background:#fef2f2}
 .rec-item.paidx{border-color:#bbf7d0;background:#f0fdf4}
 .rec-acts{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px}
-.rec-acts button{border:none;border-radius:8px;padding:6px 11px;font-family:'Nunito',sans-serif;font-weight:800;font-size:12px;cursor:pointer}
+.rec-acts button{border:none;border-radius:8px;padding:6px 11px;font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;font-weight:600;font-size:12px;cursor:pointer}
 .ra-pay{background:#059669;color:#fff}.ra-wa{background:#25d366;color:#fff}.ra-snz{background:#fef3c7;color:#92400e}.ra-del{background:#fee2e2;color:#991b1b}
-.rec-banner-card{background:#fff;border:2px solid #fdba74;border-radius:14px;padding:13px 14px;margin-bottom:14px;box-shadow:var(--shadow)}
+.rec-banner-card{background:#fff;border:1px solid #fdba74;border-radius:14px;padding:13px 14px;margin-bottom:14px;box-shadow:var(--shadow)}
 .rec-banner-card.has-due{border-color:#dc2626}
+
+/* ===== KURUMSAL TEMA ===== */
+:root{--bg:#f3f4f8;--card:#fff;--card2:#f7f8fb;--border:#dfe3ec;--text:#1b2340;--text2:#4a5470;--muted:#7a8399;--dim:#a3abbd;
+  --purple:#2f3f73;--purple-l:#e9ecf5;--orange:#b7791f;--orange-l:#fbf3e0;--gold:#b7791f;
+  --shadow:0 1px 2px rgba(16,24,40,.05),0 1px 3px rgba(16,24,40,.06)}
+body{font-size:14px;-webkit-font-smoothing:antialiased;line-height:1.45}
+input,select,textarea,button{font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif}
+input,select{border-radius:9px;padding:10px 12px;font-size:14px;font-weight:500}
+input:focus,select:focus{box-shadow:0 0 0 3px rgba(47,63,115,.12)}
+.card{border-radius:12px;padding:16px;box-shadow:var(--shadow)}
+.btn{border-radius:9px;box-shadow:none!important;font-weight:600;font-size:14px;padding:10px 18px}
+.btn:hover{transform:none;filter:brightness(1.1)}
+.btn-purple,.btn-blue{background:var(--purple)}
+.btn-orange{background:var(--gold)}
+.btn-green{background:#1f7a5a}
+.btn-wa{background:#1fa855}
+.btn-ghost{border-radius:9px;font-weight:600;color:var(--purple)}
+.btn-sm{padding:7px 13px;font-size:13px;border-radius:8px}
+.section-lbl{font-size:14px;font-weight:700;text-transform:none;letter-spacing:0;color:var(--text);border-bottom:1px solid var(--border);padding-bottom:9px;margin-bottom:14px}
+.lbl{font-size:12px;font-weight:600;text-transform:none;letter-spacing:0;color:var(--text2)}
+.badge{border-radius:6px;font-weight:600;padding:3px 9px}
+.app-hdr{background:#1b2340;border-radius:14px;padding:20px 20px 18px;text-align:left;box-shadow:none;border-bottom:3px solid var(--gold);margin-bottom:14px}
+.app-hdr h1{font-size:22px;font-weight:700;margin:0 0 4px;letter-spacing:-.2px}
+.app-hdr p{font-size:12px;font-weight:500;letter-spacing:.2px;text-transform:none;color:rgba(255,255,255,.7)}
+.s-row{border-radius:12px;padding:11px 14px}
+.s-row:hover{transform:none;border-color:var(--purple)}
+.avatar{background:var(--purple);border-radius:10px}
+.tab-bar{border-radius:11px}
+.tab-btn{font-weight:600;border-radius:8px}
+.cal-card{border-radius:12px}
+.modal-box{border-radius:14px}
+.exp-bar,.overdue{border-radius:12px}
+.stat{border-radius:9px}
+.mark-btn{font-weight:600}
+.sync-dot{box-shadow:0 0 0 2px rgba(255,255,255,.2)}
+/* ana menü kareleri */
+.kpi-row{display:flex;gap:8px;margin-bottom:14px}
+.kpi{flex:1;background:#fff;border:1px solid var(--border);border-radius:12px;padding:10px 12px;box-shadow:var(--shadow)}
+.kpi .v{font-size:20px;font-weight:700;color:var(--text);line-height:1.1}
+.kpi .k{font-size:11px;font-weight:500;color:var(--muted);margin-top:3px}
+.tile-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.tile{display:flex;flex-direction:column;align-items:flex-start;gap:10px;background:#fff;border:1px solid var(--border);border-radius:12px;padding:14px;cursor:pointer;box-shadow:var(--shadow);font-size:14px;font-weight:600;color:var(--text);text-align:left;transition:border-color .15s,background .15s}
+.tile:hover{border-color:var(--purple);background:#fafbfd}
+.tile svg{width:22px;height:22px;stroke:var(--purple);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+.tile.primary{grid-column:1/-1;background:var(--purple);color:#fff;border-color:var(--purple);flex-direction:row;align-items:center;gap:14px;padding:16px}
+.tile.primary:hover{background:#26335e}
+.tile.primary svg{stroke:#fff;width:28px;height:28px}
+.tile small{display:block;font-weight:400;font-size:12px;color:var(--muted);margin-top:2px}
+.tile.primary small{color:rgba(255,255,255,.75)}
+
+/* öğrenci kartı sekmeleri */
+.dt-nav{display:flex;gap:4px;background:#fff;border:1px solid var(--border);border-radius:11px;padding:4px;margin-bottom:12px;box-shadow:var(--shadow);position:sticky;top:6px;z-index:30;overflow-x:auto}
+.dt-btn{flex:1;white-space:nowrap;border:none;background:transparent;color:var(--muted);font-size:13px;font-weight:600;padding:9px 12px;border-radius:8px;cursor:pointer}
+.dt-btn.on{background:var(--purple);color:#fff}
+/* alt gezinti */
+.screen{padding-bottom:84px}
+#bnav{position:fixed;left:0;right:0;bottom:0;z-index:900;display:flex;justify-content:center;background:rgba(255,255,255,.96);backdrop-filter:blur(8px);border-top:1px solid var(--border);padding:6px 8px calc(6px + env(safe-area-inset-bottom))}
+#bnav .bn-in{display:flex;width:100%;max-width:660px}
+#bnav button{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;border:none;background:transparent;color:var(--muted);font-size:11px;font-weight:600;padding:6px 2px;cursor:pointer;border-radius:8px}
+#bnav button svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+#bnav button.on{color:var(--purple)}
+#bnav button.on svg{stroke:var(--purple)}
+body:has(#s-veli-view.active) #bnav,body:has(#s-fiyat.active) #bnav,body:has(#s-yform.active) #bnav{display:none}
+body:has(#s-veli-view.active) .screen{padding-bottom:20px}
+@media print{#bnav{display:none!important}}
 </style>
 </head>
 <body>
 
 <div id="loading">
   <div class="spinner"></div>
-  <div style="font-weight:800;color:var(--purple);font-size:15px" id="loading-msg">Bağlanıyor…</div>
+  <div style="font-weight:600;color:var(--purple);font-size:15px" id="loading-msg">Bağlanıyor…</div>
 </div>
 
 <!-- LIST -->
+<div id="bnav"><div class="bn-in">
+  <button id="bn-home" class="on" onclick="go('s-list')"><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8M5 10v10h14V10"/></svg><span>Ana Sayfa</span></button>
+  <button id="bn-daily" onclick="go('s-daily')"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg><span>Yoklama</span></button>
+  <button id="bn-week" onclick="go('s-week')"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg><span>Program</span></button>
+  <button id="bn-veli" onclick="go('s-veli-share')"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6M16 5a3 3 0 010 6M18 14c1.8.8 3 2.6 3 5"/></svg><span>Veli</span></button>
+</div></div>
 <div id="s-list" class="screen active">
   <div class="app-hdr">
-    <div style="font-size:50px">🎓</div>
     <h1>Öğrenci Takip <span class="sync-dot" id="sync-dot" title="Canlı senkronizasyon"></span></h1>
-    <p>Kayıt · Yoklama · Ödeme</p>
+    <p>RockJazz Müzik Aletleri · Silifke Satranç Atölyesi</p>
   </div>
+  <div class="kpi-row" id="home-sum"></div>
   <div class="search-row">
-    <input id="search" type="text" placeholder="🔍 Öğrenci ara…" oninput="renderList()">
-    <button class="btn btn-purple" onclick="go('s-reg')">➕ Yeni Kayıt</button>
+    <input id="search" type="text" placeholder="Öğrenci ara…" oninput="renderList()">
+    <button class="btn btn-purple" onclick="go('s-reg')">+ Yeni Kayıt</button>
   </div>
   <div id="dup-name-warn" style="display:none"></div>
   <div id="rec-banner"></div>
   <div id="lvl-banner"></div>
   <div class="card mb14" id="today-sched-card">
-    <div style="font-weight:900;font-size:14px;color:var(--text);margin-bottom:10px" id="today-sched-title">📅 Bugün Dersi Olanlar</div>
+    <div style="font-weight:700;font-size:14px;color:var(--text);margin-bottom:10px" id="today-sched-title">📅 Bugün Dersi Olanlar</div>
     <div id="today-sched-list"></div>
   </div>
-  <button class="btn" style="width:100%;justify-content:center;margin-bottom:14px;font-size:14px;background:linear-gradient(135deg,#059669,#047857);color:#fff;box-shadow:0 4px 14px rgba(5,150,105,.3)" onclick="go('s-week')">🗓️ Haftalık Program</button>
-  <button class="btn btn-blue" style="width:100%;justify-content:center;margin-bottom:14px;font-size:14px" onclick="openAnalysis()">📈 Gelir Analizi &amp; Ödeme Yönetimi</button>
-  <button class="btn" style="width:100%;justify-content:center;margin-bottom:14px;font-size:16px;padding:15px;background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#fff;box-shadow:0 4px 14px rgba(37,99,235,.35)" onclick="go('s-daily')">✅ Günlük Yoklama</button>
-  <button class="btn" style="width:100%;justify-content:center;margin-bottom:14px;font-size:14px;background:linear-gradient(135deg,#d97706,#b45309);color:#fff;box-shadow:0 4px 14px rgba(217,119,6,.3)" onclick="go('s-yform')">📋 Yoklama Formu</button>
-  <button class="btn" style="width:100%;justify-content:center;margin-bottom:14px;font-size:14px;background:linear-gradient(135deg,#0ea5e9,#0284c7);color:#fff;box-shadow:0 4px 14px rgba(14,165,233,.3)" onclick="go('s-veli-share')">👪 Veli Paylaşımı</button>
-  <button class="btn" style="width:100%;justify-content:center;margin-bottom:14px;font-size:14px;background:linear-gradient(135deg,#A9791E,#7c5c14);color:#fff;box-shadow:0 4px 14px rgba(169,121,30,.3)" onclick="go('s-fiyat')">💵 Fiyat Güncelleyici</button>
-  <button class="btn" style="width:100%;justify-content:center;margin-bottom:14px;font-size:14px;background:linear-gradient(135deg,#374151,#1f2937);color:#fff;box-shadow:0 4px 14px rgba(55,65,81,.3)" onclick="openArchive()">🗃️ Eski Kursiyer Arşivi</button>
-  <div style="background:#fff;border:2px solid var(--border);border-radius:14px;padding:14px;margin-bottom:14px;box-shadow:var(--shadow)">
-    <div style="font-weight:900;font-size:14px;color:var(--purple);margin-bottom:12px">📊 Aylık Toplu Arşiv</div>
+  <div class="tile-grid">
+    <button class="tile primary" onclick="go('s-daily')"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg><span>Günlük Yoklama<small>Bugünün derslerini tek dokunuşla işaretle</small></span></button>
+    <button class="tile" onclick="go('s-week')"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg><span>Haftalık Program</span></button>
+    <button class="tile" onclick="go('s-yform')"><svg viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4h6v3H9zM9 12h6M9 16h6"/></svg><span>Yoklama Formu</span></button>
+    <button class="tile" onclick="go('s-veli-share')"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6M16 5a3 3 0 010 6M18 14c1.8.8 3 2.6 3 5"/></svg><span>Veli Paylaşımı</span></button>
+    <button class="tile" onclick="openAnalysis()"><svg viewBox="0 0 24 24"><path d="M4 20V4M4 20h16M8 16v-4M12 16V8M16 16v-6"/></svg><span>Gelir &amp; Ödeme Analizi</span></button>
+    <button class="tile" onclick="go('s-fiyat')"><svg viewBox="0 0 24 24"><path d="M3 12V4h8l10 10-8 8L3 12z"/><circle cx="7.5" cy="8.5" r="1"/></svg><span>Fiyat Güncelleyici</span></button>
+    <button class="tile" onclick="openArchive()"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v11a1 1 0 001 1h12a1 1 0 001-1V8M10 12h4"/></svg><span>Eski Kursiyer Arşivi</span></button>
+  </div>
+  <div style="background:#fff;border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:14px;box-shadow:var(--shadow)">
+    <div style="font-weight:700;font-size:14px;color:var(--purple);margin-bottom:12px">📊 Aylık Toplu Arşiv</div>
     <div style="display:grid;grid-template-columns:1fr 80px;gap:8px;margin-bottom:10px">
-      <select id="bulk-month" style="width:100%;padding:10px;font-size:14px;border-radius:9px;border:2px solid var(--border);background:#fff;font-family:'Nunito',sans-serif;font-weight:700;color:var(--text);appearance:none">
+      <select id="bulk-month" style="width:100%;padding:10px;font-size:14px;border-radius:9px;border:1px solid var(--border);background:#fff;font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;font-weight:700;color:var(--text);appearance:none">
         <option value="0">Ocak</option><option value="1">Şubat</option><option value="2">Mart</option>
         <option value="3">Nisan</option><option value="4">Mayıs</option><option value="5">Haziran</option>
         <option value="6">Temmuz</option><option value="7">Ağustos</option><option value="8">Eylül</option>
         <option value="9">Ekim</option><option value="10">Kasım</option><option value="11">Aralık</option>
       </select>
-      <input id="bulk-year" type="number" placeholder="2026" style="width:100%;padding:10px 6px;font-size:14px;border-radius:9px;border:2px solid var(--border);font-weight:800;color:var(--text);font-family:'Nunito',sans-serif;text-align:center;background:#fff">
+      <input id="bulk-year" type="number" placeholder="2026" style="width:100%;padding:10px 6px;font-size:14px;border-radius:9px;border:1px solid var(--border);font-weight:600;color:var(--text);font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;text-align:center;background:#fff">
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
       <button class="btn btn-green" style="justify-content:center;padding:11px 8px;font-size:13px" onclick="bulkExcel()">⬇️ Excel İndir</button>
@@ -249,7 +322,7 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
 <div id="s-reg" class="screen">
   <button class="btn-ghost mb14" onclick="go('s-list')">← Geri</button>
   <div class="card">
-    <h2 style="font-family:'Playfair Display',serif;font-size:21px;text-align:center;color:var(--purple);margin-bottom:20px">📝 Yeni Öğrenci Kaydı</h2>
+    <h2 style="font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;font-size:21px;text-align:center;color:var(--purple);margin-bottom:20px">📝 Yeni Öğrenci Kaydı</h2>
     <div class="section-lbl">👤 Öğrenci Bilgileri</div>
     <div class="g2 mb14">
       <div><label class="lbl">Ad *</label><input id="r-name" placeholder="Adı" oninput="ce('r-name','r-err-name')"><div class="err-msg" id="r-err-name"></div></div>
@@ -284,16 +357,16 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
       <button type="button" class="btn-ghost" style="width:100%;justify-content:center;padding:9px;font-size:13px;margin-top:6px" onclick="addSchedRow('r')">➕ Saat Ekle</button>
     </div>
     <div class="section-lbl">💰 Ödeme Bilgileri</div>
-    <div style="background:#f0fdf4;border:2px solid #86efac;border-radius:11px;padding:14px 15px;margin-bottom:16px">
+    <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:11px;padding:14px 15px;margin-bottom:16px">
       <label class="lbl" style="color:#166534">Aylık Sabit Ders Bedeli (₺)</label>
       <div style="display:flex;align-items:center;gap:10px;margin-top:4px;margin-bottom:14px">
-        <input id="r-fee" type="number" placeholder="Örn: 800" style="font-size:20px;font-weight:900;color:#059669;border-color:#86efac;background:#fff;flex:1">
-        <span style="font-size:22px;font-weight:900;color:#059669;flex-shrink:0">₺</span>
+        <input id="r-fee" type="number" placeholder="Örn: 800" style="font-size:20px;font-weight:700;color:#059669;border-color:#86efac;background:#fff;flex:1">
+        <span style="font-size:22px;font-weight:700;color:#059669;flex-shrink:0">₺</span>
       </div>
       <label class="lbl" style="color:#166534">Ders Başı Ücret (₺) <span style="font-weight:600;text-transform:none;letter-spacing:0;font-size:11px;color:#4ade80">— geldiği ders × bu ücret = hesaplama</span></label>
       <div style="display:flex;align-items:center;gap:10px;margin-top:4px;margin-bottom:14px">
-        <input id="r-lesson-fee" type="number" placeholder="Örn: 150" style="font-size:20px;font-weight:900;color:#059669;border-color:#86efac;background:#fff;flex:1">
-        <span style="font-size:22px;font-weight:900;color:#059669;flex-shrink:0">₺</span>
+        <input id="r-lesson-fee" type="number" placeholder="Örn: 150" style="font-size:20px;font-weight:700;color:#059669;border-color:#86efac;background:#fff;flex:1">
+        <span style="font-size:22px;font-weight:700;color:#059669;flex-shrink:0">₺</span>
       </div>
       <label class="lbl" style="color:#166534">%20 KDV Durumu</label>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px" id="r-kdv-btns">
@@ -303,8 +376,8 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
       <input type="hidden" id="r-kdv" value="0">
     </div>
     <div class="section-lbl">💳 Ödeme Taahhüdü</div>
-    <div style="background:#fefce8;border:2px solid #fde047;border-radius:11px;padding:12px 13px;margin-bottom:16px">
-      <div style="font-size:13px;font-weight:800;color:#713f12;margin-bottom:9px">📋 Veli hangi tarih aralığında ödeme yapacak?</div>
+    <div style="background:#fefce8;border:1px solid #fde047;border-radius:11px;padding:12px 13px;margin-bottom:16px">
+      <div style="font-size:13px;font-weight:600;color:#713f12;margin-bottom:9px">📋 Veli hangi tarih aralığında ödeme yapacak?</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px" id="r-pr-btns">
         <button type="button" class="pr-btn" data-v="1-5" onclick="selPR('r','1-5')">📅 1–5. günler</button>
         <button type="button" class="pr-btn" data-v="6-10" onclick="selPR('r','6-10')">📅 6–10. günler</button>
@@ -331,7 +404,7 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
 <div id="s-edit" class="screen">
   <button class="btn-ghost mb14" onclick="go('s-detail')">← Geri</button>
   <div class="card">
-    <h2 style="font-family:'Playfair Display',serif;font-size:21px;text-align:center;color:var(--orange);margin-bottom:20px">✏️ Öğrenci Düzenle</h2>
+    <h2 style="font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;font-size:21px;text-align:center;color:var(--orange);margin-bottom:20px">✏️ Öğrenci Düzenle</h2>
     <div class="section-lbl">👤 Öğrenci Bilgileri</div>
     <div class="g2 mb14">
       <div><label class="lbl">Ad *</label><input id="e-name" oninput="ce('e-name','e-err-name')"><div class="err-msg" id="e-err-name"></div></div>
@@ -366,16 +439,16 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
       <button type="button" class="btn-ghost" style="width:100%;justify-content:center;padding:9px;font-size:13px;margin-top:6px" onclick="addSchedRow('e')">➕ Saat Ekle</button>
     </div>
     <div class="section-lbl">💰 Ödeme Bilgileri</div>
-    <div style="background:#f0fdf4;border:2px solid #86efac;border-radius:11px;padding:14px 15px;margin-bottom:16px">
+    <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:11px;padding:14px 15px;margin-bottom:16px">
       <label class="lbl" style="color:#166534">Aylık Sabit Ders Bedeli (₺)</label>
       <div style="display:flex;align-items:center;gap:10px;margin-top:4px;margin-bottom:14px">
-        <input id="e-fee" type="number" placeholder="Örn: 800" style="font-size:20px;font-weight:900;color:#059669;border-color:#86efac;background:#fff;flex:1">
-        <span style="font-size:22px;font-weight:900;color:#059669;flex-shrink:0">₺</span>
+        <input id="e-fee" type="number" placeholder="Örn: 800" style="font-size:20px;font-weight:700;color:#059669;border-color:#86efac;background:#fff;flex:1">
+        <span style="font-size:22px;font-weight:700;color:#059669;flex-shrink:0">₺</span>
       </div>
       <label class="lbl" style="color:#166534">Ders Başı Ücret (₺)</label>
       <div style="display:flex;align-items:center;gap:10px;margin-top:4px;margin-bottom:14px">
-        <input id="e-lesson-fee" type="number" placeholder="Örn: 150" style="font-size:20px;font-weight:900;color:#059669;border-color:#86efac;background:#fff;flex:1">
-        <span style="font-size:22px;font-weight:900;color:#059669;flex-shrink:0">₺</span>
+        <input id="e-lesson-fee" type="number" placeholder="Örn: 150" style="font-size:20px;font-weight:700;color:#059669;border-color:#86efac;background:#fff;flex:1">
+        <span style="font-size:22px;font-weight:700;color:#059669;flex-shrink:0">₺</span>
       </div>
       <label class="lbl" style="color:#166534">%20 KDV Durumu</label>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px" id="e-kdv-btns">
@@ -385,7 +458,7 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
       <input type="hidden" id="e-kdv" value="0">
     </div>
     <div class="section-lbl">💳 Ödeme Taahhüdü</div>
-    <div style="background:#fefce8;border:2px solid #fde047;border-radius:11px;padding:12px 13px;margin-bottom:16px">
+    <div style="background:#fefce8;border:1px solid #fde047;border-radius:11px;padding:12px 13px;margin-bottom:16px">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px" id="e-pr-btns">
         <button type="button" class="pr-btn" data-v="1-5" onclick="selPR('e','1-5')">📅 1–5. günler</button>
         <button type="button" class="pr-btn" data-v="6-10" onclick="selPR('e','6-10')">📅 6–10. günler</button>
@@ -413,6 +486,13 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
   <button class="btn-ghost mb14" onclick="go('s-list')">← Geri</button>
   <div class="card mb12" id="det-hdr"></div>
   <div class="overdue" id="overdue-box"></div>
+  <div class="dt-nav" id="dt-nav">
+    <button class="dt-btn on" id="dtb-cal" onclick="dtShow('cal')">Takvim</button>
+    <button class="dt-btn" id="dtb-notes" onclick="dtShow('notes')">Ödev &amp; Not</button>
+    <button class="dt-btn" id="dtb-level" onclick="dtShow('level')">Seviye</button>
+    <button class="dt-btn" id="dtb-ops" onclick="dtShow('ops')">Ödeme &amp; İşlem</button>
+  </div>
+  <div id="dt-cal">
   <div class="tab-bar">
     <button class="tab-btn tab-att" id="tbtn-att" onclick="switchTab('att')">📋 Yoklama Takvimi</button>
     <button class="tab-btn" id="tbtn-pay" onclick="switchTab('pay')">💰 Ödeme Takvimi</button>
@@ -420,7 +500,7 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
   <div class="cal-card">
     <div class="cal-hdr">
       <button class="cal-nav" onclick="prevM()">‹</button>
-      <span id="mon-lbl" style="font-weight:900;font-size:18px;color:var(--text)"></span>
+      <span id="mon-lbl" style="font-weight:700;font-size:18px;color:var(--text)"></span>
       <button class="cal-nav" onclick="nextM()">›</button>
     </div>
     <div class="mark-row" id="mark-row">
@@ -433,31 +513,33 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
     <div class="legend" id="cal-leg"></div>
     <div class="stats" id="cal-stats"></div>
   </div>
-  <div id="pay-status-box" style="display:none;border-radius:13px;padding:13px 16px;margin-bottom:12px;border:2px solid;font-weight:800;font-size:14px;text-align:center"></div>
+  <div id="pay-status-box" style="display:none;border-radius:13px;padding:13px 16px;margin-bottom:12px;border:1px solid;font-weight:600;font-size:14px;text-align:center"></div>
   <div class="card mb12" id="pay-list-card" style="display:none">
-    <div id="pay-list-title" style="font-weight:900;font-size:15px;margin-bottom:10px"></div>
+    <div id="pay-list-title" style="font-weight:700;font-size:15px;margin-bottom:10px"></div>
     <div id="pay-list-body"></div>
   </div>
   <div class="card mb12" id="yearly-card" style="display:none">
     <div id="yearly-body"></div>
   </div>
+  </div>
+  <div id="dt-notes" style="display:none">
   <div class="card mb12">
     <div class="section-lbl">📚 Ödev &amp; Not</div>
-    <div class="mb14"><label class="lbl">Bu Haftanın Ödevi</label><textarea id="n-hw" rows="2" placeholder="Örn: Sayfa 12-14 tekrar, gam çalışması…" style="width:100%;padding:11px 14px;border-radius:10px;border:2px solid var(--border);font-family:'Nunito',sans-serif;font-size:14px;font-weight:600;color:var(--text);resize:vertical;outline:none"></textarea></div>
-    <div class="mb14"><label class="lbl">Öğretmen Notu</label><textarea id="n-grade" rows="2" placeholder="Örn: Bu ay çok iyi ilerledi…" style="width:100%;padding:11px 14px;border-radius:10px;border:2px solid var(--border);font-family:'Nunito',sans-serif;font-size:14px;font-weight:600;color:var(--text);resize:vertical;outline:none"></textarea></div>
+    <div class="mb14"><label class="lbl">Bu Haftanın Ödevi</label><textarea id="n-hw" rows="2" placeholder="Örn: Sayfa 12-14 tekrar, gam çalışması…" style="width:100%;padding:11px 14px;border-radius:10px;border:1px solid var(--border);font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;font-size:14px;font-weight:600;color:var(--text);resize:vertical;outline:none"></textarea></div>
+    <div class="mb14"><label class="lbl">Öğretmen Notu</label><textarea id="n-grade" rows="2" placeholder="Örn: Bu ay çok iyi ilerledi…" style="width:100%;padding:11px 14px;border-radius:10px;border:1px solid var(--border);font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;font-size:14px;font-weight:600;color:var(--text);resize:vertical;outline:none"></textarea></div>
     <button class="btn btn-purple btn-sm" onclick="saveNotes()">💾 Kaydet</button>
     <p style="font-size:11px;color:var(--muted);font-weight:600;margin-top:8px;line-height:1.5">Kaydettiğiniz ödev/not, kaydetme saatiyle arşive girer; aynı gün tekrar kaydederseniz sadece en son kaydedilen görünür. Gün bitince bu alan boşalır.</p>
-    <div style="margin-top:16px;padding-top:14px;border-top:2px dashed var(--border)">
+    <div style="margin-top:16px;padding-top:14px;border-top:1px dashed var(--border)">
       <div class="section-lbl" style="margin-bottom:10px">🗂️ Ödev &amp; Not Arşivi <span id="hwarc-count" style="color:var(--muted);font-weight:700;text-transform:none;letter-spacing:0"></span></div>
       <div id="hwarc-list" style="max-height:420px;overflow-y:auto;padding-right:2px"></div>
     </div>
-    <div style="margin-top:16px;padding-top:14px;border-top:2px dashed var(--border)">
+    <div style="margin-top:16px;padding-top:14px;border-top:1px dashed var(--border)">
       <div class="section-lbl" style="margin-bottom:6px">📊 3 Aylık Gelişim Raporu</div>
       <p style="font-size:11px;color:var(--muted);font-weight:600;line-height:1.5;margin-bottom:10px">Yoklama, ödev ve öğretmen notlarından her 3 ayda bir otomatik hazırlanır (1-5 puanlı). İstediğin zaman aşağıdan elle de hazırlayabilirsin.</p>
       <div id="rep-card"></div>
       <button class="btn btn-purple btn-sm" style="width:100%;justify-content:center" onclick="repPrepare(curId)">🧾 Rapor Hazırla (Manuel)</button>
     </div>
-    <div style="margin-top:16px;padding-top:14px;border-top:2px dashed var(--border)">
+    <div style="margin-top:16px;padding-top:14px;border-top:1px dashed var(--border)">
       <div class="section-lbl" style="margin-bottom:10px">📲 WhatsApp ile Gönder</div>
       <label class="lbl">Kime gönderilsin?</label>
       <select id="wa-hw-to" style="margin-bottom:10px"></select>
@@ -474,6 +556,8 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
       <p style="font-size:11px;color:var(--muted);font-weight:600;margin-top:8px;line-height:1.5">Yukarıdaki ödev/not alanındaki güncel metin gönderilir (önce Kaydet'e basmak zorunda değilsin). Alıcı seçilmezse WhatsApp'ta kişiyi kendin seçersin.</p>
     </div>
   </div>
+  </div>
+  <div id="dt-level" style="display:none">
   <div class="card mb12" id="lvl-card">
     <div class="section-lbl">🎯 Seviye &amp; İlerleme (Ay Sonu)</div>
     <p style="font-size:11px;color:var(--muted);font-weight:600;line-height:1.5;margin-bottom:10px">Her ay sonunda öğrencinin seviyesini ve o ayki ilerlemesini girin. Son 3 ay veli mesajına ve veli paneline otomatik eklenir.</p>
@@ -483,17 +567,19 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
     </div>
     <label class="lbl">Bu Ayki İlerleme</label>
     <div id="lv-stars" style="display:flex;gap:6px;margin-bottom:14px"></div>
-    <div class="mb14"><label class="lbl">Bu Ay Çalışılan Konular / Eserler</label><textarea id="lv-topics" rows="2" placeholder="Örn: Do majör gam, Für Elise ilk 16 ölçü…" style="width:100%;padding:11px 14px;border-radius:10px;border:2px solid var(--border);font-family:'Nunito',sans-serif;font-size:14px;font-weight:600;color:var(--text);resize:vertical;outline:none"></textarea></div>
-    <div class="mb14"><label class="lbl">Öğretmen Değerlendirmesi</label><textarea id="lv-note" rows="2" placeholder="Örn: Ritim duygusu gelişti, evde daha düzenli çalışmalı…" style="width:100%;padding:11px 14px;border-radius:10px;border:2px solid var(--border);font-family:'Nunito',sans-serif;font-size:14px;font-weight:600;color:var(--text);resize:vertical;outline:none"></textarea></div>
+    <div class="mb14"><label class="lbl">Bu Ay Çalışılan Konular / Eserler</label><textarea id="lv-topics" rows="2" placeholder="Örn: Do majör gam, Für Elise ilk 16 ölçü…" style="width:100%;padding:11px 14px;border-radius:10px;border:1px solid var(--border);font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;font-size:14px;font-weight:600;color:var(--text);resize:vertical;outline:none"></textarea></div>
+    <div class="mb14"><label class="lbl">Öğretmen Değerlendirmesi</label><textarea id="lv-note" rows="2" placeholder="Örn: Ritim duygusu gelişti, evde daha düzenli çalışmalı…" style="width:100%;padding:11px 14px;border-radius:10px;border:1px solid var(--border);font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;font-size:14px;font-weight:600;color:var(--text);resize:vertical;outline:none"></textarea></div>
     <button class="btn btn-purple btn-sm" onclick="lvlSave()">💾 Kaydet</button>
     <span id="lv-status" style="font-size:11px;font-weight:700;color:var(--muted);margin-left:8px"></span>
-    <div style="margin-top:16px;padding-top:14px;border-top:2px dashed var(--border)">
+    <div style="margin-top:16px;padding-top:14px;border-top:1px dashed var(--border)">
       <div class="section-lbl" style="margin-bottom:10px">📈 Seviye Geçmişi</div>
       <div id="lv-history"></div>
     </div>
   </div>
+  </div>
+  <div id="dt-ops" style="display:none">
   <div class="exp-bar">
-    <div style="font-weight:800;font-size:14px;color:var(--text2)">📊 İşlemler</div>
+    <div style="font-weight:600;font-size:14px;color:var(--text2)">📊 İşlemler</div>
     <div style="display:flex;gap:7px;flex-wrap:wrap">
       <button class="btn btn-orange btn-sm" onclick="openReceipt()">🧾 Makbuz</button>
       <button class="btn btn-green btn-sm" onclick="exportExcel()">⬇️ Excel</button>
@@ -506,7 +592,7 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
     <div id="rec-summary"></div>
     <div id="rec-open-list"></div>
     <button class="btn btn-orange btn-sm" id="rec-toggle" onclick="toggleRecForm()">➕ Yeni Alacak / Alınan Mal Ekle</button>
-    <div id="rec-form" style="display:none;margin-top:12px;padding-top:12px;border-top:2px dashed var(--border)">
+    <div id="rec-form" style="display:none;margin-top:12px;padding-top:12px;border-top:1px dashed var(--border)">
       <label class="lbl">Tür</label>
       <select id="rec-type" style="margin-bottom:10px"><option value="mal">🛍️ Alınan Mal (kitap, tel, aksesuar…)</option><option value="diger">📌 Diğer Alacak</option></select>
       <label class="lbl">Ne alındı / Açıklama</label>
@@ -519,20 +605,21 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
       <select id="rec-every" style="margin-bottom:12px"><option value="3">Her 3 günde bir</option><option value="5" selected>Her 5 günde bir</option><option value="7">Her 7 günde bir</option><option value="10">Her 10 günde bir</option><option value="14">Her 14 günde bir</option></select>
       <div style="display:flex;gap:8px"><button class="btn-ghost" style="flex:1;padding:10px;border-radius:9px" onclick="toggleRecForm()">İptal</button><button class="btn btn-orange" style="flex:2;padding:10px;border-radius:9px;justify-content:center" onclick="addRec()">💾 Alacağı Kaydet</button></div>
     </div>
-    <details id="rec-closed-wrap" style="display:none;margin-top:12px"><summary style="cursor:pointer;font-weight:800;font-size:13px;color:#166534" id="rec-closed-sum"></summary><div id="rec-closed-list" style="margin-top:8px"></div></details>
+    <details id="rec-closed-wrap" style="display:none;margin-top:12px"><summary style="cursor:pointer;font-weight:600;font-size:13px;color:#166534" id="rec-closed-sum"></summary><div id="rec-closed-list" style="margin-top:8px"></div></details>
   </div>
   <div class="card mb12" id="discount-card">
     <div class="section-lbl">🏷️ Erken Ödeme İndirimi (%5)</div>
     <label style="display:flex;align-items:center;gap:10px;cursor:pointer;margin-bottom:8px">
-      <input type="checkbox" id="disc-enabled" onchange="toggleDiscPreview()" style="width:20px;height:20px;accent-color:#7c3aed;cursor:pointer;flex-shrink:0">
-      <span style="font-weight:800;font-size:14px;color:var(--text)">Bu öğrenci için erken ödeme indirim politikasını uygula</span>
+      <input type="checkbox" id="disc-enabled" onchange="toggleDiscPreview()" style="width:20px;height:20px;accent-color:#2f3f73;cursor:pointer;flex-shrink:0">
+      <span style="font-weight:600;font-size:14px;color:var(--text)">Bu öğrenci için erken ödeme indirim politikasını uygula</span>
     </label>
-    <div style="background:#f5f3ff;border:2px solid #ddd6fe;border-radius:10px;padding:10px 13px;margin-bottom:12px;font-size:12px;font-weight:700;color:#5b21b6;line-height:1.5">📌 Kural: Öğrenci ayın <b>1. ile 10. günleri</b> arasında ödeme yaparsa, <b>bir sonraki ayki</b> ders ücretinden otomatik olarak <b>%5 indirim</b> uygulanır.</div>
-    <div id="disc-reward-box" style="display:none;background:#f0fdf4;border:2px solid #a7f3d0;border-radius:10px;padding:10px 13px;margin-bottom:12px;font-weight:800;font-size:13px;color:#065f46;line-height:1.5"></div>
-    <div id="disc-preview" style="display:none;background:#f0fdf4;border:2px solid #a7f3d0;border-radius:10px;padding:10px 13px;margin-bottom:12px;font-weight:800;font-size:13px;color:#065f46"></div>
+    <div style="background:#f5f3ff;border:1px solid #d3d9ea;border-radius:10px;padding:10px 13px;margin-bottom:12px;font-size:12px;font-weight:700;color:#26335e;line-height:1.5">📌 Kural: Öğrenci ayın <b>1. ile 10. günleri</b> arasında ödeme yaparsa, <b>bir sonraki ayki</b> ders ücretinden otomatik olarak <b>%5 indirim</b> uygulanır.</div>
+    <div id="disc-reward-box" style="display:none;background:#f0fdf4;border:1px solid #a7f3d0;border-radius:10px;padding:10px 13px;margin-bottom:12px;font-weight:600;font-size:13px;color:#065f46;line-height:1.5"></div>
+    <div id="disc-preview" style="display:none;background:#f0fdf4;border:1px solid #a7f3d0;border-radius:10px;padding:10px 13px;margin-bottom:12px;font-weight:600;font-size:13px;color:#065f46"></div>
     <label class="lbl">İndirim Notu (hatırlatma) <span style="font-weight:600;text-transform:none;font-size:11px;color:var(--dim)" id="disc-count">0/250</span></label>
-    <textarea id="disc-note" maxlength="250" rows="3" placeholder="Bu indirimi neden verdiğinizi ve avantajlarını buraya yazabilirsiniz. Örn: Ayın 1-10. günleri arasında ödeme yapan velilere teşvik amaçlı erken ödeme indirimi uygulanır; düzenli ödemeyi teşvik eder, hem veli hem kurum için avantajlıdır." oninput="updateDiscCount()" style="width:100%;padding:11px 14px;border-radius:10px;border:2px solid var(--border);font-family:'Nunito',sans-serif;font-size:14px;font-weight:600;color:var(--text);resize:vertical;outline:none;margin-bottom:12px"></textarea>
+    <textarea id="disc-note" maxlength="250" rows="3" placeholder="Bu indirimi neden verdiğinizi ve avantajlarını buraya yazabilirsiniz. Örn: Ayın 1-10. günleri arasında ödeme yapan velilere teşvik amaçlı erken ödeme indirimi uygulanır; düzenli ödemeyi teşvik eder, hem veli hem kurum için avantajlıdır." oninput="updateDiscCount()" style="width:100%;padding:11px 14px;border-radius:10px;border:1px solid var(--border);font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;font-size:14px;font-weight:600;color:var(--text);resize:vertical;outline:none;margin-bottom:12px"></textarea>
     <button class="btn btn-purple btn-sm" onclick="saveDiscount()">💾 Kaydet</button>
+  </div>
   </div>
 </div>
 
@@ -546,8 +633,8 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
   </div>
 
   <!-- Period selector -->
-  <div style="background:#fff;border:2px solid var(--border);border-radius:14px;padding:14px;margin-bottom:14px;box-shadow:var(--shadow)">
-    <div style="font-weight:900;font-size:13px;color:var(--text2);margin-bottom:10px">📅 Dönem Seçimi</div>
+  <div style="background:#fff;border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:14px;box-shadow:var(--shadow)">
+    <div style="font-weight:700;font-size:13px;color:var(--text2);margin-bottom:10px">📅 Dönem Seçimi</div>
     <div style="display:flex;gap:6px;flex-wrap:wrap" id="period-btns">
       <button class="per-btn sel" data-p="1" onclick="setPeriod(1)">Bu Ay</button>
       <button class="per-btn" data-p="3" onclick="setPeriod(3)">3 Ay</button>
@@ -562,7 +649,7 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
 
   <!-- Bar chart -->
   <div class="card mb14" id="ana-chart-card">
-    <div style="font-weight:900;font-size:14px;color:var(--text);margin-bottom:14px" id="ana-chart-title">Aylık Gelir Grafiği</div>
+    <div style="font-weight:700;font-size:14px;color:var(--text);margin-bottom:14px" id="ana-chart-title">Aylık Gelir Grafiği</div>
     <div id="ana-chart" style="width:100%;overflow-x:auto"></div>
     <div style="display:flex;gap:12px;margin-top:12px;flex-wrap:wrap">
       <div style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:700;color:var(--text2)"><span style="width:12px;height:12px;border-radius:3px;background:#059669;display:inline-block"></span>Alınan</div>
@@ -572,25 +659,25 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
 
   <!-- Music vs Chess -->
   <div class="card mb14" id="ana-compare-card">
-    <div style="font-weight:900;font-size:14px;color:var(--text);margin-bottom:14px">🎵 Müzik vs ♟ Satranç Karşılaştırması</div>
+    <div style="font-weight:700;font-size:14px;color:var(--text);margin-bottom:14px">🎵 Müzik vs ♟ Satranç Karşılaştırması</div>
     <div id="ana-compare"></div>
   </div>
 
   <!-- KDV summary -->
   <div class="card mb14" id="ana-kdv-card">
-    <div style="font-weight:900;font-size:14px;color:var(--text);margin-bottom:14px">🧾 KDV (%20) Durumu</div>
+    <div style="font-weight:700;font-size:14px;color:var(--text);margin-bottom:14px">🧾 KDV (%20) Durumu</div>
     <div id="ana-kdv"></div>
   </div>
 
   <!-- Per student payment table -->
   <div class="card mb14">
-    <div style="font-weight:900;font-size:14px;color:var(--text);margin-bottom:12px">👤 Öğrenci Bazlı Ödeme Durumu</div>
+    <div style="font-weight:700;font-size:14px;color:var(--text);margin-bottom:12px">👤 Öğrenci Bazlı Ödeme Durumu</div>
     <div id="ana-students"></div>
   </div>
 
   <!-- Excel export -->
-  <div style="background:#fff;border:2px solid var(--border);border-radius:14px;padding:14px;margin-bottom:20px;box-shadow:var(--shadow)">
-    <div style="font-weight:900;font-size:14px;color:var(--purple);margin-bottom:10px">⬇️ Tüm Verileri Dışa Aktar</div>
+  <div style="background:#fff;border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:20px;box-shadow:var(--shadow)">
+    <div style="font-weight:700;font-size:14px;color:var(--purple);margin-bottom:10px">⬇️ Tüm Verileri Dışa Aktar</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
       <button class="btn btn-green" style="justify-content:center;padding:12px 8px;font-size:13px" onclick="exportAnalysisExcel()">📊 Gelir Raporu Excel</button>
       <button class="btn btn-blue" style="justify-content:center;padding:12px 8px;font-size:13px" onclick="exportAllPayments()">💳 Tüm Ödemeler Excel</button>
@@ -603,7 +690,7 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
   <button class="btn-ghost mb14" onclick="go('s-list')">← Geri</button>
   <div style="background:linear-gradient(135deg,#374151,#1f2937);padding:22px 18px 18px;text-align:center;border-radius:18px;margin-bottom:16px;box-shadow:0 8px 24px rgba(0,0,0,.25)">
     <div style="font-size:40px;margin-bottom:6px">🗃️</div>
-    <h2 style="font-family:'Playfair Display',serif;font-size:22px;color:#fff;margin:0 0 4px">Eski Kursiyer Arşivi</h2>
+    <h2 style="font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;font-size:22px;color:#fff;margin:0 0 4px">Eski Kursiyer Arşivi</h2>
     <p style="font-size:12px;color:rgba(255,255,255,.6);font-weight:700;letter-spacing:1px">Silinen öğrencilerin tüm kayıtları burada saklanır</p>
   </div>
   <div style="display:flex;gap:8px;margin-bottom:14px">
@@ -632,14 +719,14 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
     <button class="btn btn-purple" style="width:100%;justify-content:center;padding:12px;margin-bottom:14px" onclick="genVeliLink()">🔗 Bağlantı Oluştur</button>
     <div id="veli-link-box" style="display:none">
       <label class="lbl">Veli Bağlantısı</label>
-      <div style="background:#f5f3ff;border:2px solid #ddd6fe;border-radius:12px;padding:14px;margin-bottom:10px;text-align:center">
-        <input id="veli-link-input" readonly onclick="this.select()" style="border:none;background:transparent;text-align:center;font-size:18px;font-weight:900;letter-spacing:.5px;color:#5b21b6;padding:4px;width:100%">
+      <div style="background:#f5f3ff;border:1px solid #d3d9ea;border-radius:12px;padding:14px;margin-bottom:10px;text-align:center">
+        <input id="veli-link-input" readonly onclick="this.select()" style="border:none;background:transparent;text-align:center;font-size:18px;font-weight:700;letter-spacing:.5px;color:#26335e;padding:4px;width:100%">
       </div>
       <div style="display:flex;gap:8px;margin-bottom:16px">
         <button class="btn-ghost" style="flex:1;justify-content:center" onclick="copyVeliLink()">📋 Bağlantıyı Kopyala</button>
       </div>
       <label class="lbl">Veliye Gidecek Mesaj <span style="text-transform:none;font-weight:700;color:var(--muted)">(ödemeler + ödev/not arşivi tarih ve saatiyle; göndermeden önce düzenleyebilirsiniz)</span></label>
-      <textarea id="veli-msg" rows="16" style="width:100%;padding:11px 14px;border-radius:10px;border:2px solid var(--border);font-family:'Nunito',sans-serif;font-size:13px;font-weight:600;color:var(--text);resize:vertical;outline:none;margin-bottom:10px"></textarea>
+      <textarea id="veli-msg" rows="16" style="width:100%;padding:11px 14px;border-radius:10px;border:1px solid var(--border);font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;font-size:13px;font-weight:600;color:var(--text);resize:vertical;outline:none;margin-bottom:10px"></textarea>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn-ghost" style="flex:1;justify-content:center" onclick="copyVeliMsg()">📋 Mesajı Kopyala</button>
         <button class="btn btn-wa" style="flex:1;justify-content:center" onclick="sendVeliWA()">📲 WhatsApp'tan Gönder</button>
@@ -665,16 +752,16 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
     <div class="section-lbl">✅ Günlük Yoklama</div>
     <div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:12px">
       <button class="btn-ghost" style="padding:9px 14px;font-size:15px" onclick="ydShift(-1)">◀</button>
-      <input id="yd-date" type="date" onchange="renderDaily()" style="padding:9px 10px;font-size:14px;border-radius:9px;border:2px solid var(--border);font-weight:800;text-align:center">
+      <input id="yd-date" type="date" onchange="renderDaily()" style="padding:9px 10px;font-size:14px;border-radius:9px;border:1px solid var(--border);font-weight:600;text-align:center">
       <button class="btn-ghost" style="padding:9px 14px;font-size:15px" onclick="ydShift(1)">▶</button>
     </div>
-    <div id="yd-title" style="text-align:center;font-weight:900;font-size:15px;color:var(--text);margin-bottom:10px"></div>
+    <div id="yd-title" style="text-align:center;font-weight:700;font-size:15px;color:var(--text);margin-bottom:10px"></div>
     <div id="yd-stats" style="display:flex;gap:8px;margin-bottom:12px"></div>
     <button class="btn btn-green" style="width:100%;justify-content:center;padding:11px;font-size:14px" onclick="ydAllCame()">✅ Bekleyenlerin Hepsi Geldi</button>
   </div>
   <div id="yd-list"></div>
   <div class="card mb14" id="yd-extra-card">
-    <div style="font-weight:900;font-size:13px;color:var(--text2);margin-bottom:8px">➕ Programda olmayan öğrenci ekle (telafi / ek ders)</div>
+    <div style="font-weight:700;font-size:13px;color:var(--text2);margin-bottom:8px">➕ Programda olmayan öğrenci ekle (telafi / ek ders)</div>
     <div style="display:flex;gap:8px"><select id="yd-extra-sel" style="flex:1"></select><button class="btn btn-purple btn-sm" onclick="ydAddExtra()">Ekle</button></div>
   </div>
 </div>
@@ -708,16 +795,16 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
   <div style="max-width:1100px;margin:0 auto">
   <button class="btn-ghost mb14" onclick="go('s-list')">← Geri</button>
   <div class="card mb14">
-    <h2 style="font-family:'Playfair Display',serif;font-size:20px;text-align:center;color:#b45309;margin-bottom:10px">📋 Yoklama Formu</h2>
+    <h2 style="font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;font-size:20px;text-align:center;color:#b45309;margin-bottom:10px">📋 Yoklama Formu</h2>
     <div style="display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;margin-bottom:10px">
       <button class="btn-ghost" style="padding:8px 12px;font-size:14px" onclick="yfChangeMonth(-1)">◀</button>
-      <select id="yf-month" onchange="yfLoad()" style="padding:9px 8px;font-size:13px;border-radius:9px;border:2px solid var(--border);font-weight:800">
+      <select id="yf-month" onchange="yfLoad()" style="padding:9px 8px;font-size:13px;border-radius:9px;border:1px solid var(--border);font-weight:600">
         <option value="0">Ocak</option><option value="1">Şubat</option><option value="2">Mart</option>
         <option value="3">Nisan</option><option value="4">Mayıs</option><option value="5">Haziran</option>
         <option value="6">Temmuz</option><option value="7">Ağustos</option><option value="8">Eylül</option>
         <option value="9">Ekim</option><option value="10">Kasım</option><option value="11">Aralık</option>
       </select>
-      <input id="yf-year" type="number" style="width:80px;padding:9px 6px;font-size:13px;border-radius:9px;border:2px solid var(--border);font-weight:800;text-align:center" onchange="yfLoad()">
+      <input id="yf-year" type="number" style="width:80px;padding:9px 6px;font-size:13px;border-radius:9px;border:1px solid var(--border);font-weight:600;text-align:center" onchange="yfLoad()">
       <button class="btn-ghost" style="padding:8px 12px;font-size:14px" onclick="yfChangeMonth(1)">▶</button>
     </div>
     <div style="display:flex;justify-content:center;gap:8px;flex-wrap:wrap">
@@ -742,13 +829,13 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
 <!-- 3 AYLIK RAPOR MODAL -->
 <div class="modal-bg" id="rep-modal">
   <div class="modal-box" style="max-width:480px;max-height:92vh;overflow-y:auto">
-    <div style="font-weight:900;font-size:17px;color:var(--purple);margin-bottom:2px">📊 3 Aylık Gelişim Raporu</div>
+    <div style="font-weight:700;font-size:17px;color:var(--purple);margin-bottom:2px">📊 3 Aylık Gelişim Raporu</div>
     <div id="rep-m-sub" style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:12px"></div>
     <label class="lbl">Gelişim Puanı (1-5)</label>
     <div id="rep-m-stars" style="display:flex;gap:6px;margin-bottom:4px"></div>
     <div id="rep-m-auto" style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:12px"></div>
     <label class="lbl">Rapor Metni (düzenleyebilirsin)</label>
-    <textarea id="rep-m-text" rows="13" style="width:100%;padding:11px 14px;border-radius:10px;border:2px solid var(--border);font-family:'Nunito',sans-serif;font-size:13px;font-weight:600;color:var(--text);resize:vertical;outline:none;margin-bottom:12px;line-height:1.55"></textarea>
+    <textarea id="rep-m-text" rows="13" style="width:100%;padding:11px 14px;border-radius:10px;border:1px solid var(--border);font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;font-size:13px;font-weight:600;color:var(--text);resize:vertical;outline:none;margin-bottom:12px;line-height:1.55"></textarea>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <button class="btn-ghost" style="flex:1;justify-content:center;padding:10px" onclick="repRegen()">🔄 Yeniden Oluştur</button>
       <button class="btn btn-purple" style="flex:1;justify-content:center;padding:10px" onclick="repSaveModal()">💾 Kaydet</button>
@@ -761,10 +848,10 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
 <div class="modal-bg" id="conf-modal">
   <div class="modal-box" style="max-width:320px;text-align:center">
     <div id="conf-icon" style="font-size:36px;margin-bottom:8px">⚠️</div>
-    <div id="conf-msg" style="font-weight:800;font-size:15px;color:var(--text);margin-bottom:20px;line-height:1.5"></div>
+    <div id="conf-msg" style="font-weight:600;font-size:15px;color:var(--text);margin-bottom:20px;line-height:1.5"></div>
     <div style="display:flex;gap:8px">
       <button class="btn-ghost" style="flex:1;padding:11px;font-size:14px;border-radius:9px" onclick="confNo()">İptal</button>
-      <button id="conf-yes" style="flex:1;padding:11px;font-size:14px;border-radius:9px;border:none;background:#dc2626;color:#fff;font-family:'Nunito',sans-serif;font-weight:800;cursor:pointer" onclick="confYes()">Evet</button>
+      <button id="conf-yes" style="flex:1;padding:11px;font-size:14px;border-radius:9px;border:none;background:#dc2626;color:#fff;font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;font-weight:600;cursor:pointer" onclick="confYes()">Evet</button>
     </div>
   </div>
 </div>
@@ -772,7 +859,7 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
 <!-- PAYMENT MODAL -->
 <div class="modal-bg" id="pay-modal">
   <div class="modal-box">
-    <div style="font-weight:900;font-size:18px;margin-bottom:4px;color:var(--text)">💰 Ödeme Ekle</div>
+    <div style="font-weight:700;font-size:18px;margin-bottom:4px;color:var(--text)">💰 Ödeme Ekle</div>
     <div id="pay-modal-date" style="font-size:13px;color:var(--muted);margin-bottom:14px;font-weight:700"></div>
     <div id="pay-type-wrap" style="display:none"><label class="lbl">Ödeme Ne İçin?</label>
     <select id="pay-type" style="margin-bottom:12px" onchange="onPayTypeChange()"></select></div>
@@ -798,9 +885,9 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
     <div id="rec-card">
       <div class="rec-hdr">
         <div style="font-size:42px;margin-bottom:7px">🎵♟</div>
-        <div style="font-size:16px;font-weight:900;line-height:1.4">RockJazz Müzik Aletleri<br>ve Silifke Satranç Atölyesi</div>
+        <div style="font-size:16px;font-weight:700;line-height:1.4">RockJazz Müzik Aletleri<br>ve Silifke Satranç Atölyesi</div>
         <div style="font-size:11px;color:rgba(255,255,255,.6);margin-top:4px;font-weight:700;letter-spacing:1px;text-transform:uppercase">Resmi Ödeme Makbuzu</div>
-        <div style="display:inline-block;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:4px 16px;font-size:13px;font-weight:800;margin-top:10px">✅ MAKBUZ</div>
+        <div style="display:inline-block;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:4px 16px;font-size:13px;font-weight:600;margin-top:10px">✅ MAKBUZ</div>
         <div id="rec-no" style="font-size:11px;font-weight:700;color:rgba(255,255,255,.4);margin-top:5px"></div>
       </div>
       <div class="rec-body">
@@ -825,14 +912,14 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
         </div>
         <div class="rec-row">
           <div class="rec-lbl" style="padding-top:9px">Ücret</div>
-          <div class="rec-val"><div style="display:flex;align-items:center;gap:6px"><input id="rec-amount" type="number" placeholder="0" style="font-size:24px;font-weight:900;color:#059669;max-width:150px"><span style="font-size:20px;font-weight:900;color:#059669">₺</span></div></div>
+          <div class="rec-val"><div style="display:flex;align-items:center;gap:6px"><input id="rec-amount" type="number" placeholder="0" style="font-size:24px;font-weight:700;color:#059669;max-width:150px"><span style="font-size:20px;font-weight:700;color:#059669">₺</span></div></div>
         </div>
         <div class="rec-row"><div class="rec-lbl">Parayı Alan</div><div class="rec-val"><span class="rec-fix">RockJazz Müzik Aletleri<br>ve Silifke Satranç Atölyesi</span></div></div>
         <div class="rec-row"><div class="rec-lbl">Not</div><div class="rec-val"><input id="rec-note" placeholder="Ek not (isteğe bağlı)"></div></div>
       </div>
       <div class="rec-foot">
-        <div style="font-size:13px;color:#7c82b8;font-weight:700" id="rec-date"></div>
-        <div style="font-size:12px;color:#4c4f8a;font-weight:800;text-align:right;line-height:1.5">Kaşe / İmza<br><span style="font-size:15px">____________________</span></div>
+        <div style="font-size:13px;color:#7a8399;font-weight:700" id="rec-date"></div>
+        <div style="font-size:12px;color:#4a5470;font-weight:600;text-align:right;line-height:1.5">Kaşe / İmza<br><span style="font-size:15px">____________________</span></div>
       </div>
     </div>
   </div>
@@ -979,7 +1066,7 @@ const eduColor=e=>{
   if(!e)return{border:'#e2e8f0',bg:'#ffffff'};
   if(e.includes('Satranç'))return{border:'#f97316',bg:'#fff7ed'};
   if(e.includes('Piyano'))return{border:'#3b82f6',bg:'#eff6ff'};
-  if(e.includes('Gitar'))return{border:'#8b5cf6',bg:'#f5f3ff'};
+  if(e.includes('Gitar'))return{border:'#3a4c8a',bg:'#f5f3ff'};
   if(e.includes('Bağlama'))return{border:'#eab308',bg:'#fefce8'};
   if(e.includes('Ukulele'))return{border:'#22c55e',bg:'#f0fdf4'};
   return{border:'#e2e8f0',bg:'#ffffff'};
@@ -1013,6 +1100,15 @@ function go(id){
   if(id==='s-yform') openYForm();
   if(id==='s-week') renderWeek();
   if(id==='s-daily') openDaily();
+  const bm={'s-list':'home','s-daily':'daily','s-week':'week','s-veli-share':'veli'};
+  ['home','daily','week','veli'].forEach(k=>{const b=document.getElementById('bn-'+k);if(b)b.className=(bm[id]===k)?'on':'';});
+}
+function dtShow(t){
+  ['cal','notes','level','ops'].forEach(k=>{
+    const el=document.getElementById('dt-'+k),b=document.getElementById('dtb-'+k);
+    if(el)el.style.display=(k===t)?'block':'none';
+    if(b)b.className='dt-btn'+(k===t?' on':'');
+  });
 }
 
 // ══ LIST ══════════════════════════════════════════════════════════════
@@ -1057,16 +1153,16 @@ function renderTodaySched(){
     const c=eduColor(s.education);
     const fn=((s.name||'')+' '+(s.surname||'')).trim().toLocaleUpperCase('tr').replace(/\s+/g,' ');
     const dup=dupSet.has(fn);
-    const dupTag=dup?`<div style="font-size:11px;color:#dc2626;font-weight:900;margin-top:2px">⚠️ Aynı isimde başka öğrenci var — ${s.phone?'📞 '+s.phone:(s.momPhone?'👩 '+s.momPhone:'Kayıt no: '+s.id)}</div>`:'';
+    const dupTag=dup?`<div style="font-size:11px;color:#dc2626;font-weight:700;margin-top:2px">⚠️ Aynı isimde başka öğrenci var — ${s.phone?'📞 '+s.phone:(s.momPhone?'👩 '+s.momPhone:'Kayıt no: '+s.id)}</div>`:'';
     return `
     <div class="s-row" style="border-color:${c.border};background:${c.bg}" onclick="openDetCal('${s.id}')">
       <div class="avatar" style="width:40px;height:40px;background:${c.border};font-size:18px">${eduIcon(s.education)}</div>
       <div style="flex:1;min-width:0">
-        <div style="font-weight:900;font-size:14px">${s.name} ${s.surname}</div>
+        <div style="font-weight:700;font-size:14px">${s.name} ${s.surname}</div>
         <div style="font-size:11px;color:var(--muted);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${s.education} · ${s.program}</div>
         ${dupTag}
       </div>
-      <div style="font-weight:900;font-size:14px;color:${c.border};flex-shrink:0">⏰ ${time}</div>
+      <div style="font-weight:700;font-size:14px;color:${c.border};flex-shrink:0">⏰ ${time}</div>
     </div>`;
   }).join('');
 }
@@ -1081,10 +1177,21 @@ function renderDupNameWarning(){
     return t[0].charAt(0)+t[0].slice(1).toLocaleLowerCase('tr')+' '+(t[1]?t[1].charAt(0)+t[1].slice(1).toLocaleLowerCase('tr'):'');
   });
   box.style.display='block';
-  box.innerHTML='<div style="background:#fef2f2;border:2px solid #fecaca;border-radius:12px;padding:10px 12px;margin-bottom:12px;font-size:12px;font-weight:800;color:#991b1b">⚠️ Aynı isimde birden fazla kayıtlı öğrenci var: '+names.join(', ')+'. Yoklama ve ders programı eşleştirmelerinde karışıklık olmaması için bu isimler otomatik eşleştirmelerde atlanır — telefon numarasına göre ayırt edin.</div>';
+  box.innerHTML='<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:12px;padding:10px 12px;margin-bottom:12px;font-size:12px;font-weight:600;color:#991b1b">⚠️ Aynı isimde birden fazla kayıtlı öğrenci var: '+names.join(', ')+'. Yoklama ve ders programı eşleştirmelerinde karışıklık olmaması için bu isimler otomatik eşleştirmelerde atlanır — telefon numarasına göre ayırt edin.</div>';
 }
 function renderList(){
   try{renderLevelBanner();}catch(e){}
+  try{
+    const hs=document.getElementById('home-sum');
+    if(hs){
+      const ti=(new Date().getDay()+6)%7;
+      const n=students.reduce((a,x)=>a+(x.schedule||[]).filter(sl=>sl.day===ti&&sl.time).length,0);
+      const dn=new Date();
+      hs.innerHTML='<div class="kpi"><div class="v">'+students.length+'</div><div class="k">Aktif öğrenci</div></div>'+
+        '<div class="kpi"><div class="v">'+n+'</div><div class="k">Bugünkü ders</div></div>'+
+        '<div class="kpi"><div class="v">'+dn.getDate()+' '+MONTHS[dn.getMonth()].slice(0,3)+'</div><div class="k">'+['Pazar','Pazartesi','Salı','Çarşamba','Perşembe','Cuma','Cumartesi'][dn.getDay()]+'</div></div>';
+    }
+  }catch(e){}
   renderTodaySched();
   renderRecBanner();
   renderDupNameWarning();
@@ -1103,7 +1210,7 @@ function renderList(){
       return `
       <div style="display:flex;align-items:center;gap:8px;margin:18px 2px 8px">
         <span style="width:11px;height:11px;border-radius:50%;background:${dot};display:inline-block;flex-shrink:0"></span>
-        <span style="font-weight:900;font-size:14px;color:#1e293b">${cat}</span>
+        <span style="font-weight:700;font-size:14px;color:#1e293b">${cat}</span>
         <span style="font-size:12px;color:var(--muted);font-weight:700">(${list.length})</span>
       </div>` + list.map(s=>{
         const c=eduColor(s.education);
@@ -1113,7 +1220,7 @@ function renderList(){
       <div class="s-row" style="border-color:${dup?'#dc2626':c.border};background:${c.bg}" onclick="openDetNewWin('${s.id}')">
         <div class="avatar" style="width:48px;height:48px;background:${c.border}">${eduIcon(s.education)}</div>
         <div style="flex:1;min-width:0">
-          <div style="font-weight:900;font-size:15px">${s.name} ${s.surname}${dup?' <span style="color:#dc2626;font-size:11px;font-weight:900">⚠️ aynı isim</span>':''}</div>
+          <div style="font-weight:700;font-size:15px">${s.name} ${s.surname}${dup?' <span style="color:#dc2626;font-size:11px;font-weight:700">⚠️ aynı isim</span>':''}</div>
           <div style="font-size:12px;color:var(--muted);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${s.education} · ${s.program}</div>
           <div style="font-size:12px;color:var(--dim);margin-top:1px">${s.phone?'📞 '+s.phone:''}${s.momPhone?' · 👩 '+s.momPhone:''}${dup?' · Kayıt no: '+s.id:''}</div>
           ${recBadge(s.id)}
@@ -1176,12 +1283,12 @@ const YF_SEED={"2026-09":{"rows":[["11:00:00                        11:30","11:1
 ;
 let yfData=null, yfSaveTimer=null, yfPayments={}, yfActiveEl=null;
 const YF_COLORS=[
-  {name:'Siyah',hex:'#1e1b4b'},
+  {name:'Siyah',hex:'#1b2340'},
   {name:'Kırmızı',hex:'#dc2626'},
   {name:'Turuncu',hex:'#ea580c'},
   {name:'Yeşil',hex:'#059669'},
   {name:'Mavi',hex:'#1d4ed8'},
-  {name:'Mor',hex:'#7c3aed'},
+  {name:'Mor',hex:'#2f3f73'},
   {name:'Pembe',hex:'#db2777'}
 ];
 function yfInitToolbar(){
@@ -1465,8 +1572,8 @@ function addSchedRow(p,day,time){
   row.style.cssText='display:flex;gap:6px;align-items:center;margin-bottom:6px';
   const dayOpts=SCHED_DAYS.map((d,i)=>`<option value="${i}" ${i===day?'selected':''}>${d}</option>`).join('');
   row.innerHTML=`
-    <select class="sched-day" style="flex:1;padding:9px 6px;font-size:13px;border-radius:9px;border:2px solid var(--border);font-weight:800">${dayOpts}</select>
-    <input type="time" class="sched-time" value="${time||'14:00'}" style="flex:1;padding:9px 6px;font-size:13px;border-radius:9px;border:2px solid var(--border);font-weight:800">
+    <select class="sched-day" style="flex:1;padding:9px 6px;font-size:13px;border-radius:9px;border:1px solid var(--border);font-weight:600">${dayOpts}</select>
+    <input type="time" class="sched-time" value="${time||'14:00'}" style="flex:1;padding:9px 6px;font-size:13px;border-radius:9px;border:1px solid var(--border);font-weight:600">
     <button type="button" class="btn-del" style="flex-shrink:0" onclick="this.parentElement.remove()">Sil</button>`;
   wrap.appendChild(row);
 }
@@ -1630,6 +1737,7 @@ async function openDet(id){
   payData=Object.values(payVal||{});
   notesData=noteVal||{};
   notesLogData=nlVal||{};
+  dtShow('cal');
   // Gün bittiyse (kayıt bugünden eskiyse): ana alandan kaldır, arşive tarihiyle taşı
   try{
     const t=todays();
@@ -1665,22 +1773,22 @@ function renderDetail(){
   let regBadge='';
   if(s.registeredAt){
     const[ry,rm,rd]=s.registeredAt.split('-');
-    regBadge=`<div style="display:inline-flex;align-items:center;gap:5px;background:#1e1b4b;color:#c4b5fd;border-radius:8px;padding:4px 10px;font-size:12px;font-weight:800;margin-top:5px">📅 Kayıt: ${rd} ${MONTHS[+rm-1]} ${ry}</div>`;
+    regBadge=`<div style="display:inline-flex;align-items:center;gap:5px;background:#1b2340;color:#b4bddb;border-radius:8px;padding:4px 10px;font-size:12px;font-weight:600;margin-top:5px">📅 Kayıt: ${rd} ${MONTHS[+rm-1]} ${ry}</div>`;
   }
   document.getElementById('det-hdr').innerHTML=`
     <div style="display:flex;align-items:flex-start;gap:13px">
       <div class="avatar" style="width:54px;height:54px;font-size:26px;border-radius:16px">${eduIcon(s.education)}</div>
       <div style="flex:1;min-width:0">
-        <div style="font-weight:900;font-size:19px">${s.name} ${s.surname}</div>
+        <div style="font-weight:700;font-size:19px">${s.name} ${s.surname}</div>
         ${regBadge}
         <div style="display:flex;gap:6px;margin-top:7px;flex-wrap:wrap">
-          <span class="badge" style="background:var(--purple-l);color:var(--purple);border:2px solid #ddd6fe">${s.education}</span>
-          <span class="badge" style="background:var(--green-l);color:var(--green);border:2px solid #a7f3d0">⏱ ${s.program}</span>
-          ${s.fee?'<span class="badge" style="background:var(--green-l);color:var(--green);border:2px solid #a7f3d0">💰 '+parseFloat(s.fee).toLocaleString('tr-TR')+' ₺/ay</span>':''}
-          ${s.lessonFee?'<span class="badge" style="background:#f0fdf4;color:#166534;border:2px solid #86efac">📚 '+parseFloat(s.lessonFee).toLocaleString('tr-TR')+' ₺/ders</span>':''}
-          ${s.fee?(s.kdvDahil?'<span class="badge" style="background:#eff6ff;color:#1d4ed8;border:2px solid #bfdbfe">✅ KDV Dahil</span>':'<span class="badge" style="background:#f3f4f6;color:#4b5563;border:2px solid #d1d5db">🚫 KDV Hariç</span>'):''}
-          ${rng?'<span class="badge" style="background:#fef9c3;color:#713f12;border:2px solid #fde047">💳 Her ay '+s.payDay+'. günler</span>':''}
-          ${s.schedule&&s.schedule.length?'<span class="badge" style="background:#ecfdf5;color:#15803d;border:2px solid #86efac">📅 '+s.schedule.map(sl=>SCHED_DAYS[sl.day]+' '+sl.time).join(' · ')+'</span>':''}
+          <span class="badge" style="background:var(--purple-l);color:var(--purple);border:1px solid #d3d9ea">${s.education}</span>
+          <span class="badge" style="background:var(--green-l);color:var(--green);border:1px solid #a7f3d0">⏱ ${s.program}</span>
+          ${s.fee?'<span class="badge" style="background:var(--green-l);color:var(--green);border:1px solid #a7f3d0">💰 '+parseFloat(s.fee).toLocaleString('tr-TR')+' ₺/ay</span>':''}
+          ${s.lessonFee?'<span class="badge" style="background:#f0fdf4;color:#166534;border:1px solid #86efac">📚 '+parseFloat(s.lessonFee).toLocaleString('tr-TR')+' ₺/ders</span>':''}
+          ${s.fee?(s.kdvDahil?'<span class="badge" style="background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe">✅ KDV Dahil</span>':'<span class="badge" style="background:#f3f4f6;color:#4b5563;border:1px solid #d1d5db">🚫 KDV Hariç</span>'):''}
+          ${rng?'<span class="badge" style="background:#fef9c3;color:#713f12;border:1px solid #fde047">💳 Her ay '+s.payDay+'. günler</span>':''}
+          ${s.schedule&&s.schedule.length?'<span class="badge" style="background:#ecfdf5;color:#15803d;border:1px solid #86efac">📅 '+s.schedule.map(sl=>SCHED_DAYS[sl.day]+' '+sl.time).join(' · ')+'</span>':''}
         </div>
         <div style="margin-top:10px;display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12px;font-weight:700">
           ${s.phone?'<div style="background:var(--bg);padding:6px 9px;border-radius:7px;color:var(--text2)">📞 '+s.phone+'</div>':''}
@@ -1835,14 +1943,14 @@ function renderHwArchive(){
     const dl=d.getDate()+' '+MONTHS[d.getMonth()]+' '+d.getFullYear()+' · '+HW_DAYS[d.getDay()];
     const isToday=it.date===today;
     const latest=it===items[0];
-    return '<div style="background:'+(latest?'#faf5ff':'var(--bg)')+';border:2px solid '+(latest?'#c4b5fd':'var(--border)')+';border-radius:12px;padding:10px 12px;margin-bottom:8px">'+
-      (latest?'<div style="font-size:10px;font-weight:900;color:#7c3aed;margin-bottom:4px">⭐ EN SON KAYDEDİLEN</div>':'')+
+    return '<div style="background:'+(latest?'#f5f6fb':'var(--bg)')+';border:1px solid '+(latest?'#b4bddb':'var(--border)')+';border-radius:12px;padding:10px 12px;margin-bottom:8px">'+
+      (latest?'<div style="font-size:10px;font-weight:700;color:#2f3f73;margin-bottom:4px">⭐ EN SON KAYDEDİLEN</div>':'')+
       '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px">'+
-        '<div style="font-weight:900;font-size:12px;color:var(--purple)">📅 '+dl+(it.time?' · 🕒 '+it.time:'')+(isToday?' <span style="background:#dcfce7;color:#166534;border-radius:6px;padding:1px 6px;font-size:10px;margin-left:4px">Bugün</span>':'')+'</div>'+
-        '<button onclick="deleteHwLog(\''+it.k.replace(/'/g,'')+'\')" title="Kaydı sil" style="background:#fee2e2;color:#dc2626;border:none;border-radius:7px;padding:3px 8px;font-size:12px;font-weight:800;cursor:pointer">🗑️</button>'+
+        '<div style="font-weight:700;font-size:12px;color:var(--purple)">📅 '+dl+(it.time?' · 🕒 '+it.time:'')+(isToday?' <span style="background:#dcfce7;color:#166534;border-radius:6px;padding:1px 6px;font-size:10px;margin-left:4px">Bugün</span>':'')+'</div>'+
+        '<button onclick="deleteHwLog(\''+it.k.replace(/'/g,'')+'\')" title="Kaydı sil" style="background:#fee2e2;color:#dc2626;border:none;border-radius:7px;padding:3px 8px;font-size:12px;font-weight:600;cursor:pointer">🗑️</button>'+
       '</div>'+
-      (it.hw?'<div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:'+(it.gr?'6':'0')+'px;white-space:pre-wrap"><span style="font-weight:900;color:var(--text2)">📚 Ödev:</span> '+hwEsc(it.hw)+'</div>':'')+
-      (it.gr?'<div style="font-size:13px;font-weight:700;color:var(--text);white-space:pre-wrap"><span style="font-weight:900;color:var(--text2)">📝 Not:</span> '+hwEsc(it.gr)+'</div>':'')+
+      (it.hw?'<div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:'+(it.gr?'6':'0')+'px;white-space:pre-wrap"><span style="font-weight:700;color:var(--text2)">📚 Ödev:</span> '+hwEsc(it.hw)+'</div>':'')+
+      (it.gr?'<div style="font-size:13px;font-weight:700;color:var(--text);white-space:pre-wrap"><span style="font-weight:700;color:var(--text2)">📝 Not:</span> '+hwEsc(it.gr)+'</div>':'')+
     '</div>';
   }).join('');
 }
@@ -1992,10 +2100,10 @@ function renderCal(){
   const leg=curTab==='att'
     ?'<div class="ldot"><span class="dot" style="background:#1d4ed8"></span>Geldi</div>'+
       '<div class="ldot"><span class="dot" style="background:#dc2626"></span>Gelmedi</div>'+
-      (rng?'<div class="ldot"><span class="dot" style="background:#fef9c3;border:2px solid #fde047"></span>Taahhüt Günleri</div>':'')+
-      '<div class="ldot"><span class="dot" style="background:transparent;border:2px solid var(--orange)"></span>Bugün</div>'
+      (rng?'<div class="ldot"><span class="dot" style="background:#fef9c3;border:1px solid #fde047"></span>Taahhüt Günleri</div>':'')+
+      '<div class="ldot"><span class="dot" style="background:transparent;border:1px solid var(--orange)"></span>Bugün</div>'
     :'<div class="ldot"><span class="dot" style="background:#059669"></span>Ödeme Yapıldı</div>'+
-      '<div class="ldot"><span class="dot" style="background:transparent;border:2px solid var(--orange)"></span>Bugün</div>';
+      '<div class="ldot"><span class="dot" style="background:transparent;border:1px solid var(--orange)"></span>Bugün</div>';
   document.getElementById('cal-leg').innerHTML=leg;
 
   const mk=mkey(curY,curM);
@@ -2007,13 +2115,13 @@ function renderCal(){
   const calcTot=lf>0?came*lf:0;
 
   document.getElementById('cal-stats').innerHTML=curTab==='att'
-    ?'<div class="stat" style="background:var(--blue-l);border:2px solid #bfdbfe"><div class="n" style="color:var(--blue)">'+came+'</div><div class="l" style="color:var(--blue)">Geldi</div></div>'+
-      '<div class="stat" style="background:var(--red-l);border:2px solid #fecaca"><div class="n" style="color:var(--red)">'+abs+'</div><div class="l" style="color:var(--red)">Gelmedi</div></div>'+
-      '<div class="stat" style="background:var(--purple-l);border:2px solid #ddd6fe"><div class="n" style="color:var(--purple)">'+(came+abs)+'</div><div class="l" style="color:var(--purple)">Toplam</div></div>'+
-      (lf>0&&came>0?'<div class="stat" style="flex:2;background:#f0fdf4;border:2px dashed #86efac"><div class="n" style="color:#059669;font-size:13px">'+came+'×'+lf.toLocaleString('tr-TR')+'₺='+calcTot.toLocaleString('tr-TR')+'₺</div><div class="l" style="color:#166534">Tahmini Ücret</div></div>':'')
-    :'<div class="stat" style="background:var(--green-l);border:2px solid #a7f3d0"><div class="n" style="color:var(--green)">'+pays.length+'</div><div class="l" style="color:var(--green)">Ödeme</div></div>'+
-      '<div class="stat" style="flex:2;background:var(--green-l);border:2px solid #a7f3d0"><div class="n" style="color:var(--green);font-size:19px">'+tot.toLocaleString('tr-TR')+' ₺</div><div class="l" style="color:var(--green)">Bu Ay Alınan</div></div>'+
-      (lf>0?'<div class="stat" style="background:#f0fdf4;border:2px dashed #86efac;flex:2"><div class="n" style="color:#166534;font-size:12px">'+came+'×'+lf.toLocaleString('tr-TR')+'₺</div><div class="n" style="color:#059669;font-size:16px;margin-top:2px">='+calcTot.toLocaleString('tr-TR')+'₺</div><div class="l" style="color:#166534">Hesaplama</div></div>':'');
+    ?'<div class="stat" style="background:var(--blue-l);border:1px solid #bfdbfe"><div class="n" style="color:var(--blue)">'+came+'</div><div class="l" style="color:var(--blue)">Geldi</div></div>'+
+      '<div class="stat" style="background:var(--red-l);border:1px solid #fecaca"><div class="n" style="color:var(--red)">'+abs+'</div><div class="l" style="color:var(--red)">Gelmedi</div></div>'+
+      '<div class="stat" style="background:var(--purple-l);border:1px solid #d3d9ea"><div class="n" style="color:var(--purple)">'+(came+abs)+'</div><div class="l" style="color:var(--purple)">Toplam</div></div>'+
+      (lf>0&&came>0?'<div class="stat" style="flex:2;background:#f0fdf4;border:1px dashed #86efac"><div class="n" style="color:#059669;font-size:13px">'+came+'×'+lf.toLocaleString('tr-TR')+'₺='+calcTot.toLocaleString('tr-TR')+'₺</div><div class="l" style="color:#166534">Tahmini Ücret</div></div>':'')
+    :'<div class="stat" style="background:var(--green-l);border:1px solid #a7f3d0"><div class="n" style="color:var(--green)">'+pays.length+'</div><div class="l" style="color:var(--green)">Ödeme</div></div>'+
+      '<div class="stat" style="flex:2;background:var(--green-l);border:1px solid #a7f3d0"><div class="n" style="color:var(--green);font-size:19px">'+tot.toLocaleString('tr-TR')+' ₺</div><div class="l" style="color:var(--green)">Bu Ay Alınan</div></div>'+
+      (lf>0?'<div class="stat" style="background:#f0fdf4;border:1px dashed #86efac;flex:2"><div class="n" style="color:#166534;font-size:12px">'+came+'×'+lf.toLocaleString('tr-TR')+'₺</div><div class="n" style="color:#059669;font-size:16px;margin-top:2px">='+calcTot.toLocaleString('tr-TR')+'₺</div><div class="l" style="color:#166534">Hesaplama</div></div>':'');
 
   renderPayList();
   renderPayStatus();
@@ -2085,11 +2193,11 @@ function renderPayList(){
     return '<div class="pay-row">'+
       '<div style="min-width:0;flex:1">'+
         '<div style="font-size:14px;font-weight:700">📅 '+d.getDate()+' '+MONTHS[d.getMonth()]+' '+d.getFullYear()+'</div>'+
-        (p.recId?'<div style="font-size:11px;color:#b45309;font-weight:800;margin-top:2px">🛍️ Alınan mal / alacak ödemesi</div>':'')+
+        (p.recId?'<div style="font-size:11px;color:#b45309;font-weight:600;margin-top:2px">🛍️ Alınan mal / alacak ödemesi</div>':'')+
         (p.desc?'<div style="font-size:12px;color:var(--muted);margin-top:2px;font-weight:600">💬 '+p.desc+'</div>':'')+
       '</div>'+
       '<div style="display:flex;align-items:center;gap:9px;flex-shrink:0">'+
-        '<span style="font-weight:900;color:var(--green);font-size:15px">'+parseFloat(p.amount).toLocaleString('tr-TR')+' ₺</span>'+
+        '<span style="font-weight:700;color:var(--green);font-size:15px">'+parseFloat(p.amount).toLocaleString('tr-TR')+' ₺</span>'+
         '<button class="btn-del" onclick="delPay(\''+p.id+'\')">Sil</button>'+
       '</div></div>';
   }).join('');
@@ -2148,11 +2256,11 @@ function renderYearlyTable(){
   let regY=0,regM2=0;
   if(s.registeredAt){const p=s.registeredAt.split('-');regY=+p[0];regM2=+p[1]-1;}
   let carryover=0,hasData=false;
-  let html='<div style="font-weight:900;font-size:15px;color:var(--text);margin-bottom:4px">📋 '+tableYear+' Yılı Ödeme Tablosu'+(policyOn?' <span style="font-size:11px;background:#ede9fe;color:#7c3aed;border-radius:8px;padding:2px 9px;vertical-align:middle">🏷️ Erken Ödeme İndirimi Aktif</span>':'')+'</div>';
+  let html='<div style="font-weight:700;font-size:15px;color:var(--text);margin-bottom:4px">📋 '+tableYear+' Yılı Ödeme Tablosu'+(policyOn?' <span style="font-size:11px;background:#e9ecf5;color:#2f3f73;border-radius:8px;padding:2px 9px;vertical-align:middle">🏷️ Erken Ödeme İndirimi Aktif</span>':'')+'</div>';
   if(s.registeredAt){const[ry,rm,rd]=s.registeredAt.split('-');html+='<div style="font-size:11px;color:var(--muted);font-weight:700;margin-bottom:12px">📅 Kayıt: '+rd+' '+MONTHS[+rm-1]+' '+ry+' tarihinden itibaren</div>';}
   else html+='<div style="margin-bottom:12px"></div>';
   html+='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px">';
-  html+='<thead><tr style="background:var(--purple-l)"><th style="padding:8px 5px;text-align:left;font-weight:900;color:var(--purple)">Ay</th><th style="padding:8px 5px;text-align:right;font-weight:900;color:var(--purple)">Beklenen</th><th style="padding:8px 5px;text-align:right;font-weight:900;color:var(--purple)">Ödenen</th><th style="padding:8px 5px;text-align:right;font-weight:900;color:var(--purple)">Bakiye</th><th style="padding:8px 5px;text-align:left;font-weight:900;color:var(--purple)">Durum</th></tr></thead><tbody>';
+  html+='<thead><tr style="background:var(--purple-l)"><th style="padding:8px 5px;text-align:left;font-weight:700;color:var(--purple)">Ay</th><th style="padding:8px 5px;text-align:right;font-weight:700;color:var(--purple)">Beklenen</th><th style="padding:8px 5px;text-align:right;font-weight:700;color:var(--purple)">Ödenen</th><th style="padding:8px 5px;text-align:right;font-weight:700;color:var(--purple)">Bakiye</th><th style="padding:8px 5px;text-align:left;font-weight:700;color:var(--purple)">Durum</th></tr></thead><tbody>';
   for(let m=0;m<12;m++){
     if(s.registeredAt){if(tableYear<regY)break;if(tableYear===regY&&m<regM2)continue;}
     const isFuture=(tableYear>now.getFullYear())||(tableYear===now.getFullYear()&&m>now.getMonth());
@@ -2198,18 +2306,18 @@ function renderYearlyTable(){
     const parts=[];
     if(lRemShow>0)parts.push('📚 Ders ücreti '+fmtTL(lRemShow)+' ₺');
     remLines.forEach(x=>parts.push(x));
-    const tags=(discApplied?'<div style="font-size:10px;color:#7c3aed;font-weight:800;margin-top:2px">🏷️ %5 indirim uygulandı</div>':'')+
-      (earlyPay?'<div style="font-size:10px;color:#059669;font-weight:800;margin-top:2px">⏱ Erken ödendi (sonraki ay %5 indirim kazandırır)</div>':'')+
-      addLines.map(t=>'<div style="font-size:10px;color:#b45309;font-weight:800;margin-top:2px">➕ '+t+'</div>').join('')+
-      ((iExp>0||iRem>0)&&balance>0?'<div style="font-size:10px;color:#991b1b;font-weight:800;margin-top:2px">Kalan: '+parts.join(' + ')+'</div>':'');
+    const tags=(discApplied?'<div style="font-size:10px;color:#2f3f73;font-weight:600;margin-top:2px">🏷️ %5 indirim uygulandı</div>':'')+
+      (earlyPay?'<div style="font-size:10px;color:#059669;font-weight:600;margin-top:2px">⏱ Erken ödendi (sonraki ay %5 indirim kazandırır)</div>':'')+
+      addLines.map(t=>'<div style="font-size:10px;color:#b45309;font-weight:600;margin-top:2px">➕ '+t+'</div>').join('')+
+      ((iExp>0||iRem>0)&&balance>0?'<div style="font-size:10px;color:#991b1b;font-weight:600;margin-top:2px">Kalan: '+parts.join(' + ')+'</div>':'');
     html+='<tr style="border-bottom:1.5px solid var(--border);background:'+rowBg+'">'+
-      '<td style="padding:8px 5px;font-weight:800">'+MONTHS[m]+'</td>'+
+      '<td style="padding:8px 5px;font-weight:600">'+MONTHS[m]+'</td>'+
       '<td style="padding:8px 5px;text-align:right;font-weight:700;color:var(--text2)">'+(expected>0?expected.toLocaleString('tr-TR')+' ₺':'—')+'</td>'+
-      '<td style="padding:8px 5px;text-align:right;font-weight:800;color:'+(paid>0?'#059669':'var(--dim)')+'">'+
+      '<td style="padding:8px 5px;text-align:right;font-weight:600;color:'+(paid>0?'#059669':'var(--dim)')+'">'+
         (paid>0?paid.toLocaleString('tr-TR')+' ₺':'—')+'</td>'+
-      '<td style="padding:8px 5px;text-align:right;font-weight:900;color:'+(balance>0?'#dc2626':'#059669')+'">'+
+      '<td style="padding:8px 5px;text-align:right;font-weight:700;color:'+(balance>0?'#dc2626':'#059669')+'">'+
         (balance>0?'+'+balance.toLocaleString('tr-TR')+' ₺':balance<0?Math.abs(balance).toLocaleString('tr-TR')+' ₺ fazla':'✓')+'</td>'+
-      '<td style="padding:8px 5px;font-weight:800;color:'+stColor+'">'+stTxt+
+      '<td style="padding:8px 5px;font-weight:600;color:'+stColor+'">'+stTxt+
         (desc?'<div style="font-size:10px;color:var(--muted);margin-top:2px">'+desc+'</div>':'')+tags+
       '</td></tr>';
     carryover=newCarryover;
@@ -2232,9 +2340,9 @@ function renderYearlyTable(){
       if(carryover>0)lines+='<div style="font-size:12px;margin-top:5px">📚 Ders ücreti: <b>'+carryover.toLocaleString('tr-TR')+' ₺</b></div>';
       itemsLeft.forEach(x=>{lines+='<div style="font-size:12px;margin-top:3px">'+(x.r.type==='diger'?'📌 ':'🛍️ ')+repEsc(x.r.desc)+' <span style="font-weight:700">('+repDL(x.r.date)+')</span>: <b>'+fmtTL(x.rem)+' ₺</b></div>';});
     }
-    html+='<div style="margin-top:10px;background:#fef2f2;border:2px solid #fecaca;border-radius:9px;padding:10px 12px;font-weight:800;font-size:13px;color:#991b1b">⚠️ Toplam kalan bakiye: <b>'+totalLeft.toLocaleString('tr-TR')+' ₺</b>'+lines+'</div>';
+    html+='<div style="margin-top:10px;background:#fef2f2;border:1px solid #fecaca;border-radius:9px;padding:10px 12px;font-weight:600;font-size:13px;color:#991b1b">⚠️ Toplam kalan bakiye: <b>'+totalLeft.toLocaleString('tr-TR')+' ₺</b>'+lines+'</div>';
   } else if((baseFee>0||recData.length)&&hasData){
-    html+='<div style="margin-top:10px;background:#f0fdf4;border:2px solid #a7f3d0;border-radius:9px;padding:10px 12px;font-weight:800;font-size:13px;color:#065f46">✅ Tüm ödemeler tam yapılmış</div>';
+    html+='<div style="margin-top:10px;background:#f0fdf4;border:1px solid #a7f3d0;border-radius:9px;padding:10px 12px;font-weight:600;font-size:13px;color:#065f46">✅ Tüm ödemeler tam yapılmış</div>';
   }
   if(!hasData){card.style.display='none';return;}
   card.style.display='block';
@@ -2319,22 +2427,22 @@ function renderRecCard(){
   const today=todays();
   const total=openL.reduce((a,r)=>a+recRemain(r,payData),0);
   document.getElementById('rec-summary').innerHTML=openL.length
-    ?'<div style="background:#fff7ed;border:2px solid #fdba74;border-radius:10px;padding:9px 12px;margin-bottom:10px;font-weight:900;font-size:13px;color:#9a3412">Açık alacak: '+openL.length+' kalem · <span style="font-size:15px">'+fmtTL(total)+' ₺</span></div>'
+    ?'<div style="background:#fff7ed;border:1px solid #fdba74;border-radius:10px;padding:9px 12px;margin-bottom:10px;font-weight:700;font-size:13px;color:#9a3412">Açık alacak: '+openL.length+' kalem · <span style="font-size:15px">'+fmtTL(total)+' ₺</span></div>'
     :'<div style="font-size:12px;color:var(--dim);font-weight:700;margin-bottom:10px">Açık alacak yok.</div>';
   document.getElementById('rec-open-list').innerHTML=openL.map(r=>{
     const rem=recRemain(r,payData),pd=recPaid(r,payData);
     const due=r.nextRemind<=today;
     const late=due?daysBetween(r.nextRemind,today):0;
     const remTxt=due
-      ?'<span style="color:#dc2626;font-weight:900">🔔 Hatırlatma günü'+(late>0?' ('+late+' gün geçti)':' — bugün')+'</span>'
+      ?'<span style="color:#dc2626;font-weight:700">🔔 Hatırlatma günü'+(late>0?' ('+late+' gün geçti)':' — bugün')+'</span>'
       :'🔔 Sonraki hatırlatma: <b>'+repDL(r.nextRemind)+'</b>';
     return '<div class="rec-item'+(due?' due':'')+'">'+
       '<div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start">'+
-        '<div style="min-width:0;flex:1"><div style="font-weight:900;font-size:14px">'+recIcon(r)+' '+repEsc(r.desc)+'</div>'+
+        '<div style="min-width:0;flex:1"><div style="font-weight:700;font-size:14px">'+recIcon(r)+' '+repEsc(r.desc)+'</div>'+
         '<div style="font-size:11px;color:var(--muted);font-weight:700;margin-top:2px">📅 '+repDL(r.date)+' · '+(r.type==='diger'?'Diğer alacak':'Alınan mal')+'</div>'+
         '<div style="font-size:11px;color:var(--muted);font-weight:700;margin-top:2px">Toplam '+fmtTL(r.amount)+' ₺'+(pd>0?' · Ödenen '+fmtTL(pd)+' ₺':'')+'</div>'+
         '<div style="font-size:11px;margin-top:3px;font-weight:700;color:#92400e">'+remTxt+' <span style="color:var(--dim)">(her '+(r.remindEvery||5)+' günde bir)</span></div></div>'+
-        '<div style="text-align:right;flex-shrink:0"><div style="font-size:10px;color:var(--muted);font-weight:800">KALAN</div><div style="font-weight:900;font-size:17px;color:#dc2626">'+fmtTL(rem)+' ₺</div></div>'+
+        '<div style="text-align:right;flex-shrink:0"><div style="font-size:10px;color:var(--muted);font-weight:600">KALAN</div><div style="font-weight:700;font-size:17px;color:#dc2626">'+fmtTL(rem)+' ₺</div></div>'+
       '</div>'+
       '<div class="rec-acts">'+
         '<button class="ra-pay" onclick="recPay(\''+r.id+'\')">💰 Ödeme Al</button>'+
@@ -2348,7 +2456,7 @@ function renderRecCard(){
     w.style.display='block';
     document.getElementById('rec-closed-sum').textContent='✅ Ödenenler ('+closedL.length+')';
     document.getElementById('rec-closed-list').innerHTML=closedL.map(r=>
-      '<div class="rec-item paidx" style="padding:8px 11px;margin-bottom:6px"><div style="display:flex;justify-content:space-between;gap:8px"><div style="font-weight:800;font-size:13px">'+recIcon(r)+' '+repEsc(r.desc)+'<div style="font-size:11px;color:var(--muted);font-weight:700">Alındı: '+repDL(r.date)+(r.closedAt?' · Ödendi: '+repDL(r.closedAt):'')+'</div></div><div style="font-weight:900;color:#059669;white-space:nowrap">'+fmtTL(r.amount)+' ₺</div></div></div>'
+      '<div class="rec-item paidx" style="padding:8px 11px;margin-bottom:6px"><div style="display:flex;justify-content:space-between;gap:8px"><div style="font-weight:600;font-size:13px">'+recIcon(r)+' '+repEsc(r.desc)+'<div style="font-size:11px;color:var(--muted);font-weight:700">Alındı: '+repDL(r.date)+(r.closedAt?' · Ödendi: '+repDL(r.closedAt):'')+'</div></div><div style="font-weight:700;color:#059669;white-space:nowrap">'+fmtTL(r.amount)+' ₺</div></div></div>'
     ).join('');
   } else w.style.display='none';
 }
@@ -2445,7 +2553,7 @@ function recBadge(sid){
   if(!items.length)return '';
   const sum=items.reduce((a,r)=>a+recRemainStored(r),0);
   const due=items.some(r=>r.nextRemind<=todays());
-  return '<div style="display:inline-block;margin-top:4px;font-size:11px;font-weight:900;border-radius:7px;padding:2px 8px;'+(due?'background:#fee2e2;color:#991b1b':'background:#ffedd5;color:#9a3412')+'">'+(due?'🔔 ':'🛍️ ')+'Alacak: '+fmtTL(sum)+' ₺</div>';
+  return '<div style="display:inline-block;margin-top:4px;font-size:11px;font-weight:700;border-radius:7px;padding:2px 8px;'+(due?'background:#fee2e2;color:#991b1b':'background:#ffedd5;color:#9a3412')+'">'+(due?'🔔 ':'🛍️ ')+'Alacak: '+fmtTL(sum)+' ₺</div>';
 }
 function renderRecBanner(){
   const box=document.getElementById('rec-banner');if(!box)return;
@@ -2458,20 +2566,20 @@ function renderRecBanner(){
   const dueHtml=due.map(x=>{
     const late=daysBetween(x.r.nextRemind,today);
     return '<div class="rec-item due" style="margin-bottom:8px">'+
-      '<div style="display:flex;justify-content:space-between;gap:10px"><div style="min-width:0"><div style="font-weight:900;font-size:14px;cursor:pointer" onclick="openDetNewWin(\''+x.s.id+'\')">'+repEsc(x.s.name+' '+x.s.surname)+'</div>'+
+      '<div style="display:flex;justify-content:space-between;gap:10px"><div style="min-width:0"><div style="font-weight:700;font-size:14px;cursor:pointer" onclick="openDetNewWin(\''+x.s.id+'\')">'+repEsc(x.s.name+' '+x.s.surname)+'</div>'+
       '<div style="font-size:12px;font-weight:700;color:#7c2d12;margin-top:2px">'+recIcon(x.r)+' '+repEsc(x.r.desc)+' · '+repDL(x.r.date)+'</div>'+
-      '<div style="font-size:11px;font-weight:800;color:#dc2626;margin-top:2px">🔔 '+(late>0?late+' gün önce hatırlatılması gerekiyordu':'Bugün hatırlatma günü')+'</div></div>'+
-      '<div style="text-align:right;flex-shrink:0;font-weight:900;font-size:16px;color:#dc2626">'+fmtTL(x.rem)+' ₺</div></div>'+
+      '<div style="font-size:11px;font-weight:600;color:#dc2626;margin-top:2px">🔔 '+(late>0?late+' gün önce hatırlatılması gerekiyordu':'Bugün hatırlatma günü')+'</div></div>'+
+      '<div style="text-align:right;flex-shrink:0;font-weight:700;font-size:16px;color:#dc2626">'+fmtTL(x.rem)+' ₺</div></div>'+
       '<div class="rec-acts"><button class="ra-wa" onclick="recRemind(\''+x.s.id+'\',\''+x.r.id+'\')">📲 Veliye Hatırlat</button>'+
       '<button class="ra-pay" onclick="recPayFromBanner(\''+x.s.id+'\',\''+x.r.id+'\')">💰 Ödeme Al</button>'+
       '<button class="ra-snz" onclick="recSnooze(\''+x.s.id+'\',\''+x.r.id+'\')">⏰ '+(x.r.remindEvery||5)+' gün ertele</button></div></div>';
   }).join('');
   const rest=list.filter(x=>x.r.nextRemind>today);
-  const restHtml=rest.length?'<details style="margin-top:6px"><summary style="cursor:pointer;font-weight:800;font-size:12px;color:var(--text2)">Diğer açık alacaklar ('+rest.length+') — hatırlatma günü henüz gelmedi</summary><div style="margin-top:8px">'+
-    rest.map(x=>'<div style="display:flex;justify-content:space-between;gap:8px;padding:7px 0;border-bottom:1px solid #f3f4f6;font-size:12px;font-weight:700;cursor:pointer" onclick="openDetNewWin(\''+x.s.id+'\')"><div style="min-width:0"><b>'+repEsc(x.s.name+' '+x.s.surname)+'</b> · '+recIcon(x.r)+' '+repEsc(x.r.desc)+'<div style="font-size:11px;color:var(--muted)">Sonraki hatırlatma: '+repDL(x.r.nextRemind)+'</div></div><div style="font-weight:900;color:#9a3412;white-space:nowrap">'+fmtTL(x.rem)+' ₺</div></div>').join('')+'</div></details>':'';
+  const restHtml=rest.length?'<details style="margin-top:6px"><summary style="cursor:pointer;font-weight:600;font-size:12px;color:var(--text2)">Diğer açık alacaklar ('+rest.length+') — hatırlatma günü henüz gelmedi</summary><div style="margin-top:8px">'+
+    rest.map(x=>'<div style="display:flex;justify-content:space-between;gap:8px;padding:7px 0;border-bottom:1px solid #f3f4f6;font-size:12px;font-weight:700;cursor:pointer" onclick="openDetNewWin(\''+x.s.id+'\')"><div style="min-width:0"><b>'+repEsc(x.s.name+' '+x.s.surname)+'</b> · '+recIcon(x.r)+' '+repEsc(x.r.desc)+'<div style="font-size:11px;color:var(--muted)">Sonraki hatırlatma: '+repDL(x.r.nextRemind)+'</div></div><div style="font-weight:700;color:#9a3412;white-space:nowrap">'+fmtTL(x.rem)+' ₺</div></div>').join('')+'</div></details>':'';
   box.innerHTML='<div class="rec-banner-card'+(due.length?' has-due':'')+'" id="rec-banner-card">'+
-    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:'+(due.length||rest.length?'10':'0')+'px"><div style="font-weight:900;font-size:14px">🛍️ Alacaklar / Alınan Mal'+(due.length?' <span style="background:#dc2626;color:#fff;border-radius:10px;padding:1px 8px;font-size:11px;margin-left:4px">'+due.length+' hatırlatma</span>':'')+'</div>'+
-    '<div style="font-weight:900;font-size:13px;color:#9a3412">Toplam '+fmtTL(total)+' ₺</div></div>'+dueHtml+restHtml+'</div>';
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:'+(due.length||rest.length?'10':'0')+'px"><div style="font-weight:700;font-size:14px">🛍️ Alacaklar / Alınan Mal'+(due.length?' <span style="background:#dc2626;color:#fff;border-radius:10px;padding:1px 8px;font-size:11px;margin-left:4px">'+due.length+' hatırlatma</span>':'')+'</div>'+
+    '<div style="font-weight:700;font-size:13px;color:#9a3412">Toplam '+fmtTL(total)+' ₺</div></div>'+dueHtml+restHtml+'</div>';
 }
 
 // ---- Otomatik bildirim ----
@@ -2529,10 +2637,10 @@ function checkOverdue(){
   const waUrl='https://wa.me/'+(ph?'90'+ph.replace(/^0/,''):'')+'?text='+encodeURIComponent(msg);
   box.className='overdue show';
   box.innerHTML='<div style="display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap">'+
-    '<div style="flex:1;min-width:0"><div style="font-weight:900;font-size:15px;color:#991b1b;margin-bottom:3px">⚠️ Ödeme Gecikmiş!</div>'+
+    '<div style="flex:1;min-width:0"><div style="font-weight:700;font-size:15px;color:#991b1b;margin-bottom:3px">⚠️ Ödeme Gecikmiş!</div>'+
     '<div style="font-size:13px;color:#b91c1c;font-weight:700">'+s.name+' '+s.surname+' — <b>'+MONTHS[curM]+' '+curY+'</b><br>Taahhüt: <b>'+s.payDay+'. günler</b></div></div>'+
     '<div style="display:flex;flex-direction:column;gap:5px;flex-shrink:0">'+
-    '<a href="'+waUrl+'" target="_blank" style="display:inline-flex;align-items:center;gap:5px;background:linear-gradient(135deg,#25d366,#128c7e);color:#fff;border-radius:9px;padding:8px 13px;font-family:\'Nunito\',sans-serif;font-weight:800;font-size:13px;text-decoration:none">📲 WhatsApp</a>'+
+    '<a href="'+waUrl+'" target="_blank" style="display:inline-flex;align-items:center;gap:5px;background:linear-gradient(135deg,#25d366,#128c7e);color:#fff;border-radius:9px;padding:8px 13px;font-family:\'Inter\',system-ui,sans-serif;font-weight:600;font-size:13px;text-decoration:none">📲 WhatsApp</a>'+
     (ph?'<div style="font-size:11px;color:#b91c1c;font-weight:700;text-align:center">'+ph+'</div>':'<div style="font-size:11px;color:#b91c1c;font-weight:700">⚠ Telefon yok</div>')+
     '</div></div>';
 }
@@ -2747,7 +2855,7 @@ function renderAnalysis(){
         <div class="sum-n" style="color:var(--green);font-size:16px">${totalRec.toLocaleString('tr-TR')} ₺</div>
         <div class="sum-l">Alınan</div>
       </div>
-      <div class="sum-card" style="background:var(--purple-l);border-color:#ddd6fe">
+      <div class="sum-card" style="background:var(--purple-l);border-color:#d3d9ea">
         <div class="sum-n" style="color:var(--purple);font-size:16px">${totalExp.toLocaleString('tr-TR')} ₺</div>
         <div class="sum-l">Beklenen</div>
       </div>
@@ -2786,25 +2894,25 @@ function renderAnalysis(){
   document.getElementById('ana-compare').innerHTML=`
     <div style="margin-bottom:14px">
       <div style="display:flex;justify-content:space-between;margin-bottom:6px">
-        <span style="font-weight:800;font-size:13px">🎵 Müzik</span>
-        <span style="font-weight:900;font-size:13px;color:#059669">${totalMusic.toLocaleString('tr-TR')} ₺ / ${totalMusicExp.toLocaleString('tr-TR')} ₺ <span style="color:var(--muted)">(${mPct}%)</span></span>
+        <span style="font-weight:600;font-size:13px">🎵 Müzik</span>
+        <span style="font-weight:700;font-size:13px;color:#059669">${totalMusic.toLocaleString('tr-TR')} ₺ / ${totalMusicExp.toLocaleString('tr-TR')} ₺ <span style="color:var(--muted)">(${mPct}%)</span></span>
       </div>
       <div class="prog-bar"><div class="prog-fill" style="width:${mPct}%;background:#1d4ed8"></div></div>
     </div>
     <div>
       <div style="display:flex;justify-content:space-between;margin-bottom:6px">
-        <span style="font-weight:800;font-size:13px">♟ Satranç</span>
-        <span style="font-weight:900;font-size:13px;color:#059669">${totalChess.toLocaleString('tr-TR')} ₺ / ${totalChessExp.toLocaleString('tr-TR')} ₺ <span style="color:var(--muted)">(${cPct}%)</span></span>
+        <span style="font-weight:600;font-size:13px">♟ Satranç</span>
+        <span style="font-weight:700;font-size:13px;color:#059669">${totalChess.toLocaleString('tr-TR')} ₺ / ${totalChessExp.toLocaleString('tr-TR')} ₺ <span style="color:var(--muted)">(${cPct}%)</span></span>
       </div>
-      <div class="prog-bar"><div class="prog-fill" style="width:${cPct}%;background:#7c3aed"></div></div>
+      <div class="prog-bar"><div class="prog-fill" style="width:${cPct}%;background:#2f3f73"></div></div>
     </div>
     <div style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px">
       <div style="background:var(--blue-l);border-radius:9px;padding:8px;text-align:center">
-        <div style="font-weight:900;color:var(--blue)">${students.filter(s=>!s.education?.includes('Satranç')).length}</div>
+        <div style="font-weight:700;color:var(--blue)">${students.filter(s=>!s.education?.includes('Satranç')).length}</div>
         <div style="color:var(--text2);font-weight:700">Müzik Öğrencisi</div>
       </div>
       <div style="background:var(--purple-l);border-radius:9px;padding:8px;text-align:center">
-        <div style="font-weight:900;color:var(--purple)">${students.filter(s=>s.education?.includes('Satranç')).length}</div>
+        <div style="font-weight:700;color:var(--purple)">${students.filter(s=>s.education?.includes('Satranç')).length}</div>
         <div style="color:var(--text2);font-weight:700">Satranç Öğrencisi</div>
       </div>
     </div>`;
@@ -2821,7 +2929,7 @@ function renderAnalysis(){
     const thisMoPays=allPays.filter(p=>p.date.startsWith(curMk)).reduce((a,p)=>a+parseFloat(p.amount||0),0);
     const bal=fee>0?(fee-thisMoPays):0;
     const pct2=periodExp>0?Math.min(100,Math.round(periodPays/periodExp*100)):null;
-    const statusColor=thisMoPays>=fee&&fee>0?'#059669':bal>0?'#dc2626':'#7c82b8';
+    const statusColor=thisMoPays>=fee&&fee>0?'#059669':bal>0?'#dc2626':'#7a8399';
     const statusTxt=fee===0?'—':thisMoPays>=fee?'✅ Tam':thisMoPays>0?'⚠ Eksik':'❌ Yok';
     return{s,periodPays,periodExp,pct2,statusTxt,statusColor,kdvDahil:!!s.kdvDahil};
   }).sort((a,b)=>b.periodPays-a.periodPays);
@@ -2845,15 +2953,15 @@ function renderAnalysis(){
         <div class="sum-l">🚫 KDV Hariç Öğrenci</div>
       </div>
     </div>
-    <div style="background:#eff6ff;border:2px solid #bfdbfe;border-radius:11px;padding:12px 13px;margin-bottom:8px">
-      <div style="font-weight:800;font-size:12px;color:#1d4ed8;margin-bottom:8px">✅ KDV Dahil Öğrencilerden Alınan Tutar (Seçili Dönem)</div>
+    <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:11px;padding:12px 13px;margin-bottom:8px">
+      <div style="font-weight:600;font-size:12px;color:#1d4ed8;margin-bottom:8px">✅ KDV Dahil Öğrencilerden Alınan Tutar (Seçili Dönem)</div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center">
-        <div><div style="font-weight:900;font-size:14px;color:#1d4ed8">${kdvGross.toLocaleString('tr-TR')} ₺</div><div style="font-size:10px;color:var(--muted);font-weight:700">Toplam (KDV Dahil)</div></div>
-        <div><div style="font-weight:900;font-size:14px;color:#059669">${kdvNet.toLocaleString('tr-TR')} ₺</div><div style="font-size:10px;color:var(--muted);font-weight:700">KDV Hariç Tutar</div></div>
-        <div><div style="font-weight:900;font-size:14px;color:#dc2626">${kdvAmount.toLocaleString('tr-TR')} ₺</div><div style="font-size:10px;color:var(--muted);font-weight:700">Hesaplanan %20 KDV</div></div>
+        <div><div style="font-weight:700;font-size:14px;color:#1d4ed8">${kdvGross.toLocaleString('tr-TR')} ₺</div><div style="font-size:10px;color:var(--muted);font-weight:700">Toplam (KDV Dahil)</div></div>
+        <div><div style="font-weight:700;font-size:14px;color:#059669">${kdvNet.toLocaleString('tr-TR')} ₺</div><div style="font-size:10px;color:var(--muted);font-weight:700">KDV Hariç Tutar</div></div>
+        <div><div style="font-weight:700;font-size:14px;color:#dc2626">${kdvAmount.toLocaleString('tr-TR')} ₺</div><div style="font-size:10px;color:var(--muted);font-weight:700">Hesaplanan %20 KDV</div></div>
       </div>
     </div>
-    <div style="background:#f3f4f6;border:2px solid #d1d5db;border-radius:11px;padding:10px 13px;font-size:12px;font-weight:800;color:#4b5563;display:flex;justify-content:space-between">
+    <div style="background:#f3f4f6;border:1px solid #d1d5db;border-radius:11px;padding:10px 13px;font-size:12px;font-weight:600;color:#4b5563;display:flex;justify-content:space-between">
       <span>🚫 KDV Hariç Öğrencilerden Alınan Tutar</span><span>${nonKdvTotal.toLocaleString('tr-TR')} ₺</span>
     </div>`;
 
@@ -2861,17 +2969,17 @@ function renderAnalysis(){
     <div class="stu-pay-row">
       <div style="font-size:18px;flex-shrink:0">${eduIcon(s.education)}</div>
       <div style="flex:1;min-width:0">
-        <div style="font-weight:800;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${s.name} ${s.surname}</div>
+        <div style="font-weight:600;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${s.name} ${s.surname}</div>
         <div style="font-size:11px;color:var(--muted);margin-top:2px">${periodPays.toLocaleString('tr-TR')} ₺ / ${periodExp.toLocaleString('tr-TR')} ₺</div>
         ${pct2!==null?`<div class="prog-bar" style="margin-top:4px"><div class="prog-fill" style="width:${pct2}%;background:${pct2>=100?'#059669':pct2>=50?'#d97706':'#dc2626'}"></div></div>`:''}
       </div>
-      <div style="font-weight:900;font-size:12px;color:${statusColor};flex-shrink:0;text-align:right">${statusTxt}</div>
+      <div style="font-weight:700;font-size:12px;color:${statusColor};flex-shrink:0;text-align:right">${statusTxt}</div>
     </div>`;
 
   document.getElementById('ana-students').innerHTML=`
-    <div style="font-weight:900;font-size:12px;color:#1d4ed8;margin:6px 0 8px">✅ KDV Dahil Öğrenciler (${kdvRows.length})</div>
+    <div style="font-weight:700;font-size:12px;color:#1d4ed8;margin:6px 0 8px">✅ KDV Dahil Öğrenciler (${kdvRows.length})</div>
     ${kdvRows.length?kdvRows.map(stuRowHtml).join(''):'<div style="font-size:12px;color:var(--muted);padding:6px 0">KDV dahil öğrenci yok.</div>'}
-    <div style="font-weight:900;font-size:12px;color:#4b5563;margin:14px 0 8px">🚫 KDV Hariç Öğrenciler (${nonKdvRows.length})</div>
+    <div style="font-weight:700;font-size:12px;color:#4b5563;margin:14px 0 8px">🚫 KDV Hariç Öğrenciler (${nonKdvRows.length})</div>
     ${nonKdvRows.length?nonKdvRows.map(stuRowHtml).join(''):'<div style="font-size:12px;color:var(--muted);padding:6px 0">KDV hariç öğrenci yok.</div>'}`;
 }
 
@@ -2972,7 +3080,7 @@ function lvlLoadMonth(){
 }
 function lvlDrawStars(){
   document.getElementById('lv-stars').innerHTML=[1,2,3,4,5].map(n=>
-    '<button type="button" onclick="lvlSetProg('+n+')" style="flex:1;padding:9px 0;border-radius:10px;border:2px solid '+(n===_lvProg?'#f59e0b':'var(--border)')+';background:'+(n===_lvProg?'#fef3c7':'#fff')+';font-family:\'Nunito\',sans-serif;font-weight:900;font-size:15px;color:'+(n<=_lvProg?'#d97706':'var(--dim)')+';cursor:pointer">'+n+' ★</button>').join('');
+    '<button type="button" onclick="lvlSetProg('+n+')" style="flex:1;padding:9px 0;border-radius:10px;border:1px solid '+(n===_lvProg?'#f59e0b':'var(--border)')+';background:'+(n===_lvProg?'#fef3c7':'#fff')+';font-family:\'Inter\',system-ui,sans-serif;font-weight:700;font-size:15px;color:'+(n<=_lvProg?'#d97706':'var(--dim)')+';cursor:pointer">'+n+' ★</button>').join('');
 }
 function lvlSetProg(n){_lvProg=n;lvlDrawStars();}
 async function lvlSave(){
@@ -3007,13 +3115,13 @@ function renderLevelHistory(){
     let trend='';
     if(prevK){
       const d=(r.level||0)-(levelData[prevK].level||0);
-      trend=d>0?'<span style="color:#16a34a;font-weight:900">⬆️ Seviye yükseldi</span>':d<0?'<span style="color:#dc2626;font-weight:900">⬇️ Seviye düştü</span>':'<span style="color:var(--muted);font-weight:800">➡️ Seviye aynı</span>';
+      trend=d>0?'<span style="color:#16a34a;font-weight:700">⬆️ Seviye yükseldi</span>':d<0?'<span style="color:#dc2626;font-weight:700">⬇️ Seviye düştü</span>':'<span style="color:var(--muted);font-weight:600">➡️ Seviye aynı</span>';
     }
-    return '<div style="background:var(--bg);border:2px solid var(--border);border-radius:12px;padding:10px 12px;margin-bottom:8px">'+
-      '<div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:5px"><div style="font-weight:900;font-size:13px;color:var(--purple)">📅 '+lvlMonthLabel(k)+'</div><div style="font-size:11px;font-weight:800;color:var(--muted)">'+(r.date||'')+(r.time?' · 🕒 '+r.time:'')+'</div></div>'+
-      '<div style="font-size:13px;font-weight:800;margin-bottom:4px">🎯 Seviye '+r.level+'/5 · '+LVL_NAMES[r.level-1]+' &nbsp; <span style="color:#d97706">'+lvlStars(r.progress||0)+'</span> &nbsp; '+trend+'</div>'+
-      (r.topics?'<div style="font-size:13px;font-weight:700;white-space:pre-wrap;margin-bottom:3px"><span style="font-weight:900;color:var(--text2)">🎼 Çalışılan:</span> '+hwEsc(r.topics)+'</div>':'')+
-      (r.note?'<div style="font-size:13px;font-weight:700;white-space:pre-wrap"><span style="font-weight:900;color:var(--text2)">📝 Değerlendirme:</span> '+hwEsc(r.note)+'</div>':'')+
+    return '<div style="background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:10px 12px;margin-bottom:8px">'+
+      '<div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:5px"><div style="font-weight:700;font-size:13px;color:var(--purple)">📅 '+lvlMonthLabel(k)+'</div><div style="font-size:11px;font-weight:600;color:var(--muted)">'+(r.date||'')+(r.time?' · 🕒 '+r.time:'')+'</div></div>'+
+      '<div style="font-size:13px;font-weight:600;margin-bottom:4px">🎯 Seviye '+r.level+'/5 · '+LVL_NAMES[r.level-1]+' &nbsp; <span style="color:#d97706">'+lvlStars(r.progress||0)+'</span> &nbsp; '+trend+'</div>'+
+      (r.topics?'<div style="font-size:13px;font-weight:700;white-space:pre-wrap;margin-bottom:3px"><span style="font-weight:700;color:var(--text2)">🎼 Çalışılan:</span> '+hwEsc(r.topics)+'</div>':'')+
+      (r.note?'<div style="font-size:13px;font-weight:700;white-space:pre-wrap"><span style="font-weight:700;color:var(--text2)">📝 Değerlendirme:</span> '+hwEsc(r.note)+'</div>':'')+
     '</div>';
   }).join('');
 }
@@ -3027,12 +3135,13 @@ async function renderLevelBanner(){
   const k=lvlMonthKey(now.getFullYear(),now.getMonth());
   const missing=students.filter(s=>!(allLevels[s.id]&&allLevels[s.id][k]));
   if(!missing.length){el.innerHTML='';return;}
-  el.innerHTML='<div class="card mb14" style="border:2px solid #c4b5fd;background:#faf5ff">'+
-    '<div style="font-weight:900;font-size:14px;color:#6d28d9;margin-bottom:6px">🎯 Ay sonu: '+missing.length+' öğrencinin seviye &amp; ilerlemesi girilmedi</div>'+
-    '<div style="display:flex;flex-wrap:wrap;gap:6px">'+missing.map(s=>'<span onclick="openLvlFor(\''+s.id+'\')" style="cursor:pointer;background:#ede9fe;color:#5b21b6;border-radius:20px;padding:4px 11px;font-size:12px;font-weight:800">'+hwEsc(s.name+' '+s.surname)+'</span>').join('')+'</div></div>';
+  el.innerHTML='<div class="card mb14" style="border:1px solid #b4bddb;background:#f5f6fb">'+
+    '<div style="font-weight:700;font-size:14px;color:#26335e;margin-bottom:6px">🎯 Ay sonu: '+missing.length+' öğrencinin seviye &amp; ilerlemesi girilmedi</div>'+
+    '<div style="display:flex;flex-wrap:wrap;gap:6px">'+missing.map(s=>'<span onclick="openLvlFor(\''+s.id+'\')" style="cursor:pointer;background:#e9ecf5;color:#26335e;border-radius:20px;padding:4px 11px;font-size:12px;font-weight:600">'+hwEsc(s.name+' '+s.surname)+'</span>').join('')+'</div></div>';
 }
 async function openLvlFor(id){
   await openDet(id);
+  dtShow('level');
   setTimeout(()=>{const c=document.getElementById('lvl-card');if(c)c.scrollIntoView({behavior:'smooth',block:'start'});},80);
 }
 
@@ -3090,27 +3199,27 @@ function drawDaily(items,ds){
   let came=0,abs=0,wait=0;
   items.forEach(it=>{const v=ydSt(it.s.id,ds);if(v==='came')came++;else if(v==='absent')abs++;else wait++;});
   document.getElementById('yd-stats').innerHTML=
-    '<div class="stat" style="flex:1;background:var(--blue-l);border:2px solid #bfdbfe"><div class="n" style="color:var(--blue)">'+came+'</div><div class="l" style="color:var(--blue)">Geldi</div></div>'+
-    '<div class="stat" style="flex:1;background:var(--red-l);border:2px solid #fecaca"><div class="n" style="color:var(--red)">'+abs+'</div><div class="l" style="color:var(--red)">Gelmedi</div></div>'+
-    '<div class="stat" style="flex:1;background:#f3f4f6;border:2px solid #e5e7eb"><div class="n" style="color:#4b5563">'+wait+'</div><div class="l" style="color:#4b5563">Bekliyor</div></div>';
+    '<div class="stat" style="flex:1;background:var(--blue-l);border:1px solid #bfdbfe"><div class="n" style="color:var(--blue)">'+came+'</div><div class="l" style="color:var(--blue)">Geldi</div></div>'+
+    '<div class="stat" style="flex:1;background:var(--red-l);border:1px solid #fecaca"><div class="n" style="color:var(--red)">'+abs+'</div><div class="l" style="color:var(--red)">Gelmedi</div></div>'+
+    '<div class="stat" style="flex:1;background:#f3f4f6;border:1px solid #e5e7eb"><div class="n" style="color:#4b5563">'+wait+'</div><div class="l" style="color:#4b5563">Bekliyor</div></div>';
   const list=document.getElementById('yd-list');
   if(!items.length){list.innerHTML='<div class="card mb14" style="text-align:center;color:var(--muted);font-weight:700;font-size:13px">Bu gün için programlı ders yok. Aşağıdan öğrenci ekleyebilirsiniz.</div>';}
   else list.innerHTML=items.map(it=>{
     const s=it.s,v=ydSt(s.id,ds),c=eduColor(s.education);
     const bd=v==='came'?'#93c5fd':v==='absent'?'#fca5a5':c.border;
     const bg=v==='came'?'#eff6ff':v==='absent'?'#fef2f2':'#fff';
-    const bs='flex:1;padding:14px 8px;border-radius:12px;font-family:\'Nunito\',sans-serif;font-weight:900;font-size:16px;cursor:pointer;border:2px solid ';
-    return '<div style="background:'+bg+';border:2px solid '+bd+';border-radius:16px;padding:12px;margin-bottom:10px">'+
+    const bs='flex:1;padding:14px 8px;border-radius:12px;font-family:\'Inter\',system-ui,sans-serif;font-weight:700;font-size:16px;cursor:pointer;border:1px solid ';
+    return '<div style="background:'+bg+';border:1px solid '+bd+';border-radius:16px;padding:12px;margin-bottom:10px">'+
       '<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px" onclick="openDet(\''+s.id+'\')">'+
         '<div class="avatar" style="width:40px;height:40px;background:'+c.border+';font-size:18px;flex-shrink:0">'+eduIcon(s.education)+'</div>'+
-        '<div style="flex:1;min-width:0"><div style="font-weight:900;font-size:16px">'+hwEsc(s.name+' '+s.surname)+'</div>'+
+        '<div style="flex:1;min-width:0"><div style="font-weight:700;font-size:16px">'+hwEsc(s.name+' '+s.surname)+'</div>'+
         '<div style="font-size:12px;color:var(--muted);font-weight:700">'+(it.times.length?'🕒 '+it.times.join(' · ')+' · ':'➕ Ek ders · ')+hwEsc(s.education||'')+'</div></div>'+
       '</div>'+
       '<div style="display:flex;gap:8px">'+
         '<button onclick="ydMark(\''+s.id+'\',\'came\')" style="'+bs+(v==='came'?'#1d4ed8;background:#1d4ed8;color:#fff':'#bfdbfe;background:#fff;color:#1d4ed8')+'">✅ Geldi</button>'+
         '<button onclick="ydMark(\''+s.id+'\',\'absent\')" style="'+bs+(v==='absent'?'#dc2626;background:#dc2626;color:#fff':'#fecaca;background:#fff;color:#dc2626')+'">❌ Gelmedi</button>'+
       '</div>'+
-      (v==='absent'?'<button onclick="ydNotify(\''+s.id+'\')" style="width:100%;margin-top:8px;padding:10px;border-radius:10px;border:none;background:#25d366;color:#fff;font-family:\'Nunito\',sans-serif;font-weight:900;font-size:14px;cursor:pointer">📲 Veliye Bildir</button>':'')+
+      (v==='absent'?'<button onclick="ydNotify(\''+s.id+'\')" style="width:100%;margin-top:8px;padding:10px;border-radius:10px;border:none;background:#25d366;color:#fff;font-family:\'Inter\',system-ui,sans-serif;font-weight:700;font-size:14px;cursor:pointer">📲 Veliye Bildir</button>':'')+
     '</div>';
   }).join('');
   // ek öğrenci seçici
@@ -3178,14 +3287,14 @@ function renderWeek(){
     const byTime={};
     items.forEach(it=>{(byTime[it.time]=byTime[it.time]||[]).push(it.s);});
     const isT=d===todayIdx;
-    html+='<div class="card mb12" style="'+(isT?'border:2px solid #34d399;background:#f0fdf4':'')+'">'+
-      '<div style="font-weight:900;font-size:14px;color:'+(isT?'#047857':'var(--text)')+';margin-bottom:8px">'+names[d]+(isT?' <span style="background:#dcfce7;color:#166534;border-radius:6px;padding:1px 7px;font-size:10px;margin-left:4px">BUGÜN</span>':'')+' <span style="font-weight:700;font-size:11px;color:var(--muted)">('+items.length+' ders)</span></div>';
+    html+='<div class="card mb12" style="'+(isT?'border:1px solid #34d399;background:#f0fdf4':'')+'">'+
+      '<div style="font-weight:700;font-size:14px;color:'+(isT?'#047857':'var(--text)')+';margin-bottom:8px">'+names[d]+(isT?' <span style="background:#dcfce7;color:#166534;border-radius:6px;padding:1px 7px;font-size:10px;margin-left:4px">BUGÜN</span>':'')+' <span style="font-weight:700;font-size:11px;color:var(--muted)">('+items.length+' ders)</span></div>';
     if(!items.length)html+='<div style="font-size:12px;color:var(--muted)">Ders yok</div>';
     Object.keys(byTime).sort().forEach(t=>{
       html+='<div style="display:flex;gap:10px;align-items:flex-start;padding:6px 0;border-top:1px solid #f3f4f6">'+
-        '<div style="font-weight:900;font-size:13px;color:var(--purple);min-width:48px">'+hwEsc(t)+'</div>'+
+        '<div style="font-weight:700;font-size:13px;color:var(--purple);min-width:48px">'+hwEsc(t)+'</div>'+
         '<div style="display:flex;flex-wrap:wrap;gap:6px;flex:1">'+byTime[t].map(s=>{const c=eduColor(s.education);
-          return '<span onclick="openDet(\''+s.id+'\')" style="cursor:pointer;background:'+c.bg+';border:2px solid '+c.border+';border-radius:10px;padding:4px 9px;font-size:12px;font-weight:800">'+eduIcon(s.education)+' '+hwEsc(s.name+' '+s.surname)+'</span>';}).join('')+'</div></div>';
+          return '<span onclick="openDet(\''+s.id+'\')" style="cursor:pointer;background:'+c.bg+';border:1px solid '+c.border+';border-radius:10px;padding:4px 9px;font-size:12px;font-weight:600">'+eduIcon(s.education)+' '+hwEsc(s.name+' '+s.surname)+'</span>';}).join('')+'</div></div>';
     });
     html+='</div>';
   }
@@ -3231,25 +3340,25 @@ function renderArchive(){
       <div style="display:flex;align-items:flex-start;gap:10px">
         <div style="font-size:26px;flex-shrink:0">${eduIcon(s.education)}</div>
         <div style="flex:1;min-width:0">
-          <div style="font-weight:900;font-size:15px;color:#1f2937">${s.name} ${s.surname}</div>
+          <div style="font-weight:700;font-size:15px;color:#1f2937">${s.name} ${s.surname}</div>
           <div class="arc-del-badge">🗑️ Silindi: ${delLabel||'—'}</div>
           ${s.registeredAt?`<div class="arc-del-badge" style="margin-left:4px">📅 Kayıt: ${(()=>{const[ry,rm,rd]=s.registeredAt.split('-');return rd+' '+MONTHS[+rm-1]+' '+ry;})()}</div>`:''}
           <div style="margin-top:8px;font-size:12px;font-weight:700;color:#374151">
-            <span style="background:#ede9fe;color:#7c3aed;border-radius:6px;padding:2px 7px;margin-right:4px">${s.education}</span>
+            <span style="background:#e9ecf5;color:#2f3f73;border-radius:6px;padding:2px 7px;margin-right:4px">${s.education}</span>
             <span style="background:#f0fdf4;color:#059669;border-radius:6px;padding:2px 7px">⏱ ${s.program}</span>
           </div>
           <div style="margin-top:10px;display:flex;flex-direction:column;gap:4px">
             ${contacts.map(c=>`<div style="font-size:13px;font-weight:700;color:#374151;background:#f9fafb;padding:5px 9px;border-radius:7px">${c}</div>`).join('')}
           </div>
-          ${s.fee?`<div style="margin-top:8px;font-size:12px;color:#059669;font-weight:800;background:#f0fdf4;padding:5px 9px;border-radius:7px">💰 Aylık: ${parseFloat(s.fee).toLocaleString('tr-TR')} ₺</div>`:''}
-          ${payCount>0?`<div style="margin-top:6px;font-size:12px;color:#374151;font-weight:800;background:#f0fdf4;padding:5px 9px;border-radius:7px">
+          ${s.fee?`<div style="margin-top:8px;font-size:12px;color:#059669;font-weight:600;background:#f0fdf4;padding:5px 9px;border-radius:7px">💰 Aylık: ${parseFloat(s.fee).toLocaleString('tr-TR')} ₺</div>`:''}
+          ${payCount>0?`<div style="margin-top:6px;font-size:12px;color:#374151;font-weight:600;background:#f0fdf4;padding:5px 9px;border-radius:7px">
             💳 ${payCount} ödeme kaydı · Toplam: ${totalPaid.toLocaleString('tr-TR')} ₺
           </div>`:'<div style="margin-top:6px;font-size:12px;color:#9ca3af;font-weight:700">Ödeme kaydı yok</div>'}
         </div>
         <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0">
-          <button onclick="viewArchiveDetail('${s.id}')" style="background:#ede9fe;color:#7c3aed;border:none;border-radius:8px;padding:6px 10px;font-family:'Nunito',sans-serif;font-weight:800;font-size:12px;cursor:pointer">Detay</button>
-          <button onclick="restoreStudent('${s.id}')" style="background:#d1fae5;color:#059669;border:none;border-radius:8px;padding:6px 10px;font-family:'Nunito',sans-serif;font-weight:800;font-size:12px;cursor:pointer">Geri Al</button>
-          <button onclick="deleteArchive('${s.id}')" style="background:#fee2e2;color:#dc2626;border:none;border-radius:8px;padding:6px 10px;font-family:'Nunito',sans-serif;font-weight:800;font-size:12px;cursor:pointer">Kalıcı Sil</button>
+          <button onclick="viewArchiveDetail('${s.id}')" style="background:#e9ecf5;color:#2f3f73;border:none;border-radius:8px;padding:6px 10px;font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;font-weight:600;font-size:12px;cursor:pointer">Detay</button>
+          <button onclick="restoreStudent('${s.id}')" style="background:#d1fae5;color:#059669;border:none;border-radius:8px;padding:6px 10px;font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;font-weight:600;font-size:12px;cursor:pointer">Geri Al</button>
+          <button onclick="deleteArchive('${s.id}')" style="background:#fee2e2;color:#dc2626;border:none;border-radius:8px;padding:6px 10px;font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;font-weight:600;font-size:12px;cursor:pointer">Kalıcı Sil</button>
         </div>
       </div>
     </div>`;
@@ -3269,7 +3378,7 @@ function viewArchiveDetail(id){
             <div style="font-size:13px;font-weight:700;color:#374151">📅 ${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}</div>
             ${p.desc?`<div style="font-size:11px;color:#9ca3af">💬 ${p.desc}</div>`:''}
           </div>
-          <div style="font-weight:900;color:#059669;font-size:14px">${parseFloat(p.amount).toLocaleString('tr-TR')} ₺</div>
+          <div style="font-weight:700;color:#059669;font-size:14px">${parseFloat(p.amount).toLocaleString('tr-TR')} ₺</div>
         </div>`;
       }).join('');
   const total=pays.reduce((a,p)=>a+parseFloat(p.amount||0),0);
@@ -3277,12 +3386,12 @@ function viewArchiveDetail(id){
   document.getElementById('conf-icon').textContent='💳';
   document.getElementById('conf-msg').innerHTML=`
     <div style="text-align:left;max-height:50vh;overflow-y:auto">
-      <div style="font-weight:900;font-size:16px;color:#1f2937;margin-bottom:12px">${s.name} ${s.surname} — Ödeme Geçmişi</div>
+      <div style="font-weight:700;font-size:16px;color:#1f2937;margin-bottom:12px">${s.name} ${s.surname} — Ödeme Geçmişi</div>
       ${payHtml}
-      ${pays.length>0?`<div style="margin-top:10px;font-weight:900;color:#059669;font-size:14px">Toplam: ${total.toLocaleString('tr-TR')} ₺</div>`:''}
+      ${pays.length>0?`<div style="margin-top:10px;font-weight:700;color:#059669;font-size:14px">Toplam: ${total.toLocaleString('tr-TR')} ₺</div>`:''}
     </div>`;
   document.getElementById('conf-yes').textContent='Kapat';
-  document.getElementById('conf-yes').style.background='#7c3aed';
+  document.getElementById('conf-yes').style.background='#2f3f73';
   confCB=()=>{ document.getElementById('conf-yes').style.background='#dc2626'; };
   document.getElementById('conf-modal').classList.add('open');
 }
@@ -3587,44 +3696,44 @@ function renderVeliView(data){
   document.querySelectorAll('.screen').forEach(sc=>sc.classList.remove('active'));
   document.getElementById('s-veli-view').classList.add('active');
   const attRows=(data.att||[]).map(a=>
-    `<div class="stu-pay-row"><div style="flex:1;font-weight:800;font-size:13px">${a.l}</div>`+
-    `<div style="font-weight:900;color:var(--blue);font-size:13px;flex-shrink:0">🔵 ${a.c}</div>`+
-    `<div style="font-weight:900;color:var(--red);font-size:13px;flex-shrink:0;margin-left:8px">🔴 ${a.a}</div></div>`
+    `<div class="stu-pay-row"><div style="flex:1;font-weight:600;font-size:13px">${a.l}</div>`+
+    `<div style="font-weight:700;color:var(--blue);font-size:13px;flex-shrink:0">🔵 ${a.c}</div>`+
+    `<div style="font-weight:700;color:var(--red);font-size:13px;flex-shrink:0;margin-left:8px">🔴 ${a.a}</div></div>`
   ).join('')||'<p style="color:var(--dim);font-size:13px;text-align:center">Yoklama kaydı yok.</p>';
   const last5Html=(data.last5||[]).map(p=>{
     if(p.paid){
       return `<div style="border-radius:16px;padding:18px 10px;text-align:center;background:linear-gradient(135deg,#059669,#065f46);color:#fff;box-shadow:0 4px 14px rgba(5,150,105,.35)">
-        <div style="font-weight:900;font-size:13px;margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">${p.l}</div>
+        <div style="font-weight:700;font-size:13px;margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">${p.l}</div>
         <div style="font-size:26px;margin-bottom:6px">✅</div>
-        <div style="font-weight:900;font-size:13px">Ödeme Alınmıştır</div>
+        <div style="font-weight:700;font-size:13px">Ödeme Alınmıştır</div>
         <div style="font-size:11px;font-weight:700;margin-top:4px;opacity:.85">${p.got.toLocaleString('tr-TR')} ₺</div>
-        ${p.discApplied?'<div style="font-size:10px;font-weight:900;margin-top:6px;background:rgba(255,255,255,.2);border-radius:8px;padding:3px 6px">🏷️ %5 indirimli</div>':''}
+        ${p.discApplied?'<div style="font-size:10px;font-weight:700;margin-top:6px;background:rgba(255,255,255,.2);border-radius:8px;padding:3px 6px">🏷️ %5 indirimli</div>':''}
         ${p.earlyPay?'<div style="font-size:10px;font-weight:700;margin-top:4px;opacity:.9">⏱ Erken ödendi</div>':''}
       </div>`;
     }
     return `<div style="border-radius:16px;padding:18px 10px;text-align:center;background:linear-gradient(135deg,#dc2626,#991b1b);color:#fff;box-shadow:0 4px 14px rgba(220,38,38,.35)">
-      <div style="font-weight:900;font-size:13px;margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">${p.l}</div>
+      <div style="font-weight:700;font-size:13px;margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">${p.l}</div>
       <div style="font-size:26px;margin-bottom:6px">❌</div>
-      <div style="font-weight:900;font-size:13px">Ödeme Alınmamıştır</div>
+      <div style="font-weight:700;font-size:13px">Ödeme Alınmamıştır</div>
       <div style="font-size:11px;font-weight:700;margin-top:5px;line-height:1.4">Lütfen ödeme takvimi içinde yapmanızı rica ederiz.</div>
     </div>`;
   }).join('');
   const pay3Html=(data.pay3||[]).map(p=>{
     const badge=p.st==='ontime'
-      ?'<span style="background:var(--green-l);color:var(--green);border:2px solid #a7f3d0;border-radius:20px;padding:3px 11px;font-size:11px;font-weight:900;white-space:nowrap">✅ Zamanında</span>'
+      ?'<span style="background:var(--green-l);color:var(--green);border:1px solid #a7f3d0;border-radius:20px;padding:3px 11px;font-size:11px;font-weight:700;white-space:nowrap">✅ Zamanında</span>'
       :p.st==='late'
-      ?'<span style="background:var(--red-l);color:var(--red);border:2px solid #fecaca;border-radius:20px;padding:3px 11px;font-size:11px;font-weight:900;white-space:nowrap">⚠️ Gecikmeli</span>'
+      ?'<span style="background:var(--red-l);color:var(--red);border:1px solid #fecaca;border-radius:20px;padding:3px 11px;font-size:11px;font-weight:700;white-space:nowrap">⚠️ Gecikmeli</span>'
       :'';
-    const earlyBadge=p.early?'<span style="background:#ede9fe;color:#7c3aed;border:2px solid #ddd6fe;border-radius:20px;padding:3px 11px;font-size:11px;font-weight:900;white-space:nowrap">🏷️ %5 İndirim Kazandı</span>':'';
+    const earlyBadge=p.early?'<span style="background:#e9ecf5;color:#2f3f73;border:1px solid #d3d9ea;border-radius:20px;padding:3px 11px;font-size:11px;font-weight:700;white-space:nowrap">🏷️ %5 İndirim Kazandı</span>':'';
     return `<div class="pay-row">
       <div style="min-width:0;flex:1">
         <div style="font-size:14px;font-weight:700">📅 ${p.dl}</div>
         ${p.desc?`<div style="font-size:12px;color:var(--muted);margin-top:2px;font-weight:600">💬 ${p.desc}</div>`:''}
-        ${p.early?`<div style="font-size:11px;color:#7c3aed;margin-top:4px;font-weight:700">Ayın 1-10. günleri arasında ödendiği için bir sonraki ay ödemenize %5 indirim yansıtılacaktır.</div>`:''}
+        ${p.early?`<div style="font-size:11px;color:#2f3f73;margin-top:4px;font-weight:700">Ayın 1-10. günleri arasında ödendiği için bir sonraki ay ödemenize %5 indirim yansıtılacaktır.</div>`:''}
       </div>
       <div style="display:flex;align-items:center;gap:9px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end">
         ${badge}${earlyBadge}
-        <span style="font-weight:900;color:var(--green);font-size:15px">${p.amt.toLocaleString('tr-TR')} ₺</span>
+        <span style="font-weight:700;color:var(--green);font-size:15px">${p.amt.toLocaleString('tr-TR')} ₺</span>
       </div>
     </div>`;
   }).join('');
@@ -3637,42 +3746,42 @@ function renderVeliView(data){
     ${data.rep?`<div class="card mb12" style="border-color:#fde68a;background:linear-gradient(135deg,#fffbeb,#fff)">
       <div class="section-lbl">📊 3 Aylık Gelişim Raporu</div>
       <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:10px">📅 ${repDL(data.rep.from)} – ${repDL(data.rep.to)}</div>
-      <div style="text-align:center;background:#fff;border:2px solid #fde68a;border-radius:14px;padding:14px;margin-bottom:12px">
+      <div style="text-align:center;background:#fff;border:1px solid #fde68a;border-radius:14px;padding:14px;margin-bottom:12px">
         <div style="font-size:30px;letter-spacing:3px;color:#f59e0b;line-height:1.1">${repStars(data.rep.score)}</div>
-        <div style="font-weight:900;font-size:20px;color:var(--text);margin-top:4px">${data.rep.score}/5</div>
-        <div style="font-weight:800;font-size:13px;color:#b45309">${repLabel(data.rep.score)}</div>
+        <div style="font-weight:700;font-size:20px;color:var(--text);margin-top:4px">${data.rep.score}/5</div>
+        <div style="font-weight:600;font-size:13px;color:#b45309">${repLabel(data.rep.score)}</div>
       </div>
       <div style="white-space:pre-wrap;font-size:14px;font-weight:600;color:var(--text);line-height:1.65">${repEsc(data.rep.text)}</div>
     </div>`:''}
     <div class="card mb12">
       <div class="section-lbl">📋 Ders Programı</div>
       <div style="display:flex;gap:6px;flex-wrap:wrap">
-        ${data.e?`<span class="badge" style="background:var(--purple-l);color:var(--purple);border:2px solid #ddd6fe">${data.e}</span>`:''}
-        ${data.pr?`<span class="badge" style="background:var(--green-l);color:var(--green);border:2px solid #a7f3d0">⏱ ${data.pr}</span>`:''}
-        ${data.f?`<span class="badge" style="background:var(--green-l);color:var(--green);border:2px solid #a7f3d0">💰 ${parseFloat(data.f).toLocaleString('tr-TR')} ₺/ay</span>`:''}
-        ${data.pd?`<span class="badge" style="background:#fef9c3;color:#713f12;border:2px solid #fde047">💳 Her ay ${data.pd}. günler</span>`:''}
+        ${data.e?`<span class="badge" style="background:var(--purple-l);color:var(--purple);border:1px solid #d3d9ea">${data.e}</span>`:''}
+        ${data.pr?`<span class="badge" style="background:var(--green-l);color:var(--green);border:1px solid #a7f3d0">⏱ ${data.pr}</span>`:''}
+        ${data.f?`<span class="badge" style="background:var(--green-l);color:var(--green);border:1px solid #a7f3d0">💰 ${parseFloat(data.f).toLocaleString('tr-TR')} ₺/ay</span>`:''}
+        ${data.pd?`<span class="badge" style="background:#fef9c3;color:#713f12;border:1px solid #fde047">💳 Her ay ${data.pd}. günler</span>`:''}
       </div>
     </div>
     <div class="card mb12">
       <div class="section-lbl">💰 Bakiye Durumu</div>
       ${data.bal>0
-        ?`<div style="background:#fef2f2;border:2px solid #fecaca;border-radius:11px;padding:12px 14px;font-weight:800;color:#991b1b;text-align:center">⚠️ Kalan Bakiye: ${data.bal.toLocaleString('tr-TR')} ₺</div>`
-        :`<div style="background:#f0fdf4;border:2px solid #a7f3d0;border-radius:11px;padding:12px 14px;font-weight:800;color:#065f46;text-align:center">✅ Tüm ödemeler güncel</div>`}
+        ?`<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:11px;padding:12px 14px;font-weight:600;color:#991b1b;text-align:center">⚠️ Kalan Bakiye: ${data.bal.toLocaleString('tr-TR')} ₺</div>`
+        :`<div style="background:#f0fdf4;border:1px solid #a7f3d0;border-radius:11px;padding:12px 14px;font-weight:600;color:#065f46;text-align:center">✅ Tüm ödemeler güncel</div>`}
     </div>
     ${last5Html?`<div class="card mb12">
       <div class="section-lbl">📆 Son 5 Ay Ödeme Durumu</div>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px">${last5Html}</div>
     </div>`:''}
-    ${data.nd?`<div class="card mb12" style="background:linear-gradient(135deg,#ede9fe,#f5f3ff);border-color:#ddd6fe">
+    ${data.nd?`<div class="card mb12" style="background:linear-gradient(135deg,#e9ecf5,#f5f3ff);border-color:#d3d9ea">
       <div style="display:flex;align-items:center;gap:10px">
         <div style="font-size:30px">🎉</div>
-        <div style="font-weight:800;font-size:13px;color:#5b21b6;line-height:1.5">Ayın 1-10. günleri arasında ödeme yaptığınız için <b>%5 indirim kazandınız</b>. İndiriminiz bir sonraki ay ödemenize yansıtılacaktır. Bu bilgi ayrıca mesaj ile tarafınıza iletilecektir.</div>
+        <div style="font-weight:600;font-size:13px;color:#26335e;line-height:1.5">Ayın 1-10. günleri arasında ödeme yaptığınız için <b>%5 indirim kazandınız</b>. İndiriminiz bir sonraki ay ödemenize yansıtılacaktır. Bu bilgi ayrıca mesaj ile tarafınıza iletilecektir.</div>
       </div>
     </div>`:''}
     <div class="card mb12">
       <div class="section-lbl">💳 Son 3 Ay Ödemeleriniz</div>
       ${pay3Html||'<p style="color:var(--dim);font-size:13px;text-align:center">Bu dönemde kayıtlı ödeme bulunmuyor.</p>'}
-      <div style="margin-top:12px;background:#fefce8;border:2px solid #fde047;border-radius:11px;padding:11px 14px;font-weight:800;font-size:13px;color:#713f12;text-align:center">🔔 Lütfen ödemelerinizi zamanında yapmanızı rica ediyoruz.</div>
+      <div style="margin-top:12px;background:#fefce8;border:1px solid #fde047;border-radius:11px;padding:11px 14px;font-weight:600;font-size:13px;color:#713f12;text-align:center">🔔 Lütfen ödemelerinizi zamanında yapmanızı rica ediyoruz.</div>
     </div>
     <div class="card mb12">
       <div class="section-lbl">📅 Yoklama Özeti (Son 3 Ay)</div>
@@ -3682,7 +3791,7 @@ function renderVeliView(data){
       <div class="section-lbl">📚 Ödev &amp; Öğretmen Notu (Son 3 Ay)</div>
       ${data.hwLog.map(l=>`<div class="pay-row">
         <div style="min-width:0;flex:1">
-          <div style="font-size:13px;font-weight:900;color:var(--purple);margin-bottom:4px">📅 ${l.dl}${l.tm?' · 🕒 '+l.tm:''}</div>
+          <div style="font-size:13px;font-weight:700;color:var(--purple);margin-bottom:4px">📅 ${l.dl}${l.tm?' · 🕒 '+l.tm:''}</div>
           ${l.hw?`<div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:3px"><span class="lbl" style="display:inline">Ödev: </span>${l.hw}</div>`:''}
           ${l.gr?`<div style="font-size:14px;font-weight:700;color:var(--text)"><span class="lbl" style="display:inline">Not: </span>${l.gr}</div>`:''}
         </div>
@@ -3696,8 +3805,8 @@ function renderVeliView(data){
       <div class="section-lbl">🎯 Seviye &amp; İlerleme</div>
       ${data.lvl.map(l=>`<div class="pay-row">
         <div style="min-width:0;flex:1">
-          <div style="font-size:13px;font-weight:900;color:var(--purple);margin-bottom:4px">📅 ${l.ml}</div>
-          <div style="font-size:14px;font-weight:800;color:var(--text);margin-bottom:3px">Seviye ${l.lv}/5 · ${hwEsc(l.ln)} &nbsp; <span style="color:#d97706">${'★'.repeat(l.pr)}${'☆'.repeat(5-l.pr)}</span></div>
+          <div style="font-size:13px;font-weight:700;color:var(--purple);margin-bottom:4px">📅 ${l.ml}</div>
+          <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:3px">Seviye ${l.lv}/5 · ${hwEsc(l.ln)} &nbsp; <span style="color:#d97706">${'★'.repeat(l.pr)}${'☆'.repeat(5-l.pr)}</span></div>
           ${l.topics?`<div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:3px"><span class="lbl" style="display:inline">Çalışılan: </span>${hwEsc(l.topics)}</div>`:''}
           ${l.note?`<div style="font-size:13px;font-weight:700;color:var(--text)"><span class="lbl" style="display:inline">Değerlendirme: </span>${hwEsc(l.note)}</div>`:''}
         </div>
@@ -3853,14 +3962,14 @@ function renderRepCard(){
   if(!box)return;
   const r=repLatest(repCache[curId]);
   if(!r){
-    box.innerHTML='<div style="background:var(--bg);border:2px dashed var(--border);border-radius:10px;padding:11px;font-size:12px;font-weight:700;color:var(--muted);text-align:center;margin-bottom:10px">Henüz rapor yok. 3 ay dolunca otomatik hazırlanır veya aşağıdan elle hazırlayabilirsin.</div>';
+    box.innerHTML='<div style="background:var(--bg);border:1px dashed var(--border);border-radius:10px;padding:11px;font-size:12px;font-weight:700;color:var(--muted);text-align:center;margin-bottom:10px">Henüz rapor yok. 3 ay dolunca otomatik hazırlanır veya aşağıdan elle hazırlayabilirsin.</div>';
     return;
   }
   const next=repAddMonths(r.to,3);
-  box.innerHTML=`<div style="background:linear-gradient(135deg,#fffbeb,#fff);border:2px solid #fde68a;border-radius:12px;padding:12px 14px;margin-bottom:10px">
+  box.innerHTML=`<div style="background:linear-gradient(135deg,#fffbeb,#fff);border:1px solid #fde68a;border-radius:12px;padding:12px 14px;margin-bottom:10px">
     <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">
-      <div style="font-size:22px;letter-spacing:2px;color:#f59e0b">${repStars(r.score)} <span style="font-size:15px;font-weight:900;color:var(--text);letter-spacing:0">${r.score}/5 · ${repLabel(r.score)}</span></div>
-      <span class="badge" style="background:${r.mode==='manual'?'#dbeafe':'#ede9fe'};color:${r.mode==='manual'?'#1d4ed8':'#7c3aed'}">${r.mode==='manual'?'✍️ Manuel':'🤖 Otomatik'}</span>
+      <div style="font-size:22px;letter-spacing:2px;color:#f59e0b">${repStars(r.score)} <span style="font-size:15px;font-weight:700;color:var(--text);letter-spacing:0">${r.score}/5 · ${repLabel(r.score)}</span></div>
+      <span class="badge" style="background:${r.mode==='manual'?'#dbeafe':'#e9ecf5'};color:${r.mode==='manual'?'#1d4ed8':'#2f3f73'}">${r.mode==='manual'?'✍️ Manuel':'🤖 Otomatik'}</span>
     </div>
     <div style="font-size:11px;font-weight:700;color:var(--muted);margin:4px 0 8px">📅 ${repDL(r.from)} – ${repDL(r.to)} · Sonraki otomatik rapor: ${repDL(next)}</div>
     <div style="white-space:pre-wrap;font-size:13px;font-weight:600;color:var(--text);line-height:1.55;max-height:190px;overflow-y:auto">${repEsc(r.text)}</div>
@@ -3933,7 +4042,7 @@ function repOpenModal(id,rep){
 function repDrawStars(){
   const sc=_repDraft.rep.score;
   document.getElementById('rep-m-stars').innerHTML=[1,2,3,4,5].map(n=>
-    '<button onclick="repSetScore('+n+')" style="flex:1;padding:9px 0;border-radius:10px;border:2px solid '+(n===sc?'#f59e0b':'var(--border)')+';background:'+(n===sc?'#fef3c7':'#fff')+';font-family:\'Nunito\',sans-serif;font-weight:900;font-size:15px;color:'+(n<=sc?'#d97706':'var(--dim)')+';cursor:pointer">'+n+' ★</button>').join('');
+    '<button onclick="repSetScore('+n+')" style="flex:1;padding:9px 0;border-radius:10px;border:1px solid '+(n===sc?'#f59e0b':'var(--border)')+';background:'+(n===sc?'#fef3c7':'#fff')+';font-family:\'Inter\',system-ui,sans-serif;font-weight:700;font-size:15px;color:'+(n<=sc?'#d97706':'var(--dim)')+';cursor:pointer">'+n+' ★</button>').join('');
 }
 function repSetScore(n){_repDraft.rep.score=n;repDrawStars();}
 async function repRegen(){
@@ -4035,7 +4144,7 @@ setInterval(()=>{
 
 function showVeliLinkError(){
   hideLoad();
-  document.body.innerHTML='<div style="padding:60px 20px;text-align:center;font-family:\'Nunito\',sans-serif;color:#4c4f8a"><div style="font-size:50px;margin-bottom:14px">⚠️</div><div style="font-weight:800;font-size:16px">Bağlantı okunamadı veya bozuk.</div><div style="font-size:13px;margin-top:8px;color:#7c82b8">Lütfen bağlantıyı gönderen kişiden yeni bir bağlantı isteyin.</div></div>';
+  document.body.innerHTML='<div style="padding:60px 20px;text-align:center;font-family:\'Inter\',system-ui,sans-serif;color:#4a5470"><div style="font-size:50px;margin-bottom:14px">⚠️</div><div style="font-weight:600;font-size:16px">Bağlantı okunamadı veya bozuk.</div><div style="font-size:13px;margin-top:8px;color:#7a8399">Lütfen bağlantıyı gönderen kişiden yeni bir bağlantı isteyin.</div></div>';
 }
 if(location.hash.indexOf('#vid=')===0){
   const shortId=location.hash.slice(5);
