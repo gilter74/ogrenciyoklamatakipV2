@@ -212,10 +212,12 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
   </div>
   <div id="dup-name-warn" style="display:none"></div>
   <div id="rec-banner"></div>
+  <div id="lvl-banner"></div>
   <div class="card mb14" id="today-sched-card">
     <div style="font-weight:900;font-size:14px;color:var(--text);margin-bottom:10px" id="today-sched-title">📅 Bugün Dersi Olanlar</div>
     <div id="today-sched-list"></div>
   </div>
+  <button class="btn" style="width:100%;justify-content:center;margin-bottom:14px;font-size:14px;background:linear-gradient(135deg,#059669,#047857);color:#fff;box-shadow:0 4px 14px rgba(5,150,105,.3)" onclick="go('s-week')">🗓️ Haftalık Program</button>
   <button class="btn btn-blue" style="width:100%;justify-content:center;margin-bottom:14px;font-size:14px" onclick="openAnalysis()">📈 Gelir Analizi &amp; Ödeme Yönetimi</button>
   <button class="btn" style="width:100%;justify-content:center;margin-bottom:14px;font-size:14px;background:linear-gradient(135deg,#d97706,#b45309);color:#fff;box-shadow:0 4px 14px rgba(217,119,6,.3)" onclick="go('s-yform')">📋 Yoklama Formu</button>
   <button class="btn" style="width:100%;justify-content:center;margin-bottom:14px;font-size:14px;background:linear-gradient(135deg,#0ea5e9,#0284c7);color:#fff;box-shadow:0 4px 14px rgba(14,165,233,.3)" onclick="go('s-veli-share')">👪 Veli Paylaşımı</button>
@@ -443,6 +445,24 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
       <p style="font-size:11px;color:var(--muted);font-weight:600;margin-top:8px;line-height:1.5">Yukarıdaki ödev/not alanındaki güncel metin gönderilir (önce Kaydet'e basmak zorunda değilsin). Alıcı seçilmezse WhatsApp'ta kişiyi kendin seçersin.</p>
     </div>
   </div>
+  <div class="card mb12" id="lvl-card">
+    <div class="section-lbl">🎯 Seviye &amp; İlerleme (Ay Sonu)</div>
+    <p style="font-size:11px;color:var(--muted);font-weight:600;line-height:1.5;margin-bottom:10px">Her ay sonunda öğrencinin seviyesini ve o ayki ilerlemesini girin. Son 3 ay veli mesajına ve veli paneline otomatik eklenir.</p>
+    <div class="pg mb14">
+      <div><label class="lbl">Ay</label><select id="lv-month" onchange="lvlLoadMonth()"></select></div>
+      <div><label class="lbl">Seviye</label><select id="lv-level"><option value="1">1 · Başlangıç</option><option value="2">2 · Temel</option><option value="3">3 · Orta</option><option value="4">4 · İleri</option><option value="5">5 · Uzman</option></select></div>
+    </div>
+    <label class="lbl">Bu Ayki İlerleme</label>
+    <div id="lv-stars" style="display:flex;gap:6px;margin-bottom:14px"></div>
+    <div class="mb14"><label class="lbl">Bu Ay Çalışılan Konular / Eserler</label><textarea id="lv-topics" rows="2" placeholder="Örn: Do majör gam, Für Elise ilk 16 ölçü…" style="width:100%;padding:11px 14px;border-radius:10px;border:2px solid var(--border);font-family:'Nunito',sans-serif;font-size:14px;font-weight:600;color:var(--text);resize:vertical;outline:none"></textarea></div>
+    <div class="mb14"><label class="lbl">Öğretmen Değerlendirmesi</label><textarea id="lv-note" rows="2" placeholder="Örn: Ritim duygusu gelişti, evde daha düzenli çalışmalı…" style="width:100%;padding:11px 14px;border-radius:10px;border:2px solid var(--border);font-family:'Nunito',sans-serif;font-size:14px;font-weight:600;color:var(--text);resize:vertical;outline:none"></textarea></div>
+    <button class="btn btn-purple btn-sm" onclick="lvlSave()">💾 Kaydet</button>
+    <span id="lv-status" style="font-size:11px;font-weight:700;color:var(--muted);margin-left:8px"></span>
+    <div style="margin-top:16px;padding-top:14px;border-top:2px dashed var(--border)">
+      <div class="section-lbl" style="margin-bottom:10px">📈 Seviye Geçmişi</div>
+      <div id="lv-history"></div>
+    </div>
+  </div>
   <div class="exp-bar">
     <div style="font-weight:800;font-size:14px;color:var(--text2)">📊 İşlemler</div>
     <div style="display:flex;gap:7px;flex-wrap:wrap">
@@ -637,6 +657,17 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
   </div>
 </div>
 
+<!-- HAFTALIK PROGRAM -->
+<div id="s-week" class="screen">
+  <button class="btn-ghost mb14" onclick="go('s-list')">← Geri</button>
+  <div class="card mb14">
+    <div class="section-lbl">🗓️ Haftalık Ders Programı</div>
+    <label class="lbl">Branş / Eğitim</label>
+    <select id="wk-edu" onchange="renderWeek()"></select>
+  </div>
+  <div id="wk-body"></div>
+</div>
+
 <!-- VELİ GÖRÜNÜMÜ (salt okunur, veliye açılır) -->
 <div id="s-veli-view" class="screen">
   <div id="veli-view-body"></div>
@@ -804,6 +835,7 @@ const MONTHS=['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağust
 const DAYS=['Pt','Sa','Ça','Pe','Cu','Ct','Pz'];
 
 // ══ STATE ═════════════════════════════════════════════════════════════
+let levelData={}, allLevels={}, allLevelsLoaded=false, _lvProg=0;
 let students=[], curId=null, attData={}, payData=[], notesData={}, notesLogData={}, discountData={}, recData=[], allRec={};
 let curY=new Date().getFullYear(), curM=new Date().getMonth();
 let curTab='att', markC='came', confCB=null, payModalDate=null;
@@ -957,6 +989,7 @@ function go(id){
   if(id==='s-veli-share') renderVeliShare();
   if(id==='s-fiyat') loadFiyatApp();
   if(id==='s-yform') openYForm();
+  if(id==='s-week') renderWeek();
 }
 
 // ══ LIST ══════════════════════════════════════════════════════════════
@@ -1028,6 +1061,7 @@ function renderDupNameWarning(){
   box.innerHTML='<div style="background:#fef2f2;border:2px solid #fecaca;border-radius:12px;padding:10px 12px;margin-bottom:12px;font-size:12px;font-weight:800;color:#991b1b">⚠️ Aynı isimde birden fazla kayıtlı öğrenci var: '+names.join(', ')+'. Yoklama ve ders programı eşleştirmelerinde karışıklık olmaması için bu isimler otomatik eşleştirmelerde atlanır — telefon numarasına göre ayırt edin.</div>';
 }
 function renderList(){
+  try{renderLevelBanner();}catch(e){}
   renderTodaySched();
   renderRecBanner();
   renderDupNameWarning();
@@ -1555,15 +1589,17 @@ async function openDet(id){
   curY=new Date().getFullYear();curM=new Date().getMonth();
   curTab='att';markC='came';
   showLoad('Yükleniyor…');
-  const [attVal,payVal,noteVal,discVal,repVal,recVal,nlVal]=await Promise.all([
+  const [attVal,payVal,noteVal,discVal,repVal,recVal,nlVal,lvVal]=await Promise.all([
     fbGet('attendance/'+id),
     fbGet('payments/'+id),
     fbGet('notes/'+id),
     fbGet('discount/'+id),
     fbGet('reports/'+id),
     fbGet('receivables/'+id),
-    fbGet('notesLog/'+id)
+    fbGet('notesLog/'+id),
+    fbGet('levels/'+id)
   ]);
+  levelData=lvVal||{};
   recData=Object.values(recVal||{});
   allRec[id]=recVal||{};
   repCache[id]=repVal||{};
@@ -1634,6 +1670,7 @@ function renderDetail(){
   document.getElementById('n-hw').value=notesData.homework||'';
   document.getElementById('n-grade').value=notesData.grade||'';
   renderHwArchive();
+  lvlInit();
   fillHwRecipients();
   renderRepCard();
   document.getElementById('disc-enabled').checked=!!discountData.enabled;
@@ -2877,6 +2914,139 @@ async function exportAllPayments(){
   XLSX.writeFile(wb,'TumOdemeler_'+new Date().toLocaleDateString('tr-TR').replace(/\./g,'-')+'.xlsx');
 }
 
+
+// ══ SEVİYE & İLERLEME (AY SONU) ═══════════════════════════════════════
+const LVL_NAMES=['Başlangıç','Temel','Orta','İleri','Uzman'];
+function lvlMonthKey(y,m){return y+'-'+String(m+1).padStart(2,'0');}
+function lvlMonthLabel(k){const p=String(k).split('-');return (MONTHS[+p[1]-1]||'')+' '+p[0];}
+function lvlStars(n){return '★'.repeat(n)+'☆'.repeat(5-n);}
+function lvlInit(){
+  const sel=document.getElementById('lv-month');if(!sel)return;
+  const now=new Date();let o='';
+  for(let i=0;i<12;i++){
+    const d=new Date(now.getFullYear(),now.getMonth()-i,1);
+    const k=lvlMonthKey(d.getFullYear(),d.getMonth());
+    o+='<option value="'+k+'">'+lvlMonthLabel(k)+(levelData[k]?' ✓':'')+'</option>';
+  }
+  sel.innerHTML=o;
+  lvlLoadMonth();
+  renderLevelHistory();
+}
+function lvlLoadMonth(){
+  const k=document.getElementById('lv-month').value;
+  const r=levelData[k];
+  let lv=r?r.level:0;
+  if(!lv){ // önceki kayıtlı ayın seviyesini varsayılan yap
+    const prev=Object.keys(levelData).filter(x=>x<k).sort().pop();
+    lv=prev?levelData[prev].level:1;
+  }
+  document.getElementById('lv-level').value=String(lv||1);
+  _lvProg=r?(r.progress||0):0;
+  document.getElementById('lv-topics').value=r?r.topics||'':'';
+  document.getElementById('lv-note').value=r?r.note||'':'';
+  document.getElementById('lv-status').textContent=r?('Kaydedildi: '+(r.date||'')+(r.time?' · 🕒 '+r.time:'')):'Bu ay için henüz girilmedi';
+  lvlDrawStars();
+}
+function lvlDrawStars(){
+  document.getElementById('lv-stars').innerHTML=[1,2,3,4,5].map(n=>
+    '<button type="button" onclick="lvlSetProg('+n+')" style="flex:1;padding:9px 0;border-radius:10px;border:2px solid '+(n===_lvProg?'#f59e0b':'var(--border)')+';background:'+(n===_lvProg?'#fef3c7':'#fff')+';font-family:\'Nunito\',sans-serif;font-weight:900;font-size:15px;color:'+(n<=_lvProg?'#d97706':'var(--dim)')+';cursor:pointer">'+n+' ★</button>').join('');
+}
+function lvlSetProg(n){_lvProg=n;lvlDrawStars();}
+async function lvlSave(){
+  if(!curId)return;
+  const k=document.getElementById('lv-month').value;
+  if(!_lvProg){showConf('Lütfen bu ayki ilerleme puanını (1-5) seçin.','⚠️','Tamam',()=>{});return;}
+  const n=new Date();
+  const rec={
+    month:k,level:parseInt(document.getElementById('lv-level').value,10)||1,progress:_lvProg,
+    topics:document.getElementById('lv-topics').value.trim(),
+    note:document.getElementById('lv-note').value.trim(),
+    date:todays(),time:String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0')
+  };
+  setSyncing(true);
+  await fbSet('levels/'+curId+'/'+k,rec);
+  setSyncing(false);
+  levelData[k]=rec;
+  if(!allLevels[curId])allLevels[curId]={};
+  allLevels[curId][k]=rec;
+  lvlInit();
+  document.getElementById('lv-month').value=k;
+  lvlLoadMonth();
+  showConf('Seviye ve ilerleme kaydedildi!','✅','Tamam',()=>{});
+}
+function renderLevelHistory(){
+  const el=document.getElementById('lv-history');if(!el)return;
+  const keys=Object.keys(levelData).sort();
+  if(!keys.length){el.innerHTML='<div style="text-align:center;padding:16px;color:var(--muted);font-size:13px;font-weight:700;background:var(--bg);border-radius:10px">Henüz seviye kaydı yok.</div>';return;}
+  el.innerHTML=keys.slice().reverse().map(k=>{
+    const r=levelData[k];
+    const prevK=keys[keys.indexOf(k)-1];
+    let trend='';
+    if(prevK){
+      const d=(r.level||0)-(levelData[prevK].level||0);
+      trend=d>0?'<span style="color:#16a34a;font-weight:900">⬆️ Seviye yükseldi</span>':d<0?'<span style="color:#dc2626;font-weight:900">⬇️ Seviye düştü</span>':'<span style="color:var(--muted);font-weight:800">➡️ Seviye aynı</span>';
+    }
+    return '<div style="background:var(--bg);border:2px solid var(--border);border-radius:12px;padding:10px 12px;margin-bottom:8px">'+
+      '<div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:5px"><div style="font-weight:900;font-size:13px;color:var(--purple)">📅 '+lvlMonthLabel(k)+'</div><div style="font-size:11px;font-weight:800;color:var(--muted)">'+(r.date||'')+(r.time?' · 🕒 '+r.time:'')+'</div></div>'+
+      '<div style="font-size:13px;font-weight:800;margin-bottom:4px">🎯 Seviye '+r.level+'/5 · '+LVL_NAMES[r.level-1]+' &nbsp; <span style="color:#d97706">'+lvlStars(r.progress||0)+'</span> &nbsp; '+trend+'</div>'+
+      (r.topics?'<div style="font-size:13px;font-weight:700;white-space:pre-wrap;margin-bottom:3px"><span style="font-weight:900;color:var(--text2)">🎼 Çalışılan:</span> '+hwEsc(r.topics)+'</div>':'')+
+      (r.note?'<div style="font-size:13px;font-weight:700;white-space:pre-wrap"><span style="font-weight:900;color:var(--text2)">📝 Değerlendirme:</span> '+hwEsc(r.note)+'</div>':'')+
+    '</div>';
+  }).join('');
+}
+// Ay sonuna 5 gün kala: seviyesi girilmemiş öğrencileri hatırlat
+async function renderLevelBanner(){
+  const el=document.getElementById('lvl-banner');if(!el)return;
+  const now=new Date();
+  const last=new Date(now.getFullYear(),now.getMonth()+1,0).getDate();
+  if(now.getDate()<last-4||!students.length){el.innerHTML='';return;}
+  if(!allLevelsLoaded){allLevels=(await fbGet('levels'))||{};allLevelsLoaded=true;}
+  const k=lvlMonthKey(now.getFullYear(),now.getMonth());
+  const missing=students.filter(s=>!(allLevels[s.id]&&allLevels[s.id][k]));
+  if(!missing.length){el.innerHTML='';return;}
+  el.innerHTML='<div class="card mb14" style="border:2px solid #c4b5fd;background:#faf5ff">'+
+    '<div style="font-weight:900;font-size:14px;color:#6d28d9;margin-bottom:6px">🎯 Ay sonu: '+missing.length+' öğrencinin seviye &amp; ilerlemesi girilmedi</div>'+
+    '<div style="display:flex;flex-wrap:wrap;gap:6px">'+missing.map(s=>'<span onclick="openLvlFor(\''+s.id+'\')" style="cursor:pointer;background:#ede9fe;color:#5b21b6;border-radius:20px;padding:4px 11px;font-size:12px;font-weight:800">'+hwEsc(s.name+' '+s.surname)+'</span>').join('')+'</div></div>';
+}
+async function openLvlFor(id){
+  await openDet(id);
+  setTimeout(()=>{const c=document.getElementById('lvl-card');if(c)c.scrollIntoView({behavior:'smooth',block:'start'});},80);
+}
+
+// ══ HAFTALIK PROGRAM ══════════════════════════════════════════════════
+function renderWeek(){
+  const sel=document.getElementById('wk-edu');if(!sel)return;
+  const cur=sel.value||'';
+  const edus=[...new Set(students.map(s=>s.education).filter(Boolean))].sort();
+  sel.innerHTML='<option value="">Tümü</option>'+edus.map(e=>'<option value="'+hwEsc(e)+'"'+(e===cur?' selected':'')+'>'+hwEsc(e)+'</option>').join('');
+  const f=sel.value;
+  const names=['Pazartesi','Salı','Çarşamba','Perşembe','Cuma','Cumartesi','Pazar'];
+  const todayIdx=(new Date().getDay()+6)%7;
+  let html='';
+  for(let d=0;d<7;d++){
+    const items=[];
+    students.forEach(s=>{
+      if(f&&s.education!==f)return;
+      (s.schedule||[]).forEach(sl=>{if(sl.day===d&&sl.time)items.push({s,time:sl.time});});
+    });
+    items.sort((a,b)=>a.time.localeCompare(b.time));
+    const byTime={};
+    items.forEach(it=>{(byTime[it.time]=byTime[it.time]||[]).push(it.s);});
+    const isT=d===todayIdx;
+    html+='<div class="card mb12" style="'+(isT?'border:2px solid #34d399;background:#f0fdf4':'')+'">'+
+      '<div style="font-weight:900;font-size:14px;color:'+(isT?'#047857':'var(--text)')+';margin-bottom:8px">'+names[d]+(isT?' <span style="background:#dcfce7;color:#166534;border-radius:6px;padding:1px 7px;font-size:10px;margin-left:4px">BUGÜN</span>':'')+' <span style="font-weight:700;font-size:11px;color:var(--muted)">('+items.length+' ders)</span></div>';
+    if(!items.length)html+='<div style="font-size:12px;color:var(--muted)">Ders yok</div>';
+    Object.keys(byTime).sort().forEach(t=>{
+      html+='<div style="display:flex;gap:10px;align-items:flex-start;padding:6px 0;border-top:1px solid #f3f4f6">'+
+        '<div style="font-weight:900;font-size:13px;color:var(--purple);min-width:48px">'+hwEsc(t)+'</div>'+
+        '<div style="display:flex;flex-wrap:wrap;gap:6px;flex:1">'+byTime[t].map(s=>{const c=eduColor(s.education);
+          return '<span onclick="openDet(\''+s.id+'\')" style="cursor:pointer;background:'+c.bg+';border:2px solid '+c.border+';border-radius:10px;padding:4px 9px;font-size:12px;font-weight:800">'+eduIcon(s.education)+' '+hwEsc(s.name+' '+s.surname)+'</span>';}).join('')+'</div></div>';
+    });
+    html+='</div>';
+  }
+  document.getElementById('wk-body').innerHTML=html;
+}
+
 // ══ ARCHIVE ═══════════════════════════════════════════════════════════
 let archivedStudents=[];
 
@@ -3103,6 +3273,15 @@ function buildVeliFullMsg(d,url){
       if(l.gr)m+='Not: '+l.gr+'\n';
     });
   }
+  // Seviye & ilerleme
+  if(d.lvl&&d.lvl.length){
+    m+='\n🎯 *Seviye & İlerleme*\n';
+    d.lvl.forEach(l=>{
+      m+='\n📅 '+l.ml+'\nSeviye: '+l.lv+'/5 ('+l.ln+') · İlerleme: '+'★'.repeat(l.pr)+'☆'.repeat(5-l.pr)+' ('+l.pr+'/5)\n';
+      if(l.topics)m+='Çalışılan: '+l.topics+'\n';
+      if(l.note)m+='Değerlendirme: '+l.note+'\n';
+    });
+  }
   // Gelişim raporu
   if(d.rep&&d.rep.text){
     m+='\n━━━━━━━━━━\n📊 *3 Aylık Gelişim Raporu* ('+repDL(d.rep.from)+' – '+repDL(d.rep.to)+')\n\n'+repWAText(d.rep.text)+'\n';
@@ -3121,13 +3300,14 @@ function copyVeliMsg(){
 async function makeVeliUrl(id,loadMsg){
   const s=students.find(x=>x.id===id);if(!s)return null;
   showLoad(loadMsg||'Bağlantı oluşturuluyor…');
-  const [attVal,payVal,noteVal,discVal,logVal,repVal]=await Promise.all([
+  const [attVal,payVal,noteVal,discVal,logVal,repVal,lvVal]=await Promise.all([
     fbGet('attendance/'+id),
     fbGet('payments/'+id),
     fbGet('notes/'+id),
     fbGet('discount/'+id),
     fbGet('notesLog/'+id),
-    fbGet('reports/'+id)
+    fbGet('reports/'+id),
+    fbGet('levels/'+id)
   ]);
   repCache[id]=repVal||{};
   let lastRep=repLatest(repCache[id]);
@@ -3210,11 +3390,15 @@ async function makeVeliUrl(id,loadMsg){
       return{dl:d.getDate()+' '+MONTHS[d.getMonth()]+' '+d.getFullYear(),tm:l.time||'',hw:l.hw||'',gr:l.gr||''};
     });
 
+  const lvl=Object.entries(lvVal||{}).sort((a,b)=>b[0].localeCompare(a[0])).slice(0,3).reverse().map(([k,r])=>({
+    ml:lvlMonthLabel(k),lv:r.level||0,ln:LVL_NAMES[(r.level||1)-1]||'',pr:r.progress||0,topics:r.topics||'',note:r.note||'',tm:r.time||''
+  }));
+
   const data={
     n:s.name+' '+s.surname, e:s.education||'', pr:s.program||'',
     f:baseFee||'', pd:s.payDay||'', reg:s.registeredAt||'',
     att:attSummary, last5:last5, pay3:pay3, bal:carryover, nd:nextDiscount,
-    hw:note.homework||'', gr:note.grade||'', hwLog:hwLog,
+    hw:note.homework||'', gr:note.grade||'', hwLog:hwLog, lvl:lvl,
     rep:lastRep?{from:lastRep.from,to:lastRep.to,score:lastRep.score,text:lastRep.text,mode:lastRep.mode||'auto'}:null,
     gen:fmt(now.getFullYear(),now.getMonth(),now.getDate())
   };
@@ -3363,6 +3547,17 @@ function renderVeliView(data){
       ${data.hw?`<div class="mb12"><span class="lbl">Ödev</span><div style="font-weight:700;font-size:14px;color:var(--text);margin-top:3px">${data.hw}</div></div>`:''}
       ${data.gr?`<div><span class="lbl">Not</span><div style="font-weight:700;font-size:14px;color:var(--text);margin-top:3px">${data.gr}</div></div>`:''}
     </div>`:'')}
+    ${(data.lvl&&data.lvl.length)?`<div class="card mb12">
+      <div class="section-lbl">🎯 Seviye &amp; İlerleme</div>
+      ${data.lvl.map(l=>`<div class="pay-row">
+        <div style="min-width:0;flex:1">
+          <div style="font-size:13px;font-weight:900;color:var(--purple);margin-bottom:4px">📅 ${l.ml}</div>
+          <div style="font-size:14px;font-weight:800;color:var(--text);margin-bottom:3px">Seviye ${l.lv}/5 · ${hwEsc(l.ln)} &nbsp; <span style="color:#d97706">${'★'.repeat(l.pr)}${'☆'.repeat(5-l.pr)}</span></div>
+          ${l.topics?`<div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:3px"><span class="lbl" style="display:inline">Çalışılan: </span>${hwEsc(l.topics)}</div>`:''}
+          ${l.note?`<div style="font-size:13px;font-weight:700;color:var(--text)"><span class="lbl" style="display:inline">Değerlendirme: </span>${hwEsc(l.note)}</div>`:''}
+        </div>
+      </div>`).join('')}
+    </div>`:''}
     <div style="text-align:center;font-size:11px;color:var(--dim);font-weight:700;margin:16px 0 8px">📅 Oluşturulma: ${data.gen||'—'}<br>RockJazz Müzik Aletleri ve Silifke Satranç Atölyesi</div>`;
 }
 
