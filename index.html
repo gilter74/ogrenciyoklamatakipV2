@@ -413,6 +413,34 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
   <button class="btn-ghost mb14" onclick="go('s-list')">← Geri</button>
   <div class="card mb12" id="det-hdr"></div>
   <div class="overdue" id="overdue-box"></div>
+  <div class="tab-bar">
+    <button class="tab-btn tab-att" id="tbtn-att" onclick="switchTab('att')">📋 Yoklama Takvimi</button>
+    <button class="tab-btn" id="tbtn-pay" onclick="switchTab('pay')">💰 Ödeme Takvimi</button>
+  </div>
+  <div class="cal-card">
+    <div class="cal-hdr">
+      <button class="cal-nav" onclick="prevM()">‹</button>
+      <span id="mon-lbl" style="font-weight:900;font-size:18px;color:var(--text)"></span>
+      <button class="cal-nav" onclick="nextM()">›</button>
+    </div>
+    <div class="mark-row" id="mark-row">
+      <button class="mark-btn mark-came" id="mbtn-came" onclick="setMark('came')">🔵 Geldi</button>
+      <button class="mark-btn" id="mbtn-absent" onclick="setMark('absent')">🔴 Gelmedi</button>
+    </div>
+    <div class="tip" id="pay-tip" style="display:none">💡 Ödeme eklemek için takvimde o güne tıkla → Yeşile döner</div>
+    <div class="day-grid mb12" id="day-hdrs"></div>
+    <div class="day-grid" id="cal-grid"></div>
+    <div class="legend" id="cal-leg"></div>
+    <div class="stats" id="cal-stats"></div>
+  </div>
+  <div id="pay-status-box" style="display:none;border-radius:13px;padding:13px 16px;margin-bottom:12px;border:2px solid;font-weight:800;font-size:14px;text-align:center"></div>
+  <div class="card mb12" id="pay-list-card" style="display:none">
+    <div id="pay-list-title" style="font-weight:900;font-size:15px;margin-bottom:10px"></div>
+    <div id="pay-list-body"></div>
+  </div>
+  <div class="card mb12" id="yearly-card" style="display:none">
+    <div id="yearly-body"></div>
+  </div>
   <div class="card mb12">
     <div class="section-lbl">📚 Ödev &amp; Not</div>
     <div class="mb14"><label class="lbl">Bu Haftanın Ödevi</label><textarea id="n-hw" rows="2" placeholder="Örn: Sayfa 12-14 tekrar, gam çalışması…" style="width:100%;padding:11px 14px;border-radius:10px;border:2px solid var(--border);font-family:'Nunito',sans-serif;font-size:14px;font-weight:600;color:var(--text);resize:vertical;outline:none"></textarea></div>
@@ -505,34 +533,6 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
     <label class="lbl">İndirim Notu (hatırlatma) <span style="font-weight:600;text-transform:none;font-size:11px;color:var(--dim)" id="disc-count">0/250</span></label>
     <textarea id="disc-note" maxlength="250" rows="3" placeholder="Bu indirimi neden verdiğinizi ve avantajlarını buraya yazabilirsiniz. Örn: Ayın 1-10. günleri arasında ödeme yapan velilere teşvik amaçlı erken ödeme indirimi uygulanır; düzenli ödemeyi teşvik eder, hem veli hem kurum için avantajlıdır." oninput="updateDiscCount()" style="width:100%;padding:11px 14px;border-radius:10px;border:2px solid var(--border);font-family:'Nunito',sans-serif;font-size:14px;font-weight:600;color:var(--text);resize:vertical;outline:none;margin-bottom:12px"></textarea>
     <button class="btn btn-purple btn-sm" onclick="saveDiscount()">💾 Kaydet</button>
-  </div>
-  <div class="tab-bar">
-    <button class="tab-btn tab-att" id="tbtn-att" onclick="switchTab('att')">📋 Yoklama Takvimi</button>
-    <button class="tab-btn" id="tbtn-pay" onclick="switchTab('pay')">💰 Ödeme Takvimi</button>
-  </div>
-  <div class="cal-card">
-    <div class="cal-hdr">
-      <button class="cal-nav" onclick="prevM()">‹</button>
-      <span id="mon-lbl" style="font-weight:900;font-size:18px;color:var(--text)"></span>
-      <button class="cal-nav" onclick="nextM()">›</button>
-    </div>
-    <div class="mark-row" id="mark-row">
-      <button class="mark-btn mark-came" id="mbtn-came" onclick="setMark('came')">🔵 Geldi</button>
-      <button class="mark-btn" id="mbtn-absent" onclick="setMark('absent')">🔴 Gelmedi</button>
-    </div>
-    <div class="tip" id="pay-tip" style="display:none">💡 Ödeme eklemek için takvimde o güne tıkla → Yeşile döner</div>
-    <div class="day-grid mb12" id="day-hdrs"></div>
-    <div class="day-grid" id="cal-grid"></div>
-    <div class="legend" id="cal-leg"></div>
-    <div class="stats" id="cal-stats"></div>
-  </div>
-  <div id="pay-status-box" style="display:none;border-radius:13px;padding:13px 16px;margin-bottom:12px;border:2px solid;font-weight:800;font-size:14px;text-align:center"></div>
-  <div class="card mb12" id="pay-list-card" style="display:none">
-    <div id="pay-list-title" style="font-weight:900;font-size:15px;margin-bottom:10px"></div>
-    <div id="pay-list-body"></div>
-  </div>
-  <div class="card" id="yearly-card" style="display:none">
-    <div id="yearly-body"></div>
   </div>
 </div>
 
