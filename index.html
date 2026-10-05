@@ -1221,7 +1221,7 @@ function renderList(){
     const groups={};
     shown.forEach(s=>{const cat=eduCategory(s.education);(groups[cat]=groups[cat]||[]).push(s);});
     el.innerHTML=EDU_CAT_ORDER.filter(cat=>groups[cat]&&groups[cat].length).map(cat=>{
-      const list=groups[cat];
+      const list=groups[cat].slice().sort((x,y)=>((x.name||'')+' '+(x.surname||'')).localeCompare((y.name||'')+' '+(y.surname||''),'tr',{sensitivity:'base'}));
       const dot=eduColor(list[0].education).border;
       return `
       <div style="display:flex;align-items:center;gap:8px;margin:18px 2px 8px">
