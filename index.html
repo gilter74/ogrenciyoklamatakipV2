@@ -1055,6 +1055,7 @@ const fmt=(y,m,d)=>`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'
 const mkey=(y,m)=>`${y}-${String(m+1).padStart(2,'0')}`;
 const dim=(y,m)=>new Date(y,m+1,0).getDate();
 const fd=(y,m)=>{const d=new Date(y,m,1).getDay();return d===0?6:d-1;};
+const tmin=t=>{const p=String(t||'').split(':').map(Number);return isNaN(p[0])?99999:(p[0]||0)*60+(p[1]||0);};
 const todays=()=>{const n=new Date();return fmt(n.getFullYear(),n.getMonth(),n.getDate());};
 const parseRange=s=>{if(!s)return null;const p=s.split('-');return p.length===2?{a:+p[0],b:+p[1]}:null;};
 const eduIcon=e=>{
@@ -1132,7 +1133,7 @@ function renderTodaySched(){
       if(sl.day===todayIdx&&sl.time){all.push({s,time:sl.time});}
     });
   });
-  all.sort((a,b)=>(/Org/.test(a.s.education||'')?0:1)-(/Org/.test(b.s.education||'')?0:1)||a.time.localeCompare(b.time));
+  all.sort((a,b)=>tmin(a.time)-tmin(b.time)||(a.s.name||'').localeCompare(b.s.name||'','tr'));
   const today=[];
   all.forEach(({s,time})=>{
     const parts=String(time).split(':').map(Number);
@@ -3177,9 +3178,8 @@ function ydLessons(ds){
     const s=students.find(x=>x.id===id);
     if(s&&!map[id])map[id]={s,times:[]};
   });
-  const isOrg=x=>/Org/.test(x.s.education||'')?0:1;
-  return Object.values(map).map(o=>({s:o.s,times:o.times.sort(),first:o.times.sort()[0]||'99:99'}))
-    .sort((a,b)=>isOrg(a)-isOrg(b)||a.first.localeCompare(b.first)||(a.s.name||'').localeCompare(b.s.name||'','tr'));
+  return Object.values(map).map(o=>{const t=o.times.sort((x,y)=>tmin(x)-tmin(y));return{s:o.s,times:t,first:t[0]||''};})
+    .sort((a,b)=>tmin(a.first)-tmin(b.first)||(a.s.name||'').localeCompare(b.s.name||'','tr'));
 }
 async function renderDaily(){
   const ds=document.getElementById('yd-date').value||todays();
