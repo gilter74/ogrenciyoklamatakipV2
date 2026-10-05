@@ -316,8 +316,14 @@ body:has(#s-veli-view.active) .screen{padding-bottom:20px}
     </div>
     <div style="font-size:11px;color:var(--dim);margin-top:8px;font-weight:700;text-align:center">Tüm öğrenciler · Her öğrenci ayrı sekme · Yoklama + Ödeme + Özet</div>
   </div>
-  <div id="list-el"></div>
-  <div class="tot" id="tot-el"></div>
+  <button id="stu-toggle" onclick="toggleStuList()" style="width:100%;display:flex;align-items:center;justify-content:space-between;gap:10px;background:#fff;border:1px solid var(--border);border-radius:14px;padding:14px 16px;margin-bottom:6px;box-shadow:var(--shadow);cursor:pointer;font-family:'Inter',system-ui,sans-serif;font-weight:700;font-size:15px;color:var(--text)">
+    <span>👥 Öğrencilerimiz <span id="stu-count" style="color:var(--muted);font-size:13px"></span></span>
+    <span id="stu-arrow" style="font-size:18px;color:var(--purple);transition:transform .2s">▾</span>
+  </button>
+  <div id="stu-body" style="display:none">
+    <div id="list-el"></div>
+    <div class="tot" id="tot-el"></div>
+  </div>
 </div>
 
 <!-- REGISTER -->
@@ -1235,7 +1241,17 @@ function renderList(){
     }).join('');
   }
   document.getElementById('tot-el').textContent='Toplam '+students.length+' öğrenci';
+  const sc=document.getElementById('stu-count');if(sc)sc.textContent='('+students.length+')';
+  if(q&&!stuOpen)setStuList(true); // arama yapılınca menü otomatik açılır
 }
+let stuOpen=false;
+function setStuList(open){
+  stuOpen=!!open;
+  const b=document.getElementById('stu-body'),a=document.getElementById('stu-arrow');
+  if(b)b.style.display=stuOpen?'block':'none';
+  if(a)a.style.transform=stuOpen?'rotate(180deg)':'none';
+}
+function toggleStuList(){setStuList(!stuOpen);}
 
 // Öğrenci adına tıklayınca detay yeni pencerede (sekmede) açılsın
 function openDetNewWin(id){
