@@ -1160,7 +1160,9 @@ function renderTodaySched(){
     return;
   }
   const dupSet=fullNameDupSet();
-  listEl.innerHTML=today.map(({s,time})=>{
+  const TS_PAGE=3; // aynı anda en fazla 3 ders; biri bitince (10 dk sonra) sıradaki gelir
+  const rest=today.length-TS_PAGE;
+  listEl.innerHTML=today.slice(0,TS_PAGE).map(({s,time})=>{
     const c=eduColor(s.education);
     const fn=((s.name||'')+' '+(s.surname||'')).trim().toLocaleUpperCase('tr').replace(/\s+/g,' ');
     const dup=dupSet.has(fn);
@@ -1175,7 +1177,7 @@ function renderTodaySched(){
       </div>
       <div style="font-weight:700;font-size:14px;color:${c.border};flex-shrink:0">⏰ ${time}</div>
     </div>`;
-  }).join('');
+  }).join('')+(rest>0?'<div style="text-align:center;font-size:12px;font-weight:700;color:var(--muted);padding:6px 0 0">+ '+rest+' ders daha sırada · tümü için Günlük Yoklama</div>':'');
 }
 
 function renderDupNameWarning(){
