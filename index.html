@@ -291,6 +291,7 @@ body:has(#s-veli-view.active) .screen{padding-bottom:20px}
   <div id="dup-name-warn" style="display:none"></div>
   <div id="rec-banner"></div>
   <div id="lvl-banner"></div>
+  <div id="um-banner"></div>
   <div class="card mb14" id="today-sched-card">
     <div style="font-weight:700;font-size:14px;color:var(--text);margin-bottom:10px" id="today-sched-title">📅 Bugün Dersi Olanlar</div>
     <div id="today-sched-list"></div>
@@ -778,6 +779,7 @@ body:has(#s-veli-view.active) .screen{padding-bottom:20px}
     <div id="yd-stats" style="display:flex;gap:8px;margin-bottom:12px"></div>
     <button class="btn btn-green" style="width:100%;justify-content:center;padding:11px;font-size:14px" onclick="ydAllCame()">✅ Bekleyenlerin Hepsi Geldi</button>
   </div>
+  <div id="yd-um"></div>
   <div id="yd-list"></div>
   <div class="card mb14" id="yd-extra-card">
     <div style="font-weight:700;font-size:13px;color:var(--text2);margin-bottom:8px">➕ Programda olmayan öğrenci ekle (telafi / ek ders)</div>
@@ -1250,6 +1252,7 @@ function renderList(){
     }
   }catch(e){}
   renderTodaySched();
+  try{umRender();}catch(e){}
   renderRecBanner();
   renderDupNameWarning();
   const q=(document.getElementById('search').value||'').toLowerCase();
@@ -3253,7 +3256,7 @@ async function renderDaily(){
   const d=ydDateObj(ds);
   document.getElementById('yd-title').textContent=d.getDate()+' '+MONTHS[d.getMonth()]+' '+d.getFullYear()+' · '+YD_DAYS[(d.getDay()+6)%7]+(ds===todays()?'  (Bugün)':'');
   // durumları oku
-  const need=items.filter(it=>!(it.s.id in ydStatus)||ydStatus[it.s.id].ds!==ds);
+  const need=umReady?[]:items.filter(it=>!(it.s.id in ydStatus)||ydStatus[it.s.id].ds!==ds);
   if(need.length){
     showLoad('Yoklama yükleniyor…');
     await Promise.all(need.map(async it=>{
@@ -3264,45 +3267,208 @@ async function renderDaily(){
   }
   drawDaily(items,ds);
 }
-function ydSt(id,ds){const o=ydStatus[id];return o&&o.ds===ds?o.v:'';}
+function ydSt(id,ds){
+  if(umReady)return (umAtt[id]&&umAtt[id][ds])||''; // tek gerçek kaynak: canlı yoklama verisi (takvimdeki işaretlemeler dahil)
+  const o=ydStatus[id];return o&&o.ds===ds?o.v:'';
+}
+// ══ YOKLAMA HATIRLATMA: işaretlenmeyen dersler ═══════════════════════════
+let umAtt={}, umSkip={}, umReady=false, umNotified={};
+try{umNotified=JSON.parse(localStorage.getItem('umNotified')||'{}');}catch(e){}
+function umSaveNotified(){try{localStorage.setItem('umNotified',JSON.stringify(umNotified));}catch(e){}}
+function startUmWatch(){
+  try{
+    db.ref('attendance').on('value',snap=>{umAtt=snap.val()||{};umReady=true;umRefresh(true);});
+    db.ref('ydSkip').on('value',snap=>{umSkip=snap.val()||{};umRefresh(false);});
+  }catch(e){console.warn('umWatch',e);}
+  setInterval(()=>umRefresh(true),60000);
+}
+// Dersin süresi (program metnindeki "30 dk" gibi ifadeden); bulunamazsa 40 dk
+function umDur(s){const m=String(s.program||'').match(/(\d+)\s*dk/i);const d=m?+m[1]:40;return Math.min(60,Math.max(10,d));}
+// Dersi geçmiş (bugün: ders saati+süre+5 dk, önceki 3 gün: tamamı) ve yoklaması işaretlenmemiş öğrenciler
+function umPending(){
+  if(!umReady||!students.length)return [];
+  const now=new Date(),nowMin=now.getHours()*60+now.getMinutes(),out=[];
+  for(let back=0;back<=3;back++){
+    const d=new Date(now.getFullYear(),now.getMonth(),now.getDate()-back);
+    const ds=hwDateStr(d),idx=(d.getDay()+6)%7;
+    students.forEach(s=>{
+      if(s.registeredAt&&ds<s.registeredAt)return;
+      const times=(s.schedule||[]).filter(sl=>sl&&sl.day===idx&&sl.time).map(sl=>sl.time).sort((a,b)=>tmin(a)-tmin(b));
+      if(!times.length)return;
+      if(back===0&&nowMin<tmin(times[0])+umDur(s)+5)return;
+      if(umAtt[s.id]&&umAtt[s.id][ds])return;
+      if(umSkip[ds]&&umSkip[ds][s.id])return;
+      out.push({s,ds,time:times[0],back});
+    });
+  }
+  out.sort((a,b)=>a.back-b.back||tmin(a.time)-tmin(b.time)||(a.s.name||'').localeCompare(b.s.name||'','tr'));
+  return out;
+}
+function umDayLabel(ds,back){
+  if(back===0)return 'Bugün';if(back===1)return 'Dün';
+  const d=ydDateObj(ds);return d.getDate()+' '+MONTHS[d.getMonth()].slice(0,3)+' '+YD_DAYS[(d.getDay()+6)%7].slice(0,3);
+}
+function umBannerHtml(excludeDs){
+  const list=umPending().filter(x=>x.ds!==excludeDs);
+  if(!list.length)return '';
+  const bt='width:38px;height:38px;border-radius:10px;font-size:17px;cursor:pointer;border:1px solid ';
+  return '<div class="card mb14" id="um-card" style="border:1px solid #fca5a5;background:#fef2f2">'+
+    '<div style="font-weight:700;font-size:14px;color:#991b1b;margin-bottom:6px">⏰ Yoklama işaretlenmedi ('+list.length+')</div>'+
+    '<div style="font-size:11px;font-weight:600;color:#b45353;margin-bottom:6px">Geldi / gelmedi işaretleyince bu liste otomatik temizlenir. 🚫 = o gün ders yoktu.</div>'+
+    list.slice(0,6).map(x=>{
+      const c=eduColor(x.s.education);
+      return '<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-top:1px solid #fecaca">'+
+        '<div style="flex:1;min-width:0;cursor:pointer" onclick="umOpenDay(\''+x.ds+'\')">'+
+          '<div style="font-weight:700;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+eduIcon(x.s.education)+' '+hwEsc(x.s.name+' '+x.s.surname)+'</div>'+
+          '<div style="font-size:11px;font-weight:700;color:#7a8399">'+umDayLabel(x.ds,x.back)+' · 🕒 '+hwEsc(x.time)+' · '+hwEsc(x.s.education||'')+'</div></div>'+
+        '<button title="Geldi" onclick="ydMark(\''+x.s.id+'\',\'came\',\''+x.ds+'\')" style="'+bt+'#bfdbfe;background:#fff">✅</button>'+
+        '<button title="Gelmedi" onclick="ydMark(\''+x.s.id+'\',\'absent\',\''+x.ds+'\')" style="'+bt+'#fecaca;background:#fff">❌</button>'+
+        '<button title="O gün ders yoktu" onclick="ydSkipDay(\''+x.s.id+'\',\''+x.ds+'\')" style="'+bt+'#d1d5db;background:#fff">🚫</button>'+
+      '</div>';
+    }).join('')+
+    (list.length>6?'<div style="font-size:12px;font-weight:700;color:#991b1b;padding-top:8px;border-top:1px solid #fecaca">+ '+(list.length-6)+' öğrenci daha · Günlük Yoklama\'dan işaretleyin</div>':'')+
+  '</div>';
+}
+function umOpenDay(ds){document.getElementById('yd-date').value=ds;go('s-daily');}
+function umRender(){
+  const h=document.getElementById('um-banner');
+  if(h)h.innerHTML=umBannerHtml('');
+  const a=document.querySelector('.screen.active');
+  if(a&&a.id==='s-daily'){
+    const ds=ydDate||document.getElementById('yd-date').value||todays();
+    drawDaily(ydLessons(ds),ds);
+  }
+}
+function umRefresh(check){
+  umRender();
+  if(check)umNotifyCheck();
+}
+// İşaretlenmeyen ders için (her öğrenci-gün için bir kez) bildirim
+function umNotifyCheck(){
+  const cut=hwDateStr(new Date(Date.now()-6*864e5));
+  Object.keys(umNotified).forEach(k=>{if(k.slice(0,10)<cut)delete umNotified[k];});
+  const fresh=umPending().filter(x=>!umNotified[x.ds+'|'+x.s.id]);
+  if(!fresh.length)return;
+  fresh.forEach(x=>{umNotified[x.ds+'|'+x.s.id]=1;});
+  umSaveNotified();
+  const body=fresh.slice(0,4).map(x=>x.s.name+' '+x.s.surname+' — '+umDayLabel(x.ds,x.back)+' '+x.time).join('\n')+(fresh.length>4?'\n+'+(fresh.length-4)+' öğrenci daha':'');
+  blinkPageTitle('⏰ Yoklama işaretlenmedi!',20000);
+  const card=document.getElementById('um-card');
+  if(card){card.classList.remove('flash-alert');void card.offsetWidth;card.classList.add('flash-alert');setTimeout(()=>card.classList.remove('flash-alert'),5000);}
+  if('Notification' in window){
+    if(Notification.permission==='granted'){try{new Notification('⏰ Yoklama işaretlenmedi ('+fresh.length+')',{body});}catch(e){}}
+    else if(Notification.permission==='default'){requestNotifPermission();}
+  }
+}
+// Kısa süreli alt bildirim (geri al / veliye bildir kısayolu)
+function snack(msg,actions){
+  let el=document.getElementById('snack');
+  if(!el){
+    el=document.createElement('div');el.id='snack';
+    el.style.cssText='position:fixed;left:50%;bottom:78px;transform:translateX(-50%);max-width:94vw;background:#1b2340;color:#fff;border-radius:14px;padding:10px 14px;font-size:13px;font-weight:600;z-index:9999;box-shadow:0 8px 24px rgba(0,0,0,.28);display:none;gap:10px;align-items:center;flex-wrap:wrap;justify-content:center';
+    document.body.appendChild(el);
+  }
+  window._snackActs=actions||[];
+  el.innerHTML='<span>'+msg+'</span>'+(actions||[]).map((a,i)=>'<button onclick="snackAct('+i+')" style="background:rgba(255,255,255,.16);color:#fff;border:none;border-radius:8px;padding:6px 10px;font-weight:700;font-size:12px;cursor:pointer">'+a.l+'</button>').join('');
+  el.style.display='flex';
+  clearTimeout(window._snackT);window._snackT=setTimeout(()=>{el.style.display='none';},9000);
+}
+function snackAct(i){
+  const a=(window._snackActs||[])[i];
+  const el=document.getElementById('snack');if(el)el.style.display='none';
+  if(a&&a.f)a.f();
+}
+// "O gün ders yoktu": öğrenci o günün listesinden ve hatırlatmalardan çıkar (yoklama kaydı oluşmaz)
+async function ydSkipDay(id,ds){
+  umSkip[ds]=umSkip[ds]||{};umSkip[ds][id]=true;
+  umRender();
+  const s=students.find(x=>x.id===id);
+  snack('🚫 '+hwEsc(s?s.name+' '+s.surname:'Öğrenci')+' — '+umDayLabel(ds,Math.round((ydDateObj(todays())-ydDateObj(ds))/864e5))+' ders yoktu.',[{l:'↩ Geri al',f:()=>ydUnskipDay(id,ds)}]);
+  try{await fbSet('ydSkip/'+ds+'/'+id,true);}catch(e){showConf('Kaydedilemedi: '+e.message,'⚠️','Tamam',()=>{});}
+}
+async function ydUnskipDay(id,ds){
+  if(umSkip[ds]){delete umSkip[ds][id];if(!Object.keys(umSkip[ds]).length)delete umSkip[ds];}
+  umRender();
+  try{await fbDel('ydSkip/'+ds+'/'+id);}catch(e){}
+}
+let ydDoneOpen=false;
+function ydToggleDone(){
+  ydDoneOpen=!ydDoneOpen;
+  const b=document.getElementById('yd-done'),a=document.getElementById('yd-done-arrow');
+  if(b)b.style.display=ydDoneOpen?'block':'none';
+  if(a)a.style.transform=ydDoneOpen?'rotate(180deg)':'none';
+}
+function ydCardHtml(it,ds,canSkip){
+  const s=it.s,v=ydSt(s.id,ds),c=eduColor(s.education);
+  const mk=v&&v!=='came'&&v!=='absent'; // telafi vb.
+  const bd=v==='absent'?'#fca5a5':v?'#93c5fd':c.border;
+  const bg=v==='absent'?'#fef2f2':v?'#eff6ff':'#fff';
+  const bs='flex:1;padding:14px 8px;border-radius:12px;font-family:\'Inter\',system-ui,sans-serif;font-weight:700;font-size:16px;cursor:pointer;border:1px solid ';
+  return '<div style="background:'+bg+';border:1px solid '+bd+';border-radius:16px;padding:12px;margin-bottom:10px">'+
+    '<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px" onclick="openDet(\''+s.id+'\')">'+
+      '<div class="avatar" style="width:40px;height:40px;background:'+c.border+';font-size:18px;flex-shrink:0">'+eduIcon(s.education)+'</div>'+
+      '<div style="flex:1;min-width:0"><div style="font-weight:700;font-size:16px">'+hwEsc(s.name+' '+s.surname)+'</div>'+
+      '<div style="font-size:12px;color:var(--muted);font-weight:700">'+(it.times.length?'🕒 '+it.times.join(' · ')+' · ':'➕ Ek ders · ')+hwEsc(s.education||'')+(mk?' · 🩷 Telafi':'')+'</div></div>'+
+    '</div>'+
+    '<div style="display:flex;gap:8px">'+
+      '<button onclick="ydMark(\''+s.id+'\',\'came\')" style="'+bs+(v==='came'?'#1d4ed8;background:#1d4ed8;color:#fff':'#bfdbfe;background:#fff;color:#1d4ed8')+'">✅ Geldi</button>'+
+      '<button onclick="ydMark(\''+s.id+'\',\'absent\')" style="'+bs+(v==='absent'?'#dc2626;background:#dc2626;color:#fff':'#fecaca;background:#fff;color:#dc2626')+'">❌ Gelmedi</button>'+
+    '</div>'+
+    (v==='absent'?'<button onclick="ydNotify(\''+s.id+'\')" style="width:100%;margin-top:8px;padding:10px;border-radius:10px;border:none;background:#25d366;color:#fff;font-family:\'Inter\',system-ui,sans-serif;font-weight:700;font-size:14px;cursor:pointer">📲 Veliye Bildir</button>':'')+
+    (canSkip?'<button onclick="ydSkipDay(\''+s.id+'\',\''+ds+'\')" style="width:100%;margin-top:8px;padding:8px;border-radius:10px;border:1px dashed #d1d5db;background:transparent;color:#6b7280;font-family:\'Inter\',system-ui,sans-serif;font-weight:700;font-size:12px;cursor:pointer">🚫 Bugün ders yok (listeden kaldır)</button>':'')+
+  '</div>';
+}
 function drawDaily(items,ds){
-  let came=0,abs=0,wait=0;
-  items.forEach(it=>{const v=ydSt(it.s.id,ds);if(v==='came')came++;else if(v==='absent')abs++;else wait++;});
+  const skipMap=umSkip[ds]||{};
+  const pend=[],done=[],skipped=[];
+  items.forEach(it=>{
+    if(skipMap[it.s.id])skipped.push(it);
+    else if(ydSt(it.s.id,ds))done.push(it);
+    else pend.push(it);
+  });
+  let came=0,abs=0;
+  done.forEach(it=>{if(ydSt(it.s.id,ds)==='absent')abs++;else came++;});
   document.getElementById('yd-stats').innerHTML=
     '<div class="stat" style="flex:1;background:var(--blue-l);border:1px solid #bfdbfe"><div class="n" style="color:var(--blue)">'+came+'</div><div class="l" style="color:var(--blue)">Geldi</div></div>'+
     '<div class="stat" style="flex:1;background:var(--red-l);border:1px solid #fecaca"><div class="n" style="color:var(--red)">'+abs+'</div><div class="l" style="color:var(--red)">Gelmedi</div></div>'+
-    '<div class="stat" style="flex:1;background:#f3f4f6;border:1px solid #e5e7eb"><div class="n" style="color:#4b5563">'+wait+'</div><div class="l" style="color:#4b5563">Bekliyor</div></div>';
+    '<div class="stat" style="flex:1;background:#f3f4f6;border:1px solid #e5e7eb"><div class="n" style="color:#4b5563">'+pend.length+'</div><div class="l" style="color:#4b5563">Bekliyor</div></div>';
+  const um=document.getElementById('yd-um');
+  if(um)um.innerHTML=umBannerHtml(ds); // başka günlerde işaretlenmemiş dersler
   const list=document.getElementById('yd-list');
   if(!items.length){list.innerHTML='<div class="card mb14" style="text-align:center;color:var(--muted);font-weight:700;font-size:13px">Bu gün için programlı ders yok. Aşağıdan öğrenci ekleyebilirsiniz.</div>';}
-  else list.innerHTML=items.map(it=>{
-    const s=it.s,v=ydSt(s.id,ds),c=eduColor(s.education);
-    const bd=v==='came'?'#93c5fd':v==='absent'?'#fca5a5':c.border;
-    const bg=v==='came'?'#eff6ff':v==='absent'?'#fef2f2':'#fff';
-    const bs='flex:1;padding:14px 8px;border-radius:12px;font-family:\'Inter\',system-ui,sans-serif;font-weight:700;font-size:16px;cursor:pointer;border:1px solid ';
-    return '<div style="background:'+bg+';border:1px solid '+bd+';border-radius:16px;padding:12px;margin-bottom:10px">'+
-      '<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px" onclick="openDet(\''+s.id+'\')">'+
-        '<div class="avatar" style="width:40px;height:40px;background:'+c.border+';font-size:18px;flex-shrink:0">'+eduIcon(s.education)+'</div>'+
-        '<div style="flex:1;min-width:0"><div style="font-weight:700;font-size:16px">'+hwEsc(s.name+' '+s.surname)+'</div>'+
-        '<div style="font-size:12px;color:var(--muted);font-weight:700">'+(it.times.length?'🕒 '+it.times.join(' · ')+' · ':'➕ Ek ders · ')+hwEsc(s.education||'')+'</div></div>'+
-      '</div>'+
-      '<div style="display:flex;gap:8px">'+
-        '<button onclick="ydMark(\''+s.id+'\',\'came\')" style="'+bs+(v==='came'?'#1d4ed8;background:#1d4ed8;color:#fff':'#bfdbfe;background:#fff;color:#1d4ed8')+'">✅ Geldi</button>'+
-        '<button onclick="ydMark(\''+s.id+'\',\'absent\')" style="'+bs+(v==='absent'?'#dc2626;background:#dc2626;color:#fff':'#fecaca;background:#fff;color:#dc2626')+'">❌ Gelmedi</button>'+
-      '</div>'+
-      (v==='absent'?'<button onclick="ydNotify(\''+s.id+'\')" style="width:100%;margin-top:8px;padding:10px;border-radius:10px;border:none;background:#25d366;color:#fff;font-family:\'Inter\',system-ui,sans-serif;font-weight:700;font-size:14px;cursor:pointer">📲 Veliye Bildir</button>':'')+
-    '</div>';
-  }).join('');
+  else{
+    let html=pend.map(it=>ydCardHtml(it,ds,true)).join('');
+    if(!pend.length&&(done.length||skipped.length))html+='<div class="card mb14" style="text-align:center;color:#166534;background:#f0fdf4;border:1px solid #86efac;font-weight:700;font-size:14px">🎉 Bu günün tüm yoklamaları işaretlendi</div>';
+    if(done.length){
+      html+='<button onclick="ydToggleDone()" style="width:100%;display:flex;align-items:center;justify-content:space-between;background:#fff;border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:10px;cursor:pointer;font-family:\'Inter\',system-ui,sans-serif;font-weight:700;font-size:14px;color:var(--text2)"><span>✔ İşaretlenenler ('+done.length+')</span><span id="yd-done-arrow" style="transition:transform .2s;transform:'+(ydDoneOpen?'rotate(180deg)':'none')+'">▾</span></button>'+
+        '<div id="yd-done" style="display:'+(ydDoneOpen?'block':'none')+'">'+done.map(it=>ydCardHtml(it,ds,false)).join('')+'</div>';
+    }
+    if(skipped.length){
+      html+='<div class="card mb14" style="background:#f9fafb"><div style="font-weight:700;font-size:13px;color:var(--text2);margin-bottom:8px">🚫 Bu gün ders yok ('+skipped.length+')</div>'+
+        skipped.map(it=>'<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-top:1px solid var(--border)"><div style="flex:1;font-weight:700;font-size:13px">'+hwEsc(it.s.name+' '+it.s.surname)+'</div><button onclick="ydUnskipDay(\''+it.s.id+'\',\''+ds+'\')" style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:5px 10px;font-weight:700;font-size:12px;cursor:pointer">↩ Geri al</button></div>').join('')+'</div>';
+    }
+    list.innerHTML=html;
+  }
   // ek öğrenci seçici
   const ids=new Set(items.map(it=>it.s.id));
   document.getElementById('yd-extra-sel').innerHTML='<option value="">— Öğrenci seçin —</option>'+
     students.filter(s=>!ids.has(s.id)).slice().sort((a,b)=>(a.name||'').localeCompare(b.name||'','tr')).map(s=>'<option value="'+s.id+'">'+hwEsc(s.name+' '+s.surname)+'</option>').join('');
 }
-async function ydMark(id,mark){
-  const ds=ydDate||todays();
+async function ydMark(id,mark,dsOpt,quiet){
+  const ds=dsOpt||ydDate||todays();
+  requestNotifPermission();
   const cur=ydSt(id,ds);
   const nv=cur===mark?'':mark; // aynı butona tekrar basınca geri al
   ydStatus[id]={ds,v:nv};
-  drawDaily(ydLessons(ds),ds);
+  umAtt[id]=umAtt[id]||{};
+  if(nv)umAtt[id][ds]=nv;else delete umAtt[id][ds];
+  umRender();
+  const s=students.find(x=>x.id===id);
+  if(nv&&!quiet&&s){
+    const acts=[{l:'↩ Geri al',f:()=>ydMark(id,nv,ds,true)}];
+    if(nv==='absent')acts.push({l:'📲 Veliye bildir',f:()=>ydNotify(id,ds)});
+    snack((nv==='absent'?'❌ ':'✅ ')+hwEsc(s.name+' '+s.surname)+(nv==='absent'?' gelmedi':' geldi')+' olarak işaretlendi.',acts);
+  }
   setSyncing(true);
   try{
     if(nv)await fbSet('attendance/'+id+'/'+ds,nv); else await fbDel('attendance/'+id+'/'+ds);
@@ -3318,7 +3484,7 @@ function ydAllCame(){
   const items=ydLessons(ds).filter(it=>!ydSt(it.s.id,ds));
   if(!items.length){showConf('Bekleyen öğrenci yok.','ℹ️','Tamam',()=>{});return;}
   showConf(items.length+' öğrenci "Geldi" olarak işaretlensin mi?','✅','Evet, İşaretle',async()=>{
-    for(const it of items)await ydMark(it.s.id,'came');
+    for(const it of items)await ydMark(it.s.id,'came',ds,true);
   });
 }
 function ydAddExtra(){
@@ -3326,9 +3492,9 @@ function ydAddExtra(){
   if(!ydExtra.includes(id))ydExtra.push(id);
   renderDaily();
 }
-function ydNotify(id){
+function ydNotify(id,dsOpt){
   const s=students.find(x=>x.id===id);if(!s)return;
-  const ds=ydDate||todays();
+  const ds=dsOpt||ydDate||todays();
   const d=ydDateObj(ds);
   const it=ydLessons(ds).find(x=>x.s.id===id);
   const tm=it&&it.times.length?' saat '+it.times[0]:'';
@@ -4447,6 +4613,7 @@ if(location.hash.indexOf('#vid=')===0){
     }
     autoFillSchedules();
     startRecWatch();
+    startUmWatch();
     setTimeout(autoQuarterReports,2500); // 3 ayda bir otomatik rapor kontrolü
     db.ref('students').on('value',snap2=>{
       const val2=snap2.val()||{};
