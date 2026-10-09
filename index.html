@@ -3229,11 +3229,35 @@ function ydShift(n){
   el.value=fmt(d.getFullYear(),d.getMonth(),d.getDate());
   renderDaily();
 }
+let ydKeepDate=false; // hatırlatma kartından belirli bir güne gidildiyse o tarih korunur
 function openDaily(){
   const el=document.getElementById('yd-date');
-  if(!el.value)el.value=todays();
+  if(!ydKeepDate||!el.value)el.value=todays(); // normal açılışta her zaman bugün
+  ydKeepDate=false;
   renderDaily();
 }
+// Gün değişince (gece yarısı) Günlük Yoklama otomatik yeni güne geçer
+let ydLastToday=todays();
+function ydDayRollover(){
+  const t=todays();
+  if(t===ydLastToday)return;
+  const prev=ydLastToday;ydLastToday=t;
+  const el=document.getElementById('yd-date');
+  const a=document.querySelector('.screen.active');
+  const followed=el&&(!el.value||el.value===prev); // kullanıcı başka bir gün seçmediyse bugünü takip eder
+  if(followed)el.value=t;
+  if(a&&a.id==='s-daily'&&followed){
+    ydExtra=[];
+    renderDaily();
+    const d=ydDateObj(t);
+    snack('📅 Yeni gün: '+d.getDate()+' '+MONTHS[d.getMonth()]+' '+YD_DAYS[(d.getDay()+6)%7]+' — Günlük Yoklama otomatik güncellendi.',[]);
+  }
+  if(a&&a.id==='s-list')renderList();
+  try{umRefresh(true);}catch(e){}
+}
+setInterval(ydDayRollover,30000);
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')ydDayRollover();});
+window.addEventListener('focus',ydDayRollover);
 function ydLessons(ds){
   const idx=(ydDateObj(ds).getDay()+6)%7;
   const map={};
@@ -3329,7 +3353,7 @@ function umBannerHtml(excludeDs){
     (list.length>6?'<div style="font-size:12px;font-weight:700;color:#991b1b;padding-top:8px;border-top:1px solid #fecaca">+ '+(list.length-6)+' öğrenci daha · Günlük Yoklama\'dan işaretleyin</div>':'')+
   '</div>';
 }
-function umOpenDay(ds){document.getElementById('yd-date').value=ds;go('s-daily');}
+function umOpenDay(ds){document.getElementById('yd-date').value=ds;ydKeepDate=true;go('s-daily');}
 function umRender(){
   const h=document.getElementById('um-banner');
   if(h)h.innerHTML=umBannerHtml('');
