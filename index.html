@@ -369,6 +369,18 @@ body:has(#s-veli-view.active) .screen{padding-bottom:20px}
       <div class="err-msg" id="r-err-prog"></div>
     </div>
     <div class="mb20">
+      <label class="lbl">📦 Katılım Paketi / Ödeme Şekli *</label>
+      <input type="hidden" id="r-pkg" value="">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px" id="r-pkg-btns">
+        <button type="button" class="pr-btn" data-v="4" onclick="selPkg('r','4')">Aylık 4 Ders</button>
+        <button type="button" class="pr-btn" data-v="8" onclick="selPkg('r','8')">Aylık 8 Ders</button>
+        <button type="button" class="pr-btn" data-v="12" onclick="selPkg('r','12')">Aylık 12 Ders</button>
+        <button type="button" class="pr-btn" data-v="saat" onclick="selPkg('r','saat')">⏱ Saat Ücreti</button>
+      </div>
+      <div style="font-size:11px;color:var(--dim);font-weight:600;margin-top:5px">Saat ücretinde öğrenci yalnızca katıldığı ders kadar öder (Ders Başı Ücret girin).</div>
+      <div class="err-msg" id="r-err-pkg"></div>
+    </div>
+    <div class="mb20">
       <label class="lbl">📅 Haftalık Ders Saatleri <span style="font-weight:600;text-transform:none;letter-spacing:0;font-size:11px;color:var(--dim)">(Öğrenci kartında görünür)</span></label>
       <div id="r-sched-rows"></div>
       <button type="button" class="btn-ghost" style="width:100%;justify-content:center;padding:9px;font-size:13px;margin-top:6px" onclick="addSchedRow('r')">➕ Saat Ekle</button>
@@ -449,6 +461,18 @@ body:has(#s-veli-view.active) .screen{padding-bottom:20px}
         <option>Aylık 30 dk × 2</option><option>Aylık 40 dk</option><option>Aylık 40 dk × 2</option>
       </select>
       <div class="err-msg" id="e-err-prog"></div>
+    </div>
+    <div class="mb20">
+      <label class="lbl">📦 Katılım Paketi / Ödeme Şekli</label>
+      <input type="hidden" id="e-pkg" value="">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px" id="e-pkg-btns">
+        <button type="button" class="pr-btn" data-v="4" onclick="selPkg('e','4')">Aylık 4 Ders</button>
+        <button type="button" class="pr-btn" data-v="8" onclick="selPkg('e','8')">Aylık 8 Ders</button>
+        <button type="button" class="pr-btn" data-v="12" onclick="selPkg('e','12')">Aylık 12 Ders</button>
+        <button type="button" class="pr-btn" data-v="saat" onclick="selPkg('e','saat')">⏱ Saat Ücreti</button>
+      </div>
+      <div style="font-size:11px;color:var(--dim);font-weight:600;margin-top:5px">Saat ücretinde öğrenci yalnızca katıldığı ders kadar öder (Ders Başı Ücret girin).</div>
+      <div class="err-msg" id="e-err-pkg"></div>
     </div>
     <div class="mb20">
       <label class="lbl">📅 Haftalık Ders Saatleri <span style="font-weight:600;text-transform:none;letter-spacing:0;font-size:11px;color:var(--dim)">(Öğrenci kartında görünür)</span></label>
@@ -1616,10 +1640,11 @@ function resetReg(){
    'r-mom-name','r-mom-phone','r-dad-name','r-dad-phone'].forEach(id=>{
     const el=document.getElementById(id);if(el){el.value='';el.classList.remove('err');}
   });
-  ['r-err-name','r-err-surname','r-err-edu','r-err-prog'].forEach(id=>{
+  ['r-err-name','r-err-surname','r-err-edu','r-err-prog','r-err-pkg'].forEach(id=>{
     const el=document.getElementById(id);if(el)el.textContent='';
   });
   document.querySelectorAll('#r-pr-btns .pr-btn').forEach(b=>b.classList.remove('sel'));
+  selPkg('r','');
   const rKdv=document.getElementById('r-kdv');if(rKdv)rKdv.value='0';
   document.querySelectorAll('#r-kdv-btns .pr-btn').forEach(b=>b.classList.remove('sel'));
   renderSchedRows('r',[]);
@@ -1700,6 +1725,20 @@ function selPR(p,v){
   document.querySelectorAll('#'+p+'-pr-btns .pr-btn').forEach(b=>b.classList.toggle('sel',b.dataset.v===v));
 }
 
+const PKG_LABELS={'4':'Aylık 4 Derslik Paket','8':'Aylık 8 Derslik Paket','12':'Aylık 12 Derslik Paket','saat':'Saat Ücreti (katıldığı kadar öder)'};
+function pkgLabel(v){return PKG_LABELS[v]||'';}
+function pkgBadge(v,big){
+  if(!PKG_LABELS[v])return '';
+  const sty=v==='saat'?'background:#fff7ed;color:#c2410c;border:1px solid #fdba74':'background:#eef2ff;color:#3730a3;border:1px solid #a5b4fc';
+  return '<span class="badge" style="'+sty+';font-weight:800'+(big?';font-size:14px;padding:6px 12px':'')+'">📦 '+PKG_LABELS[v]+'</span>';
+}
+function selPkg(p,v){
+  const h=document.getElementById(p+'-pkg');if(h)h.value=v||'';
+  document.querySelectorAll('#'+p+'-pkg-btns .pr-btn').forEach(b=>b.classList.toggle('sel',b.dataset.v===v));
+  const er=document.getElementById(p+'-err-pkg');if(er)er.textContent='';
+  if(v==='saat'){const lf=document.getElementById(p+'-lesson-fee');if(lf)lf.style.boxShadow='0 0 0 3px #fdba74';}
+  else{const lf=document.getElementById(p+'-lesson-fee');if(lf)lf.style.boxShadow='';}
+}
 function selKdv(p,v){
   document.getElementById(p+'-kdv').value=v;
   document.querySelectorAll('#'+p+'-kdv-btns .pr-btn').forEach(b=>b.classList.toggle('sel',b.dataset.v===v));
@@ -1712,6 +1751,7 @@ function readForm(p){
     phone:document.getElementById(p+'-phone').value.trim(),
     education:document.getElementById(p+'-edu').value,
     program:document.getElementById(p+'-prog').value,
+    pkg:document.getElementById(p+'-pkg').value||'',
     fee:document.getElementById(p+'-fee').value.trim(),
     lessonFee:document.getElementById(p+'-lesson-fee').value.trim(),
     kdvDahil:document.getElementById(p+'-kdv').value==='1',
@@ -1732,6 +1772,7 @@ function validate(d,p){
   chk(d.surname, p+'-surname',ep+'surname','Soyad zorunludur');
   chk(d.education,p+'-edu',   ep+'edu',     'Eğitim türü seçin');
   chk(d.program, p+'-prog',   ep+'prog',    'Program seçin');
+  if(p==='r'&&!d.pkg){const el=document.getElementById('r-err-pkg');if(el)el.textContent='⚠ Paket / ödeme şekli seçin';ok=false;}
   return ok;
 }
 
@@ -1757,6 +1798,7 @@ function fillEdit(){
   document.getElementById('e-phone').value=s.phone||'';
   document.getElementById('e-edu').value=s.education||'';
   document.getElementById('e-prog').value=s.program||'';
+  selPkg('e',s.pkg||'');
   document.getElementById('e-fee').value=s.fee||'';
   document.getElementById('e-lesson-fee').value=s.lessonFee||'';
   document.getElementById('e-kdv').value=s.kdvDahil?'1':'0';
@@ -1855,6 +1897,7 @@ function renderDetail(){
         <div style="display:flex;gap:6px;margin-top:7px;flex-wrap:wrap">
           <span class="badge" style="background:var(--purple-l);color:var(--purple);border:1px solid #d3d9ea">${s.education}</span>
           <span class="badge" style="background:var(--green-l);color:var(--green);border:1px solid #a7f3d0">⏱ ${s.program}</span>
+          ${pkgBadge(s.pkg)}
           ${s.fee?'<span class="badge" style="background:var(--green-l);color:var(--green);border:1px solid #a7f3d0">💰 '+parseFloat(s.fee).toLocaleString('tr-TR')+' ₺/ay</span>':''}
           ${s.lessonFee?'<span class="badge" style="background:#f0fdf4;color:#166534;border:1px solid #86efac">📚 '+parseFloat(s.lessonFee).toLocaleString('tr-TR')+' ₺/ders</span>':''}
           ${s.fee?(s.kdvDahil?'<span class="badge" style="background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe">✅ KDV Dahil</span>':'<span class="badge" style="background:#f3f4f6;color:#4b5563;border:1px solid #d1d5db">🚫 KDV Hariç</span>'):''}
@@ -2089,6 +2132,7 @@ function buildHwMsg(url){
   const toStudent=sel&&sel.selectedOptions[0]&&sel.selectedOptions[0].textContent.startsWith('🎓');
   let m=toStudent?'Merhaba '+s.name+',\n\n':'Sayın Velimiz,\n\n';
   m+='*'+s.name+' '+s.surname+'* için ödev ve öğretmen notu:\n';
+  if(pkgLabel(s.pkg))m+='📦 *Program: '+pkgLabel(s.pkg)+'*\n';
   if(hw)m+='\n📚 *Bu Haftanın Ödevi*\n'+hw+'\n';
   if(gr)m+='\n📝 *Öğretmen Notu*\n'+gr+'\n';
   const wantRep=document.getElementById('wa-hw-rep')&&document.getElementById('wa-hw-rep').checked;
@@ -3665,7 +3709,9 @@ function hwEntriesFor(sid){
 }
 function hwSumText(s,y,m){
   const r=hwMonthItems(hwEntriesFor(s.id),y,m);
-  let t='*'+s.name+' '+s.surname+'* – '+MONTHS[m]+' '+y+' ödev özeti\n\n';
+  let t='*'+s.name+' '+s.surname+'* – '+MONTHS[m]+' '+y+' ödev özeti\n';
+  if(pkgLabel(s.pkg))t+='📦 *Program: '+pkgLabel(s.pkg)+'*\n';
+  t+='\n';
   t+=r.items.map((it,i)=>(i+1)+'. '+it.d+' · '+it.t+(it.n>1?' (×'+it.n+')':'')).join('\n');
   if(r.extra)t+='\n\n(Ayın daha önceki '+r.extra+' ödevi bu özete alınmadı.)';
   t+='\n\nSaygılarımla,\nRockJazz Müzik Aletleri · Silifke Satranç Atölyesi';
@@ -3810,6 +3856,7 @@ function renderArchive(){
           <div style="margin-top:8px;font-size:12px;font-weight:700;color:#374151">
             <span style="background:#e9ecf5;color:#2f3f73;border-radius:6px;padding:2px 7px;margin-right:4px">${s.education}</span>
             <span style="background:#f0fdf4;color:#059669;border-radius:6px;padding:2px 7px">⏱ ${s.program}</span>
+            ${s.pkg?'<span style="background:#eef2ff;color:#3730a3;border-radius:6px;padding:2px 7px">📦 '+pkgLabel(s.pkg)+'</span>':''}
           </div>
           <div style="margin-top:10px;display:flex;flex-direction:column;gap:4px">
             ${contacts.map(c=>`<div style="font-size:13px;font-weight:700;color:#374151;background:#f9fafb;padding:5px 9px;border-radius:7px">${c}</div>`).join('')}
@@ -3969,6 +4016,7 @@ async function genVeliLink(){
 
 function buildVeliFullMsg(d,url){
   let m='Sayın Velimiz,\n\n*'+d.n+'* için son 3 aylık bilgilendirme:\n';
+  if(PKG_LABELS[d.pk])m+='\n━━━━━━━━━━\n📦 *KATILDIĞI PROGRAM: '+PKG_LABELS[d.pk].toUpperCase('tr')+'*'+(d.pr?'\n⏱ Ders süresi: '+d.pr:'')+'\n━━━━━━━━━━\n';
   // Ödemeler
   m+='\n💰 *Ödemeler (Son 3 Ay)*\n';
   if(d.pay3&&d.pay3.length){
@@ -4113,7 +4161,7 @@ async function makeVeliUrl(id,loadMsg){
   }));
 
   const data={
-    n:s.name+' '+s.surname, e:s.education||'', pr:s.program||'',
+    n:s.name+' '+s.surname, e:s.education||'', pr:s.program||'', pk:s.pkg||'',
     f:baseFee||'', pd:s.payDay||'', reg:s.registeredAt||'',
     att:attSummary, last5:last5, pay3:pay3, bal:carryover, nd:nextDiscount,
     hw:note.homework||'', gr:note.grade||'', hwLog:hwLog, lvl:lvl,
@@ -4209,6 +4257,7 @@ function renderVeliView(data){
     </div>
     ${data.rep?`<div class="card mb12" style="border-color:#fde68a;background:linear-gradient(135deg,#fffbeb,#fff)">
       <div class="section-lbl">📊 3 Aylık Gelişim Raporu</div>
+      ${PKG_LABELS[data.pk]?`<div style="background:#eef2ff;border:2px solid #a5b4fc;color:#3730a3;border-radius:12px;padding:9px 12px;text-align:center;font-weight:800;margin-bottom:10px">📦 Katıldığı Program: ${PKG_LABELS[data.pk]}</div>`:''}
       <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:10px">📅 ${repDL(data.rep.from)} – ${repDL(data.rep.to)}</div>
       <div style="text-align:center;background:#fff;border:1px solid #fde68a;border-radius:14px;padding:14px;margin-bottom:12px">
         <div style="font-size:30px;letter-spacing:3px;color:#f59e0b;line-height:1.1">${repStars(data.rep.score)}</div>
@@ -4219,6 +4268,7 @@ function renderVeliView(data){
     </div>`:''}
     <div class="card mb12">
       <div class="section-lbl">📋 Ders Programı</div>
+      ${PKG_LABELS[data.pk]?`<div style="background:linear-gradient(135deg,#4f46e5,#7c3aed);color:#fff;border-radius:14px;padding:14px;text-align:center;margin-bottom:10px;box-shadow:0 4px 14px rgba(79,70,229,.35)"><div style="font-size:11px;font-weight:700;letter-spacing:.6px;opacity:.85">KATILDIĞI PROGRAM</div><div style="font-size:20px;font-weight:800;margin-top:3px">📦 ${PKG_LABELS[data.pk]}</div></div>`:''}
       <div style="display:flex;gap:6px;flex-wrap:wrap">
         ${data.e?`<span class="badge" style="background:var(--purple-l);color:var(--purple);border:1px solid #d3d9ea">${data.e}</span>`:''}
         ${data.pr?`<span class="badge" style="background:var(--green-l);color:var(--green);border:1px solid #a7f3d0">⏱ ${data.pr}</span>`:''}
@@ -4450,7 +4500,8 @@ function repFullMsg(){
   const sel=document.getElementById('wa-hw-to');
   const toStudent=sel&&sel.selectedOptions[0]&&sel.selectedOptions[0].textContent.startsWith('🎓');
   return (toStudent?'Merhaba '+s.name+',\n\n':'Sayın Velimiz,\n\n')+
-    '*'+s.name+' '+s.surname+'* için '+repDL(r.from)+' – '+repDL(r.to)+' dönemine ait 3 aylık genel değerlendirme raporu:\n\n'+
+    '*'+s.name+' '+s.surname+'* için '+repDL(r.from)+' – '+repDL(r.to)+' dönemine ait 3 aylık genel değerlendirme raporu:\n'+
+    (pkgLabel(s.pkg)?'\n📦 *KATILDIĞI PROGRAM: '+pkgLabel(s.pkg).toUpperCase('tr')+'*\n':'')+'\n'+
     repWAText(r.text)+'\n\nSaygılarımla,\nRockJazz Müzik Aletleri ve Silifke Satranç Atölyesi';
 }
 function repSendWA(){
