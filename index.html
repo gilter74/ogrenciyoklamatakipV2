@@ -120,6 +120,8 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
 .mark-btn{flex:1;max-width:160px;padding:8px 10px;border-radius:20px;border:1px solid transparent;background:var(--card2);color:var(--text2);font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;font-weight:600;font-size:13px;cursor:pointer;text-align:center;white-space:nowrap}
 .mark-came{background:#1d4ed8;color:#fff;border-color:#1d4ed8}
 .mark-absent{background:#dc2626;color:#fff;border-color:#dc2626}
+.mark-ist{background:#f59e0b;color:#fff;border-color:#d97706}
+.day-cell.istisna{background:#f59e0b;color:#fff;border-color:#d97706}
 .legend{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:8px;overflow:hidden}
 .ldot{display:flex;align-items:center;gap:4px;font-size:10px;color:var(--text2);font-weight:700}
 .dot{width:9px;height:9px;border-radius:2px;display:inline-block;flex-shrink:0}
@@ -547,6 +549,7 @@ body:has(#s-veli-view.active) .screen{padding-bottom:20px}
     <div class="mark-row" id="mark-row">
       <button class="mark-btn mark-came" id="mbtn-came" onclick="setMark('came')">🔵 Geldi</button>
       <button class="mark-btn" id="mbtn-absent" onclick="setMark('absent')">🔴 Gelmedi</button>
+      <button class="mark-btn" id="mbtn-ist" onclick="setMark('istisna')">🟠 İstisna</button>
     </div>
     <div class="tip" id="pay-tip" style="display:none">💡 Ödeme eklemek için takvimde o güne tıkla → Yeşile döner</div>
     <div class="day-grid mb12" id="day-hdrs"></div>
@@ -554,6 +557,7 @@ body:has(#s-veli-view.active) .screen{padding-bottom:20px}
     <div class="legend" id="cal-leg"></div>
     <div class="stats" id="cal-stats"></div>
   </div>
+  <div class="card mb12" id="tel-box" style="display:none;border:1px solid #fcd34d;background:#fffbeb"></div>
   <div id="pay-status-box" style="display:none;border-radius:13px;padding:13px 16px;margin-bottom:12px;border:1px solid;font-weight:600;font-size:14px;text-align:center"></div>
   <div class="card mb12" id="pay-list-card" style="display:none">
     <div id="pay-list-title" style="font-weight:700;font-size:15px;margin-bottom:10px"></div>
@@ -807,6 +811,7 @@ body:has(#s-veli-view.active) .screen{padding-bottom:20px}
   </div>
   <div id="yd-um"></div>
   <div id="yd-list"></div>
+  <div id="yd-guest"></div>
   <div class="card mb14" id="yd-extra-card">
     <div style="font-weight:700;font-size:13px;color:var(--text2);margin-bottom:8px">➕ Programda olmayan öğrenci ekle (telafi / ek ders)</div>
     <div style="display:flex;gap:8px"><select id="yd-extra-sel" style="flex:1"></select><button class="btn btn-purple btn-sm" onclick="ydAddExtra()">Ekle</button></div>
@@ -1339,12 +1344,13 @@ function delStudent(id){
     showLoad('Arşivleniyor…');
     const student=students.find(s=>s.id===id);
     if(student){
-      const [attSnap,paySnap,noteSnap,discSnap,recSnap]=await Promise.all([
+      const [attSnap,paySnap,noteSnap,discSnap,recSnap,istSnap]=await Promise.all([
         db.ref('attendance/'+id).once('value'),
         db.ref('payments/'+id).once('value'),
         db.ref('notes/'+id).once('value'),
         db.ref('discount/'+id).once('value'),
-        db.ref('receivables/'+id).once('value')
+        db.ref('receivables/'+id).once('value'),
+        db.ref('istisna/'+id).once('value')
       ]);
       const archiveEntry={
         ...student,
@@ -1353,7 +1359,8 @@ function delStudent(id){
         payments:paySnap.val()||{},
         notes:noteSnap.val()||{},
         discount:discSnap.val()||{},
-        receivables:recSnap.val()||{}
+        receivables:recSnap.val()||{},
+        istisna:istSnap.val()||{}
       };
       await fbSet('archived/'+id, archiveEntry);
     }
@@ -1364,7 +1371,8 @@ function delStudent(id){
       fbDel('payments/'+id),
       fbDel('notes/'+id),
       fbDel('discount/'+id),
-      fbDel('receivables/'+id)
+      fbDel('receivables/'+id),
+      fbDel('istisna/'+id)
     ]);
     delete allRec[id];
     hideLoad();
@@ -2184,6 +2192,7 @@ function setMark(c){
   markC=c;
   document.getElementById('mbtn-came').className='mark-btn'+(c==='came'?' mark-came':'');
   document.getElementById('mbtn-absent').className='mark-btn'+(c==='absent'?' mark-absent':'');
+  const bi=document.getElementById('mbtn-ist');if(bi)bi.className='mark-btn'+(c==='istisna'?' mark-ist':'');
 }
 
 function renderCal(){
@@ -2206,6 +2215,7 @@ function renderCal(){
     if(curTab==='att'){
       if(att==='came') cls+=' came';
       else if(att==='absent') cls+=' absent';
+      else if(att==='istisna') cls+=' istisna';
       else if(rng&&d>=rng.a&&d<=rng.b) cls+=' payday';
       if(ds===today&&!att) cls+=' today-r';
     } else {
@@ -2219,6 +2229,7 @@ function renderCal(){
   const leg=curTab==='att'
     ?'<div class="ldot"><span class="dot" style="background:#1d4ed8"></span>Geldi</div>'+
       '<div class="ldot"><span class="dot" style="background:#dc2626"></span>Gelmedi</div>'+
+      '<div class="ldot"><span class="dot" style="background:#f59e0b"></span>İstisna</div>'+
       (rng?'<div class="ldot"><span class="dot" style="background:#fef9c3;border:1px solid #fde047"></span>Taahhüt Günleri</div>':'')+
       '<div class="ldot"><span class="dot" style="background:transparent;border:1px solid var(--orange)"></span>Bugün</div>'
     :'<div class="ldot"><span class="dot" style="background:#059669"></span>Ödeme Yapıldı</div>'+
@@ -2228,6 +2239,7 @@ function renderCal(){
   const mk=mkey(curY,curM);
   const came=Object.entries(attData).filter(([k,v])=>k.startsWith(mk)&&v==='came').length;
   const abs=Object.entries(attData).filter(([k,v])=>k.startsWith(mk)&&v==='absent').length;
+  const ist=Object.entries(attData).filter(([k,v])=>k.startsWith(mk)&&v==='istisna').length;
   const pays=payData.filter(p=>p.date.startsWith(mk));
   const tot=pays.reduce((acc,p)=>acc+parseFloat(p.amount||0),0);
   const lf=parseFloat(s&&s.lessonFee||0);
@@ -2236,6 +2248,7 @@ function renderCal(){
   document.getElementById('cal-stats').innerHTML=curTab==='att'
     ?'<div class="stat" style="background:var(--blue-l);border:1px solid #bfdbfe"><div class="n" style="color:var(--blue)">'+came+'</div><div class="l" style="color:var(--blue)">Geldi</div></div>'+
       '<div class="stat" style="background:var(--red-l);border:1px solid #fecaca"><div class="n" style="color:var(--red)">'+abs+'</div><div class="l" style="color:var(--red)">Gelmedi</div></div>'+
+      (ist>0?'<div class="stat" style="background:#fffbeb;border:1px solid #fcd34d"><div class="n" style="color:#b45309">'+ist+'</div><div class="l" style="color:#b45309">İstisna</div></div>':'')+
       '<div class="stat" style="background:var(--purple-l);border:1px solid #d3d9ea"><div class="n" style="color:var(--purple)">'+(came+abs)+'</div><div class="l" style="color:var(--purple)">Toplam</div></div>'+
       (lf>0&&came>0?'<div class="stat" style="flex:2;background:#f0fdf4;border:1px dashed #86efac"><div class="n" style="color:#059669;font-size:13px">'+came+'×'+lf.toLocaleString('tr-TR')+'₺='+calcTot.toLocaleString('tr-TR')+'₺</div><div class="l" style="color:#166534">Tahmini Ücret</div></div>':'')
     :'<div class="stat" style="background:var(--green-l);border:1px solid #a7f3d0"><div class="n" style="color:var(--green)">'+pays.length+'</div><div class="l" style="color:var(--green)">Ödeme</div></div>'+
@@ -2245,10 +2258,18 @@ function renderCal(){
   renderPayList();
   renderPayStatus();
   renderYearlyTable();
+  try{renderTelBox();}catch(e){}
 }
 
 async function handleDay(ds,day){
   if(curTab==='att'){
+    if(markC==='istisna'){istOpen(curId,ds);return;}
+    if(attData[ds]==='istisna'&&(telAll[curId]||{})[ds]){
+      showConf('Bu gün "İstisna" olarak kayıtlı. İstisna kaydı ve telafi hakkı kaldırılıp yeni işaret mi konsun?','⚠️','Evet, Değiştir',async()=>{
+        const mc=markC;await istRemove(curId,ds);attData[ds]=mc;renderCal();await saveAtt();
+      });
+      return;
+    }
     if(attData[ds]===markC) delete attData[ds]; else attData[ds]=markC;
     renderCal();
     await saveAtt();
@@ -3304,7 +3325,7 @@ function ydDayRollover(){
 setInterval(ydDayRollover,30000);
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')ydDayRollover();});
 window.addEventListener('focus',ydDayRollover);
-function ydLessons(ds){
+function ydLessonsBase(ds){
   const idx=(ydDateObj(ds).getDay()+6)%7;
   const map={};
   students.forEach(s=>{
@@ -3319,6 +3340,21 @@ function ydLessons(ds){
   return Object.values(map).map(o=>{const t=o.times.sort((x,y)=>tmin(x)-tmin(y));return{s:o.s,times:t,first:t[0]||''};})
     .sort((a,b)=>tmin(a.first)-tmin(b.first)||(a.s.name||'').localeCompare(b.s.name||'','tr'));
 }
+function ydLessons(ds){
+  const arr=ydLessonsBase(ds);
+  Object.keys(telAll).forEach(id=>{
+    const st=students.find(x=>x.id===id);if(!st)return;
+    Object.keys(telAll[id]||{}).forEach(ds0=>{
+      const r=telAll[id][ds0];
+      if(r&&r.grant&&r.tDate===ds)arr.push({s:st,times:r.tTime?[r.tTime]:[],first:r.tTime||'',tel:ds0});
+    });
+  });
+  return arr.sort((a,b)=>tmin(a.first)-tmin(b.first)||(a.s.name||'').localeCompare(b.s.name||'','tr'));
+}
+function itSt(it,ds){
+  if(it.tel){const r=(telAll[it.s.id]||{})[it.tel];return (r&&r.tStatus)||'';}
+  return ydSt(it.s.id,ds);
+}
 async function renderDaily(){
   const ds=document.getElementById('yd-date').value||todays();
   if(ydDate!==ds){ydDate=ds;ydExtra=[];}
@@ -3326,7 +3362,7 @@ async function renderDaily(){
   const d=ydDateObj(ds);
   document.getElementById('yd-title').textContent=d.getDate()+' '+MONTHS[d.getMonth()]+' '+d.getFullYear()+' · '+YD_DAYS[(d.getDay()+6)%7]+(ds===todays()?'  (Bugün)':'');
   // durumları oku
-  const need=umReady?[]:items.filter(it=>!(it.s.id in ydStatus)||ydStatus[it.s.id].ds!==ds);
+  const need=umReady?[]:items.filter(it=>!it.tel&&!(it.s.id in ydStatus)||ydStatus[it.s.id].ds!==ds);
   if(need.length){
     showLoad('Yoklama yükleniyor…');
     await Promise.all(need.map(async it=>{
@@ -3349,6 +3385,7 @@ function startUmWatch(){
   try{
     db.ref('attendance').on('value',snap=>{umAtt=snap.val()||{};umReady=true;umRefresh(true);});
     db.ref('ydSkip').on('value',snap=>{umSkip=snap.val()||{};umRefresh(false);});
+    startTelWatch();
   }catch(e){console.warn('umWatch',e);}
   setInterval(()=>umRefresh(true),60000);
 }
@@ -3402,7 +3439,7 @@ function umBannerHtml(excludeDs){
 function umOpenDay(ds){document.getElementById('yd-date').value=ds;ydKeepDate=true;go('s-daily');}
 function umRender(){
   const h=document.getElementById('um-banner');
-  if(h)h.innerHTML=umBannerHtml('');
+  if(h)h.innerHTML=umBannerHtml('')+telBannerHtml();
   const a=document.querySelector('.screen.active');
   if(a&&a.id==='s-daily'){
     const ds=ydDate||document.getElementById('yd-date').value||todays();
@@ -3469,39 +3506,55 @@ function ydToggleDone(){
   if(a)a.style.transform=ydDoneOpen?'rotate(180deg)':'none';
 }
 function ydCardHtml(it,ds,canSkip){
-  const s=it.s,v=ydSt(s.id,ds),c=eduColor(s.education);
-  const mk=v&&v!=='came'&&v!=='absent'; // telafi vb.
-  const bd=v==='absent'?'#fca5a5':v?'#93c5fd':c.border;
-  const bg=v==='absent'?'#fef2f2':v?'#eff6ff':'#fff';
+  const s=it.s,v=itSt(it,ds),c=eduColor(s.education),tel=!!it.tel;
+  const mk=v&&v!=='came'&&v!=='absent'&&v!=='istisna'; // diğer
+  const bd=v==='absent'?'#fca5a5':v==='istisna'?'#fcd34d':v?'#93c5fd':tel?'#f9a8d4':c.border;
+  const bg=v==='absent'?'#fef2f2':v==='istisna'?'#fffbeb':v?'#eff6ff':tel?'#fdf2f8':'#fff';
   const bs='flex:1;padding:14px 8px;border-radius:12px;font-family:\'Inter\',system-ui,sans-serif;font-weight:700;font-size:16px;cursor:pointer;border:1px solid ';
+  const sm='width:100%;margin-top:8px;padding:10px;border-radius:10px;font-family:\'Inter\',system-ui,sans-serif;font-weight:700;font-size:14px;cursor:pointer;';
+  const fnC=tel?'telMark(\''+s.id+'\',\''+it.tel+'\',\'came\')':'ydMark(\''+s.id+'\',\'came\')';
+  const fnA=tel?'telMark(\''+s.id+'\',\''+it.tel+'\',\'absent\')':'ydMark(\''+s.id+'\',\'absent\')';
+  const rec=!tel?(telAll[s.id]||{})[ds]:null;
+  let extra='';
+  if(v==='istisna'&&!tel){
+    extra='<div style="background:#fef3c7;border-radius:10px;padding:8px 10px;margin-bottom:8px;font-size:12px;font-weight:700;color:#92400e">⚠️ İstisna · '+(rec?(rec.kind==='kurum'?'🏢 Kurum nedeniyle':'🧒 Öğrenci mazereti')+' · '+hwEsc(rec.reason||''):'')+(rec&&rec.grant?'<br>🩷 Telafi hakkı var · son tarih '+telDShort(rec.exp):'')+(rec&&rec.tDate?'<br>📅 Telafi: '+telDLong(rec.tDate)+(rec.tTime?' '+rec.tTime:''):'')+'</div>'+
+      '<div style="display:flex;gap:8px"><button onclick="istOpen(\''+s.id+'\',\''+ds+'\')" style="flex:1;'+sm+'margin-top:0;border:1px solid #fcd34d;background:#fff;color:#92400e">✏️ Düzenle</button>'+
+      (rec&&rec.grant&&!rec.tDate?'<button onclick="telSchedOpen(\''+s.id+'\',\''+ds+'\')" style="flex:1;'+sm+'margin-top:0;border:1px solid #86efac;background:#fff;color:#166534">📅 Telafi Ayarla</button>':'')+'</div>'+
+      '<button onclick="istWaNotify(\''+s.id+'\',\''+ds+'\')" style="'+sm+'border:none;background:#25d366;color:#fff">📲 Veliye Bildir</button>';
+  }
+  const showBtns=v!=='istisna'||tel;
   return '<div style="background:'+bg+';border:1px solid '+bd+';border-radius:16px;padding:12px;margin-bottom:10px">'+
     '<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px" onclick="openDet(\''+s.id+'\')">'+
       '<div class="avatar" style="width:40px;height:40px;background:'+c.border+';font-size:18px;flex-shrink:0">'+eduIcon(s.education)+'</div>'+
       '<div style="flex:1;min-width:0"><div style="font-weight:700;font-size:16px">'+hwEsc(s.name+' '+s.surname)+'</div>'+
-      '<div style="font-size:12px;color:var(--muted);font-weight:700">'+(it.times.length?'🕒 '+it.times.join(' · ')+' · ':'➕ Ek ders · ')+hwEsc(s.education||'')+(mk?' · 🩷 Telafi':'')+'</div></div>'+
+      '<div style="font-size:12px;color:var(--muted);font-weight:700">'+(it.times.length?'🕒 '+it.times.join(' · ')+' · ':'➕ Ek ders · ')+hwEsc(s.education||'')+(tel?' · 🩷 Telafi dersi ('+telDShort(it.tel)+' dersi yerine)':mk?' · 🩷 Telafi':'')+'</div></div>'+
     '</div>'+
-    '<div style="display:flex;gap:8px">'+
-      '<button onclick="ydMark(\''+s.id+'\',\'came\')" style="'+bs+(v==='came'?'#1d4ed8;background:#1d4ed8;color:#fff':'#bfdbfe;background:#fff;color:#1d4ed8')+'">✅ Geldi</button>'+
-      '<button onclick="ydMark(\''+s.id+'\',\'absent\')" style="'+bs+(v==='absent'?'#dc2626;background:#dc2626;color:#fff':'#fecaca;background:#fff;color:#dc2626')+'">❌ Gelmedi</button>'+
-    '</div>'+
-    (v==='absent'?'<button onclick="ydNotify(\''+s.id+'\')" style="width:100%;margin-top:8px;padding:10px;border-radius:10px;border:none;background:#25d366;color:#fff;font-family:\'Inter\',system-ui,sans-serif;font-weight:700;font-size:14px;cursor:pointer">📲 Veliye Bildir</button>':'')+
-    (canSkip?'<button onclick="ydSkipDay(\''+s.id+'\',\''+ds+'\')" style="width:100%;margin-top:8px;padding:8px;border-radius:10px;border:1px dashed #d1d5db;background:transparent;color:#6b7280;font-family:\'Inter\',system-ui,sans-serif;font-weight:700;font-size:12px;cursor:pointer">🚫 Bugün ders yok (listeden kaldır)</button>':'')+
+    (showBtns?'<div style="display:flex;gap:8px">'+
+      '<button onclick="'+fnC+'" style="'+bs+(v==='came'?'#1d4ed8;background:#1d4ed8;color:#fff':'#bfdbfe;background:#fff;color:#1d4ed8')+'">✅ Geldi</button>'+
+      '<button onclick="'+fnA+'" style="'+bs+(v==='absent'?'#dc2626;background:#dc2626;color:#fff':'#fecaca;background:#fff;color:#dc2626')+'">❌ Gelmedi</button>'+
+    '</div>':'')+
+    extra+
+    (v==='absent'&&!tel?'<button onclick="ydNotify(\''+s.id+'\')" style="'+sm+'border:none;background:#25d366;color:#fff">📲 Veliye Bildir</button>':'')+
+    (tel&&!v&&ds===todays()?'<button onclick="telWaNotify(\''+s.id+'\',\''+it.tel+'\',true)" style="'+sm+'border:none;background:#25d366;color:#fff">📲 Veliye Hatırlat</button>':'')+
+    (!tel&&!v?'<button onclick="istOpen(\''+s.id+'\',\''+ds+'\')" style="'+sm+'border:1px solid #fcd34d;background:#fffbeb;color:#92400e">⚠️ İstisna (ders yapılamadı)</button>':'')+
+    (canSkip&&!tel?'<button onclick="ydSkipDay(\''+s.id+'\',\''+ds+'\')" style="width:100%;margin-top:8px;padding:8px;border-radius:10px;border:1px dashed #d1d5db;background:transparent;color:#6b7280;font-family:\'Inter\',system-ui,sans-serif;font-weight:700;font-size:12px;cursor:pointer">🚫 Bugün ders yok (listeden kaldır)</button>':'')+
   '</div>';
 }
 function drawDaily(items,ds){
   const skipMap=umSkip[ds]||{};
   const pend=[],done=[],skipped=[];
   items.forEach(it=>{
-    if(skipMap[it.s.id])skipped.push(it);
-    else if(ydSt(it.s.id,ds))done.push(it);
+    if(!it.tel&&skipMap[it.s.id])skipped.push(it);
+    else if(itSt(it,ds))done.push(it);
     else pend.push(it);
   });
-  let came=0,abs=0;
-  done.forEach(it=>{if(ydSt(it.s.id,ds)==='absent')abs++;else came++;});
+  let came=0,abs=0,ist=0;
+  done.forEach(it=>{const v=itSt(it,ds);if(v==='absent')abs++;else if(v==='istisna')ist++;else came++;});
   document.getElementById('yd-stats').innerHTML=
     '<div class="stat" style="flex:1;background:var(--blue-l);border:1px solid #bfdbfe"><div class="n" style="color:var(--blue)">'+came+'</div><div class="l" style="color:var(--blue)">Geldi</div></div>'+
     '<div class="stat" style="flex:1;background:var(--red-l);border:1px solid #fecaca"><div class="n" style="color:var(--red)">'+abs+'</div><div class="l" style="color:var(--red)">Gelmedi</div></div>'+
-    '<div class="stat" style="flex:1;background:#f3f4f6;border:1px solid #e5e7eb"><div class="n" style="color:#4b5563">'+pend.length+'</div><div class="l" style="color:#4b5563">Bekliyor</div></div>';
+    '<div class="stat" style="flex:1;background:#f3f4f6;border:1px solid #e5e7eb"><div class="n" style="color:#4b5563">'+pend.length+'</div><div class="l" style="color:#4b5563">Bekliyor</div></div>'+
+    (ist>0?'<div class="stat" style="flex:1;background:#fffbeb;border:1px solid #fcd34d"><div class="n" style="color:#b45309">'+ist+'</div><div class="l" style="color:#b45309">İstisna</div></div>':'');
   const um=document.getElementById('yd-um');
   if(um)um.innerHTML=umBannerHtml(ds); // başka günlerde işaretlenmemiş dersler
   const list=document.getElementById('yd-list');
@@ -3519,6 +3572,11 @@ function drawDaily(items,ds){
     }
     list.innerHTML=html;
   }
+  // misafir öğrenci kutusu (yazı yazılırken yeniden çizilmez)
+  const gb=document.getElementById('yd-guest');
+  if(gb){const gn=document.getElementById('yd-g-name'),gt=document.getElementById('yd-g-time');
+    const typing=gb.contains(document.activeElement)&&document.activeElement.tagName==='INPUT'||(gn&&gn.value)||(gt&&gt.value);
+    if(!typing)gb.innerHTML=guestHtml(ds);}
   // ek öğrenci seçici
   const ids=new Set(items.map(it=>it.s.id));
   document.getElementById('yd-extra-sel').innerHTML='<option value="">— Öğrenci seçin —</option>'+
@@ -3529,6 +3587,7 @@ async function ydMark(id,mark,dsOpt,quiet){
   requestNotifPermission();
   const cur=ydSt(id,ds);
   const nv=cur===mark?'':mark; // aynı butona tekrar basınca geri al
+  if(cur==='istisna'&&nv!=='istisna'){if(telAll[id])delete telAll[id][ds];fbDel('istisna/'+id+'/'+ds);}
   ydStatus[id]={ds,v:nv};
   umAtt[id]=umAtt[id]||{};
   if(nv)umAtt[id][ds]=nv;else delete umAtt[id][ds];
@@ -3551,7 +3610,7 @@ async function ydMark(id,mark,dsOpt,quiet){
 }
 function ydAllCame(){
   const ds=ydDate||todays();
-  const items=ydLessons(ds).filter(it=>!ydSt(it.s.id,ds));
+  const items=ydLessons(ds).filter(it=>!it.tel&&!ydSt(it.s.id,ds));
   if(!items.length){showConf('Bekleyen öğrenci yok.','ℹ️','Tamam',()=>{});return;}
   showConf(items.length+' öğrenci "Geldi" olarak işaretlensin mi?','✅','Evet, İşaretle',async()=>{
     for(const it of items)await ydMark(it.s.id,'came',ds,true);
@@ -3566,11 +3625,329 @@ function ydNotify(id,dsOpt){
   const s=students.find(x=>x.id===id);if(!s)return;
   const ds=dsOpt||ydDate||todays();
   const d=ydDateObj(ds);
-  const it=ydLessons(ds).find(x=>x.s.id===id);
+  const it=ydLessons(ds).find(x=>x.s.id===id&&!x.tel);
   const tm=it&&it.times.length?' saat '+it.times[0]:'';
   const to=s.momPhone||s.dadPhone||s.phone||'';
-  const msg='Sayın Velimiz,\n\n*'+s.name+' '+s.surname+'* bugün ('+d.getDate()+' '+MONTHS[d.getMonth()]+' '+d.getFullYear()+')'+tm+' dersine katılmadı. Telafi dersi için bizimle iletişime geçebilirsiniz.\n\nSaygılarımla,\nRockJazz Müzik Aletleri ve Silifke Satranç Atölyesi';
+  const msg='Sayın Velimiz,\n\n*'+s.name+' '+s.surname+'* bugün ('+d.getDate()+' '+MONTHS[d.getMonth()]+' '+d.getFullYear()+')'+tm+' dersine katılmadı. Gelinmeyen ders paket kapsamında yapılmış sayılır; telafi uygulanmamaktadır. Mazeretiniz varsa lütfen bize bildirin.\n\nSaygılarımla,\nRockJazz Müzik Aletleri ve Silifke Satranç Atölyesi';
   window.open('https://wa.me/'+waPhone(to)+'?text='+encodeURIComponent(msg),'_blank');
+}
+
+// ══ İSTİSNA + TELAFİ HAKKI + MİSAFİR ÖĞRENCİ ═══════════════════════════
+// attendance/{id}/{ds}='istisna' → ders yapılamadı (geldi/gelmedi sayılmaz)
+// istisna/{id}/{ds}={kind:'kurum'|'ogrenci',reason,grant,exp,tDate,tTime,tStatus}
+// guests/{ds}/{key}={name,time,st}
+let telAll={}, guestAll={}, telReady=false, telNotified={};
+try{telNotified=JSON.parse(localStorage.getItem('telNotified')||'{}');}catch(e){}
+const TEL_MONTHS=2;
+const WA_SIGN='\n\nSaygılarımla,\nRockJazz Müzik Aletleri ve Silifke Satranç Atölyesi';
+function telAddMonths(ds,n){const p=ds.split('-').map(Number);const d=new Date(p[0],p[1]-1+n,p[2]);return fmt(d.getFullYear(),d.getMonth(),d.getDate());}
+function telDLong(ds){const d=ydDateObj(ds);return d.getDate()+' '+MONTHS[d.getMonth()]+' '+d.getFullYear()+' '+YD_DAYS[(d.getDay()+6)%7];}
+function telDShort(ds){const d=ydDateObj(ds);return d.getDate()+' '+MONTHS[d.getMonth()];}
+function telDaysLeft(exp){return Math.round((ydDateObj(exp)-ydDateObj(todays()))/864e5);}
+function telRecs(id){
+  const o=telAll[id]||{};
+  return Object.keys(o).sort().reverse().map(ds=>Object.assign({ds:ds},o[ds]));
+}
+// durum: none (hak yok) | open (hak var) | planned | missed (planlı ama işaretlenmedi) | done | lost (telafiye gelmedi) | expired
+function telState(r){
+  if(!r.grant)return 'none';
+  if(r.tStatus==='came')return 'done';
+  if(r.tStatus==='absent')return 'lost';
+  if(r.tDate){return r.tDate>=todays()?'planned':'missed';}
+  return r.exp&&r.exp<todays()?'expired':'open';
+}
+const TEL_ST={
+  none:['Telafi yok','#6b7280','#f3f4f6'],
+  open:['Telafi hakkı var','#92400e','#fef3c7'],
+  planned:['Telafi planlandı','#1d4ed8','#dbeafe'],
+  missed:['Telafi işaretlenmedi','#b91c1c','#fee2e2'],
+  done:['Telafi yapıldı','#166534','#dcfce7'],
+  lost:['Telafiye gelmedi, hak yandı','#b91c1c','#fee2e2'],
+  expired:['Süre doldu, hak düştü','#6b7280','#e5e7eb']
+};
+function telChip(r){const st=telState(r),t=TEL_ST[st];return '<span style="display:inline-block;background:'+t[2]+';color:'+t[1]+';border-radius:8px;padding:2px 8px;font-size:11px;font-weight:700">'+t[0]+'</span>';}
+function telWaTo(s){return s.momPhone||s.dadPhone||s.phone||'';}
+function telWaOpen(s,msg){window.open('https://wa.me/'+waPhone(telWaTo(s))+'?text='+encodeURIComponent(msg),'_blank');}
+
+// ── WhatsApp mesajları
+function istMsg(id,ds){
+  const s=students.find(x=>x.id===id),r=(telAll[id]||{})[ds];if(!s||!r)return '';
+  const lt=ydLessons(ds).find(x=>x.s.id===id&&!x.tel);
+  const tm=lt&&lt.times.length?' saat '+lt.times[0]:'';
+  let m='Sayın Velimiz,\n\n*'+s.name+' '+s.surname+'* için *'+telDLong(ds)+'*'+tm+' tarihli ders ';
+  if(r.kind==='kurum')m+='*kurumumuz kaynaklı bir nedenle* ('+(r.reason||'—')+') yapılamamıştır. Bu ders "gelmedi" sayılmaz ve paket hakkından düşmez.';
+  else m+='öğrencinin mazereti nedeniyle yapılamamıştır ('+(r.reason||'—')+'). Mazeret kayda alınmıştır.';
+  if(r.grant)m+='\n\n🩷 *Telafi hakkı tanımlanmıştır.* '+telDLong(r.exp)+' tarihine kadar uygun bir gün ve saatte telafi dersi ayarlayacağız; tarih belli olunca ayrıca bilgi vereceğiz.';
+  else m+='\n\nBu ders için telafi uygulanmamaktadır.';
+  return m+WA_SIGN;
+}
+function telMsg(id,ds,rem){
+  const s=students.find(x=>x.id===id),r=(telAll[id]||{})[ds];if(!s||!r||!r.tDate)return '';
+  let m='Sayın Velimiz,\n\n';
+  if(rem)m+='Hatırlatma: *'+s.name+' '+s.surname+'* için *bugün* telafi dersimiz var.\n';
+  else m+='*'+s.name+' '+s.surname+'* için *telafi dersi* ayarlanmıştır.\n';
+  m+='\n🩷 *Telafi Dersi: '+telDLong(r.tDate)+(r.tTime?' · 🕒 '+r.tTime:'')+'*\n(İlgili ders: '+telDLong(ds)+')\n';
+  if(!rem)m+='\nTelafi dersi bu tarihte yapılır; katılım sağlanmazsa telafi hakkı kullanılmış sayılır.';
+  return m+WA_SIGN;
+}
+function istWaNotify(id,ds){const s=students.find(x=>x.id===id);const m=istMsg(id,ds);if(s&&m)telWaOpen(s,m);}
+function telWaNotify(id,ds,rem){const s=students.find(x=>x.id===id);const m=telMsg(id,ds,rem);if(s&&m)telWaOpen(s,m);}
+
+// ── Genel mini modal
+function istModal(html){
+  let o=document.getElementById('ist-modal');
+  if(!o){o=document.createElement('div');o.id='ist-modal';o.style.cssText='position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:9999;display:flex;align-items:flex-end;justify-content:center;padding:0';document.body.appendChild(o);}
+  o.innerHTML='<div style="background:#fff;border-radius:20px 20px 0 0;width:100%;max-width:520px;max-height:92vh;overflow:auto;padding:18px 16px 22px">'+html+'</div>';
+  o.style.display='flex';
+}
+function istClose(){const o=document.getElementById('ist-modal');if(o)o.style.display='none';}
+const IST_INP='width:100%;padding:11px;border:1px solid #d1d5db;border-radius:10px;font-size:15px;font-family:inherit;box-sizing:border-box';
+const IST_BTN='padding:12px;border-radius:12px;border:none;font-weight:700;font-size:14px;cursor:pointer;font-family:inherit;';
+let istCtx=null;
+// ── İstisna kaydı
+function istOpen(id,ds){
+  const s=students.find(x=>x.id===id);if(!s)return;
+  const ex=(telAll[id]||{})[ds];
+  const kind=ex?ex.kind:'kurum';
+  istCtx={id:id,ds:ds,kind:kind,grant:ex?!!ex.grant:kind==='kurum'};
+  const chips=['Öğretmen hasta','Elektrik / teknik arıza','Resmi tatil','Atölye kapalı'];
+  istModal(
+    '<div style="font-weight:800;font-size:17px;margin-bottom:2px">⚠️ İstisna · '+hwEsc(s.name+' '+s.surname)+'</div>'+
+    '<div style="font-size:12px;font-weight:700;color:#6b7280;margin-bottom:12px">'+telDLong(ds)+' · ders yapılmadı sayılır (geldi/gelmedi değil)</div>'+
+    '<div style="display:flex;gap:8px;margin-bottom:10px">'+
+      '<button id="ist-k-kurum" onclick="istKind(\'kurum\')" style="flex:1;'+IST_BTN+'"></button>'+
+      '<button id="ist-k-ogrenci" onclick="istKind(\'ogrenci\')" style="flex:1;'+IST_BTN+'"></button></div>'+
+    '<label style="font-size:12px;font-weight:700;color:#374151">Sebep (zorunlu)</label>'+
+    '<input id="ist-reason" value="'+hwEsc(ex&&ex.reason||'')+'" placeholder="Örn: Öğretmen hasta" style="'+IST_INP+';margin:4px 0 6px">'+
+    '<div id="ist-chips" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">'+chips.map(c=>'<button onclick="document.getElementById(\'ist-reason\').value=\''+c+'\'" style="border:1px solid #fcd34d;background:#fffbeb;color:#92400e;border-radius:16px;padding:5px 10px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">'+c+'</button>').join('')+'</div>'+
+    '<label style="display:flex;align-items:center;gap:8px;font-weight:700;font-size:14px;margin-bottom:4px"><input type="checkbox" id="ist-grant" '+(istCtx.grant?'checked':'')+' style="width:20px;height:20px"> 🩷 Telafi hakkı tanı ('+TEL_MONTHS+' ay geçerli)</label>'+
+    '<div style="font-size:11px;color:#6b7280;font-weight:600;margin-bottom:14px">Telafi, haftanın herhangi bir günü ve saatine ayarlanabilir; hemen yapılması gerekmez.</div>'+
+    '<div style="display:flex;gap:8px">'+
+      '<button onclick="istClose()" style="flex:1;'+IST_BTN+'background:#f3f4f6;color:#374151">Vazgeç</button>'+
+      '<button onclick="istSave()" style="flex:2;'+IST_BTN+'background:#f59e0b;color:#fff">Kaydet</button></div>'+
+    (ex?'<button onclick="istRemove(\''+id+'\',\''+ds+'\')" style="width:100%;margin-top:8px;'+IST_BTN+'background:#fff;color:#dc2626;border:1px dashed #fca5a5">🗑 İstisnayı kaldır (ders işaretsiz kalır)</button>':'')
+  );
+  istKind(kind,true);
+}
+function istKind(k,keepGrant){
+  istCtx.kind=k;
+  const a=document.getElementById('ist-k-kurum'),b=document.getElementById('ist-k-ogrenci');
+  const on='background:#f59e0b;color:#fff',off='background:#f3f4f6;color:#374151';
+  a.textContent='🏢 Kurum nedeniyle';b.textContent='🧒 Öğrenci mazereti';
+  a.style.cssText+=';'+(k==='kurum'?on:off);b.style.cssText+=';'+(k==='ogrenci'?on:off);
+  document.getElementById('ist-chips').style.display=k==='kurum'?'flex':'none';
+  if(!keepGrant)document.getElementById('ist-grant').checked=(k==='kurum');
+}
+async function istSave(){
+  const c=istCtx;if(!c)return;
+  const reason=document.getElementById('ist-reason').value.trim();
+  if(!reason){document.getElementById('ist-reason').style.borderColor='#dc2626';snack('⚠ Sebep yazmadan istisna kaydedilmez.');return;}
+  const grant=document.getElementById('ist-grant').checked;
+  const old=(telAll[c.id]||{})[c.ds]||{};
+  const rec={kind:c.kind,reason:reason,grant:grant,exp:telAddMonths(c.ds,TEL_MONTHS),created:old.created||todays()};
+  if(grant&&old.tDate){rec.tDate=old.tDate;rec.tTime=old.tTime||'';if(old.tStatus)rec.tStatus=old.tStatus;}
+  istClose();
+  setSyncing(true);
+  try{
+    umAtt[c.id]=umAtt[c.id]||{};umAtt[c.id][c.ds]='istisna';
+    if(ydStatus[c.id]&&ydStatus[c.id].ds===c.ds)ydStatus[c.id].v='istisna';
+    telAll[c.id]=telAll[c.id]||{};telAll[c.id][c.ds]=rec;
+    if(curId===c.id&&attData){attData[c.ds]='istisna';}
+    await Promise.all([fbSet('attendance/'+c.id+'/'+c.ds,'istisna'),fbSet('istisna/'+c.id+'/'+c.ds,rec)]);
+  }catch(e){showConf('Kaydedilemedi: '+e.message,'⚠️','Tamam',()=>{});}
+  setSyncing(false);
+  telRefresh();try{if(document.getElementById('cal-grid'))renderCal();}catch(e){}
+  const s=students.find(x=>x.id===c.id);
+  const acts=[{l:'📲 Veliye bildir',f:()=>istWaNotify(c.id,c.ds)}];
+  if(grant)acts.push({l:'📅 Telafi ayarla',f:()=>telSchedOpen(c.id,c.ds)});
+  snack('⚠️ '+hwEsc(s?s.name+' '+s.surname:'')+' · istisna kaydedildi'+(grant?' (telafi hakkı var).':'.'),acts);
+}
+async function istRemove(id,ds){
+  istClose();
+  setSyncing(true);
+  try{
+    if(umAtt[id])delete umAtt[id][ds];
+    if(ydStatus[id]&&ydStatus[id].ds===ds)ydStatus[id].v='';
+    if(telAll[id])delete telAll[id][ds];
+    if(curId===id&&attData)delete attData[ds];
+    await Promise.all([fbDel('attendance/'+id+'/'+ds),fbDel('istisna/'+id+'/'+ds)]);
+  }catch(e){}
+  setSyncing(false);
+  telRefresh();try{if(document.getElementById('cal-grid'))renderCal();}catch(e){}
+}
+// ── Telafi dersi ayarla (kurum/öğretmen kararı; haftanın 7 günü, hak süresi içinde)
+function telSchedOpen(id,ds){
+  const s=students.find(x=>x.id===id),r=(telAll[id]||{})[ds];if(!s||!r)return;
+  istCtx={id:id,ds:ds};
+  const dflt=r.tDate||fmt(new Date().getFullYear(),new Date().getMonth(),new Date().getDate()+1);
+  istModal(
+    '<div style="font-weight:800;font-size:17px;margin-bottom:2px">📅 Telafi Dersi · '+hwEsc(s.name+' '+s.surname)+'</div>'+
+    '<div style="font-size:12px;font-weight:700;color:#6b7280;margin-bottom:12px">İlgili ders: '+telDLong(ds)+' · hak son tarihi: <b>'+telDLong(r.exp)+'</b></div>'+
+    '<label style="font-size:12px;font-weight:700;color:#374151">Tarih (haftanın herhangi bir günü)</label>'+
+    '<input type="date" id="tel-date" value="'+dflt+'" min="'+todays()+'" max="'+r.exp+'" style="'+IST_INP+';margin:4px 0 10px">'+
+    '<label style="font-size:12px;font-weight:700;color:#374151">Saat</label>'+
+    '<input type="time" id="tel-time" value="'+(r.tTime||'')+'" style="'+IST_INP+';margin:4px 0 14px">'+
+    '<div style="display:flex;gap:8px">'+
+      '<button onclick="istClose()" style="flex:1;'+IST_BTN+'background:#f3f4f6;color:#374151">Vazgeç</button>'+
+      '<button onclick="telSchedSave()" style="flex:2;'+IST_BTN+'background:#25d366;color:#fff">Kaydet</button></div>'+
+    (r.tDate?'<button onclick="telSchedClear(\''+id+'\',\''+ds+'\')" style="width:100%;margin-top:8px;'+IST_BTN+'background:#fff;color:#dc2626;border:1px dashed #fca5a5">Telafi tarihini kaldır</button>':'')
+  );
+}
+async function telSchedSave(){
+  const c=istCtx;if(!c)return;
+  const r=(telAll[c.id]||{})[c.ds];if(!r)return;
+  const d=document.getElementById('tel-date').value,t=document.getElementById('tel-time').value;
+  if(!d||!t){snack('⚠ Tarih ve saat seçin.');return;}
+  if(d<todays()){snack('⚠ Geçmiş bir tarih seçilemez.');return;}
+  if(d>r.exp){snack('⚠ Hak süresi '+telDLong(r.exp)+' tarihinde bitiyor; bu tarihe kadar seçin.');return;}
+  istClose();
+  r.tDate=d;r.tTime=t;delete r.tStatus;
+  setSyncing(true);
+  try{await fbSet('istisna/'+c.id+'/'+c.ds,r);}catch(e){showConf('Kaydedilemedi: '+e.message,'⚠️','Tamam',()=>{});}
+  setSyncing(false);
+  telRefresh();
+  showConf('Telafi dersi '+telDLong(d)+' · '+t+' olarak ayarlandı. Veliye WhatsApp ile bildirilsin mi?','📲','Evet, Gönder',()=>telWaNotify(c.id,c.ds,false));
+}
+async function telSchedClear(id,ds){
+  istClose();
+  const r=(telAll[id]||{})[ds];if(!r)return;
+  delete r.tDate;delete r.tTime;delete r.tStatus;
+  try{await fbSet('istisna/'+id+'/'+ds,r);}catch(e){}
+  telRefresh();
+}
+async function telMark(id,ds,mark){
+  const r=(telAll[id]||{})[ds];if(!r)return;
+  const nv=r.tStatus===mark?'':mark;
+  if(nv)r.tStatus=nv;else delete r.tStatus;
+  telRefresh();
+  setSyncing(true);
+  try{await fbSet('istisna/'+id+'/'+ds,r);}catch(e){showConf('Kaydedilemedi: '+e.message,'⚠️','Tamam',()=>{});}
+  setSyncing(false);
+}
+async function telDelete(id,ds){
+  showConf('Bu istisna kaydı ve telafi hakkı silinsin mi? (Takvimdeki gün işaretsiz kalır)','🗑️','Evet, Sil',()=>istRemove(id,ds));
+}
+// ── Öğrenci detayında İstisna & Telafi kutusu
+function renderTelBox(){
+  const el=document.getElementById('tel-box');if(!el)return;
+  const recs=telRecs(curId);
+  if(curTab!=='att'||!recs.length){el.style.display='none';el.innerHTML='';return;}
+  el.style.display='block';
+  const bs='border:1px solid #d1d5db;background:#fff;border-radius:9px;padding:6px 9px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;';
+  el.innerHTML='<div style="font-weight:800;font-size:15px;margin-bottom:8px;color:#92400e">🩷 İstisna & Telafi Hakları</div>'+recs.slice(0,8).map(r=>{
+    const st=telState(r);
+    let line='';
+    if(r.grant){
+      if(r.tDate)line='🩷 Telafi: <b>'+telDLong(r.tDate)+(r.tTime?' · '+r.tTime:'')+'</b>';
+      else if(st==='open')line='⏳ Son tarih: <b>'+telDLong(r.exp)+'</b> ('+telDaysLeft(r.exp)+' gün kaldı)';
+      else if(st==='expired')line='Son tarih: '+telDLong(r.exp);
+    }
+    let btns='';
+    if(st==='open')btns+='<button onclick="telSchedOpen(\''+curId+'\',\''+r.ds+'\')" style="'+bs+'border-color:#86efac;color:#166534">📅 Telafi Ayarla</button>';
+    if(st==='planned')btns+='<button onclick="telSchedOpen(\''+curId+'\',\''+r.ds+'\')" style="'+bs+'">✏️ Değiştir</button><button onclick="telWaNotify(\''+curId+'\',\''+r.ds+'\',false)" style="'+bs+'border-color:#86efac;color:#166534">📲 Telafiyi Bildir</button>';
+    if(st==='missed')btns+='<button onclick="telMark(\''+curId+'\',\''+r.ds+'\',\'came\')" style="'+bs+'border-color:#93c5fd;color:#1d4ed8">✅ Geldi</button><button onclick="telMark(\''+curId+'\',\''+r.ds+'\',\'absent\')" style="'+bs+'border-color:#fca5a5;color:#dc2626">❌ Gelmedi</button>';
+    btns+='<button onclick="istWaNotify(\''+curId+'\',\''+r.ds+'\')" style="'+bs+'border-color:#86efac;color:#166534">📲 İstisnayı Bildir</button>';
+    btns+='<button onclick="telDelete(\''+curId+'\',\''+r.ds+'\')" style="'+bs+'color:#dc2626">🗑</button>';
+    return '<div style="border-top:1px solid #fde68a;padding:9px 0">'+
+      '<div style="display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap"><div style="font-weight:700;font-size:13px">'+telDLong(r.ds)+' · '+(r.kind==='kurum'?'🏢 Kurum':'🧒 Öğrenci')+'</div>'+telChip(r)+'</div>'+
+      '<div style="font-size:12px;color:#6b7280;font-weight:600;margin:3px 0">'+hwEsc(r.reason||'')+'</div>'+
+      (line?'<div style="font-size:12px;font-weight:600;margin-bottom:4px">'+line+'</div>':'')+
+      '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:5px">'+btns+'</div></div>';
+  }).join('');
+}
+// ── Ana ekran: süresi yaklaşan hak / işaretlenmeyen telafi
+function telBannerHtml(){
+  if(!telReady)return '';
+  const rows=[];
+  Object.keys(telAll).forEach(id=>{
+    const s=students.find(x=>x.id===id);if(!s)return;
+    telRecs(id).forEach(r=>{
+      const st=telState(r);
+      if(st==='open'&&telDaysLeft(r.exp)<=21)rows.push({s:s,r:r,t:'open'});
+      else if(st==='missed')rows.push({s:s,r:r,t:'missed'});
+    });
+  });
+  if(!rows.length)return '';
+  const bt='border:1px solid #d1d5db;background:#fff;border-radius:10px;padding:7px 10px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;';
+  return '<div class="card mb14" id="tel-card" style="border:1px solid #fcd34d;background:#fffbeb">'+
+    '<div style="font-weight:700;font-size:14px;color:#92400e;margin-bottom:6px">🩷 Telafi Takibi ('+rows.length+')</div>'+
+    rows.slice(0,6).map(x=>{
+      const nm=hwEsc(x.s.name+' '+x.s.surname);
+      if(x.t==='missed')return '<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-top:1px solid #fde68a"><div style="flex:1;min-width:0"><div style="font-weight:700;font-size:14px">'+nm+'</div><div style="font-size:11px;font-weight:700;color:#b45309">Telafi '+telDShort(x.r.tDate)+' '+hwEsc(x.r.tTime||'')+' · işaretlenmedi</div></div>'+
+        '<button onclick="telMark(\''+x.s.id+'\',\''+x.r.ds+'\',\'came\')" style="'+bt+'">✅</button><button onclick="telMark(\''+x.s.id+'\',\''+x.r.ds+'\',\'absent\')" style="'+bt+'">❌</button></div>';
+      const dl=telDaysLeft(x.r.exp);
+      return '<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-top:1px solid #fde68a"><div style="flex:1;min-width:0"><div style="font-weight:700;font-size:14px">'+nm+'</div><div style="font-size:11px;font-weight:700;color:#b45309">'+telDShort(x.r.ds)+' dersi için telafi hakkı · '+(dl<0?'süre doldu':dl===0?'son gün BUGÜN':dl+' gün kaldı')+'</div></div>'+
+        '<button onclick="telSchedOpen(\''+x.s.id+'\',\''+x.r.ds+'\')" style="'+bt+'">📅 Ayarla</button></div>';
+    }).join('')+
+  '</div>';
+}
+function telNotifyCheck(){
+  if(!telReady)return;
+  const t=todays();
+  Object.keys(telNotified).forEach(k=>{if(k.slice(0,10)<t)delete telNotified[k];});
+  Object.keys(telAll).forEach(id=>{
+    const s=students.find(x=>x.id===id);if(!s)return;
+    telRecs(id).forEach(r=>{
+      const st=telState(r);
+      let body='';
+      if(st==='open'&&telDaysLeft(r.exp)<=7)body=s.name+' '+s.surname+' — telafi hakkı '+(telDaysLeft(r.exp)<=0?'bugün bitiyor':telDaysLeft(r.exp)+' gün sonra bitiyor')+', telafi dersi ayarlayın.';
+      else if(st==='planned'&&r.tDate===t)body=s.name+' '+s.surname+' — bugün telafi dersi var'+(r.tTime?' ('+r.tTime+')':'')+'.';
+      else if(st==='missed')body=s.name+' '+s.surname+' — '+telDShort(r.tDate)+' telafi dersi işaretlenmedi.';
+      if(!body)return;
+      const key=t+'|'+id+'|'+r.ds+'|'+st;
+      if(telNotified[key])return;
+      telNotified[key]=1;
+      try{localStorage.setItem('telNotified',JSON.stringify(telNotified));}catch(e){}
+      if('Notification' in window&&Notification.permission==='granted'){try{new Notification('🩷 Telafi Takibi',{body:body});}catch(e){}}
+    });
+  });
+}
+function telRefresh(){
+  try{umRender();}catch(e){}
+  try{renderTelBox();}catch(e){}
+  try{const a=document.querySelector('.screen.active');if(a&&a.id==='s-list')renderList();}catch(e){}
+}
+function startTelWatch(){
+  try{
+    db.ref('istisna').on('value',snap=>{telAll=snap.val()||{};telReady=true;telRefresh();telNotifyCheck();});
+    db.ref('guests').on('value',snap=>{guestAll=snap.val()||{};try{umRender();}catch(e){}});
+  }catch(e){console.warn('telWatch',e);}
+  setInterval(()=>{telNotifyCheck();},60000);
+}
+// ── Misafir öğrenci (boş saate geçici gelen; asıl öğrenci kaydı etkilenmez)
+function guestList(ds){
+  const o=guestAll[ds]||{};
+  return Object.keys(o).map(k=>Object.assign({k:k},o[k])).sort((a,b)=>tmin(a.time||'')-tmin(b.time||''));
+}
+function guestHtml(ds){
+  const list=guestList(ds);
+  const bs='border:1px solid #d1d5db;background:#fff;border-radius:9px;padding:7px 10px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;';
+  return '<div class="card mb14" id="yd-guest-card" style="border:1px solid #c4b5fd;background:#faf5ff">'+
+    '<div style="font-weight:700;font-size:13px;color:#5b21b6;margin-bottom:8px">👤 Misafir öğrenci (boş saate geçici gelen · kayıtlı olmayan)</div>'+
+    list.map(g=>'<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-top:1px solid #e9d5ff"><div style="flex:1;min-width:0"><div style="font-weight:700;font-size:14px">'+hwEsc(g.name)+'</div><div style="font-size:11px;font-weight:700;color:#7c3aed">'+(g.time?'🕒 '+hwEsc(g.time)+' · ':'')+'misafir</div></div>'+
+      '<button onclick="guestSet(\''+ds+'\',\''+g.k+'\',\'came\')" style="'+bs+(g.st==='came'?'background:#1d4ed8;color:#fff;border-color:#1d4ed8':'')+'">✅</button>'+
+      '<button onclick="guestSet(\''+ds+'\',\''+g.k+'\',\'absent\')" style="'+bs+(g.st==='absent'?'background:#dc2626;color:#fff;border-color:#dc2626':'')+'">❌</button>'+
+      '<button onclick="guestDel(\''+ds+'\',\''+g.k+'\')" style="'+bs+'">🗑</button></div>').join('')+
+    '<div style="display:flex;gap:6px;margin-top:8px"><input id="yd-g-name" placeholder="Ad Soyad" style="flex:2;min-width:0;padding:9px;border:1px solid #d1d5db;border-radius:9px;font-family:inherit"><input id="yd-g-time" type="time" style="flex:1;min-width:0;padding:9px;border:1px solid #d1d5db;border-radius:9px;font-family:inherit"><button onclick="guestAdd()" style="'+bs+'background:#7c3aed;color:#fff;border-color:#7c3aed">Ekle</button></div>'+
+  '</div>';
+}
+async function guestAdd(){
+  const ds=ydDate||todays();
+  const n=(document.getElementById('yd-g-name').value||'').trim(),t=document.getElementById('yd-g-time').value||'';
+  if(!n){snack('⚠ Misafir adını yazın.');return;}
+  const k='g'+Date.now();
+  (guestAll[ds]=guestAll[ds]||{})[k]={name:n,time:t,st:''};
+  umRender();
+  try{await fbSet('guests/'+ds+'/'+k,guestAll[ds][k]);}catch(e){showConf('Kaydedilemedi: '+e.message,'⚠️','Tamam',()=>{});}
+}
+async function guestSet(ds,k,st){
+  const g=(guestAll[ds]||{})[k];if(!g)return;
+  g.st=g.st===st?'':st;umRender();
+  try{await fbSet('guests/'+ds+'/'+k+'/st',g.st);}catch(e){}
+}
+async function guestDel(ds,k){
+  if(guestAll[ds])delete guestAll[ds][k];umRender();
+  try{await fbDel('guests/'+ds+'/'+k);}catch(e){}
 }
 
 // ══ ÖDEV TAKİBİ: toplu haftalık/aylık görünüm + otomatik aylık özet ══════════
@@ -3912,14 +4289,15 @@ async function restoreStudent(id){
     showLoad('Geri alınıyor…');
     const s=archivedStudents.find(x=>x.id===id);
     if(!s)return hideLoad();
-    const {attendance,payments,notes,discount,receivables,deletedAt,...studentData}=s;
+    const {attendance,payments,notes,discount,receivables,istisna,deletedAt,...studentData}=s;
     await Promise.all([
       fbSet('students/'+id, studentData),
       fbSet('attendance/'+id, attendance||{}),
       fbSet('payments/'+id, payments||{}),
       fbSet('notes/'+id, notes||{}),
       fbSet('discount/'+id, discount||{}),
-      fbSet('receivables/'+id, receivables||{})
+      fbSet('receivables/'+id, receivables||{}),
+      fbSet('istisna/'+id, istisna||{})
     ]);
     allRec[id]=receivables||{};
     await fbDel('archived/'+id);
@@ -4025,6 +4403,20 @@ function buildVeliFullMsg(d,url){
     });
   } else m+='Bu dönemde kayıtlı ödeme bulunmuyor.\n';
   if(d.bal>0)m+='Güncel bakiye: *'+fmtTL(d.bal)+' ₺*\n';
+  // İstisna / telafi
+  if(d.ist&&d.ist.length){
+    m+='\n⚠️ *Yapılamayan Dersler & Telafi*\n';
+    d.ist.forEach(x=>{
+      m+='• '+x.dl+' — '+(x.k==='k'?'kurum nedeniyle yapılamadı'+(x.r?' ('+x.r+')':''):'mazeret nedeniyle yapılamadı');
+      if(x.g){
+        if(x.ts==='came')m+=' · 🩷 telafi yapıldı';
+        else if(x.ts==='absent')m+=' · telafiye katılınmadı';
+        else if(x.td)m+=' · 🩷 telafi: *'+x.td+(x.tt?' '+x.tt:'')+'*';
+        else m+=' · 🩷 telafi hakkı var (son tarih '+x.exp+')';
+      }
+      m+='\n';
+    });
+  }
   // Yoklama
   if(d.att&&d.att.length){
     m+='\n📅 *Yoklama*\n';
@@ -4066,14 +4458,15 @@ function copyVeliMsg(){
 async function makeVeliUrl(id,loadMsg){
   const s=students.find(x=>x.id===id);if(!s)return null;
   showLoad(loadMsg||'Bağlantı oluşturuluyor…');
-  const [attVal,payVal,noteVal,discVal,logVal,repVal,lvVal]=await Promise.all([
+  const [attVal,payVal,noteVal,discVal,logVal,repVal,lvVal,istVal]=await Promise.all([
     fbGet('attendance/'+id),
     fbGet('payments/'+id),
     fbGet('notes/'+id),
     fbGet('discount/'+id),
     fbGet('notesLog/'+id),
     fbGet('reports/'+id),
-    fbGet('levels/'+id)
+    fbGet('levels/'+id),
+    fbGet('istisna/'+id)
   ]);
   repCache[id]=repVal||{};
   let lastRep=repLatest(repCache[id]);
@@ -4097,6 +4490,7 @@ async function makeVeliUrl(id,loadMsg){
     const absent=Object.entries(att).filter(([k,v])=>k.startsWith(mk)&&v==='absent').length;
     attSummary.push({l:MONTHS[m]+' '+y,c:came,a:absent});
   }
+  const istList=Object.keys(istVal||{}).sort().filter(k=>k>=last3Keys[0]+'-01'||(istVal[k].grant&&!istVal[k].tStatus)).map(k=>{const r=istVal[k];return{dl:telDShort(k),k:r.kind==='kurum'?'k':'o',r:r.kind==='kurum'?(r.reason||''):'',g:r.grant?1:0,exp:r.exp?telDLong(r.exp):'',td:r.tDate?telDLong(r.tDate):'',tt:r.tTime||'',ts:r.tStatus||''};});
 
   // Son 3 aydaki tüm ödemeler (zamanında / gecikmeli + erken ödeme indirim bilgisi)
   const policyOn=!!disc.enabled;
@@ -4163,7 +4557,7 @@ async function makeVeliUrl(id,loadMsg){
   const data={
     n:s.name+' '+s.surname, e:s.education||'', pr:s.program||'', pk:s.pkg||'',
     f:baseFee||'', pd:s.payDay||'', reg:s.registeredAt||'',
-    att:attSummary, last5:last5, pay3:pay3, bal:carryover, nd:nextDiscount,
+    att:attSummary, ist:istList, last5:last5, pay3:pay3, bal:carryover, nd:nextDiscount,
     hw:note.homework||'', gr:note.grade||'', hwLog:hwLog, lvl:lvl,
     rep:lastRep?{from:lastRep.from,to:lastRep.to,score:lastRep.score,text:lastRep.text,mode:lastRep.mode||'auto'}:null,
     gen:fmt(now.getFullYear(),now.getMonth(),now.getDate())
@@ -4301,6 +4695,14 @@ function renderVeliView(data){
       <div class="section-lbl">📅 Yoklama Özeti (Son 3 Ay)</div>
       ${attRows}
     </div>
+    ${(data.ist&&data.ist.length)?`<div class="card mb12" style="border:2px solid #fcd34d;background:#fffbeb">
+      <div class="section-lbl">⚠️ Yapılamayan Dersler &amp; Telafi</div>
+      ${data.ist.map(x=>`<div class="stu-pay-row" style="flex-direction:column;align-items:flex-start;gap:3px">
+        <div style="font-weight:700;font-size:14px">📅 ${x.dl} · ${x.k==='k'?'Kurum nedeniyle yapılamadı':'Mazeret nedeniyle yapılamadı'}</div>
+        ${x.k==='k'&&x.r?`<div style="font-size:12px;color:var(--muted);font-weight:600">${hwEsc(x.r)}</div>`:''}
+        ${x.g?(x.ts==='came'?'<div style="font-weight:700;color:#166534;font-size:13px">🩷 Telafi dersi yapıldı</div>':x.ts==='absent'?'<div style="font-weight:700;color:#b91c1c;font-size:13px">Telafi dersine katılınmadı</div>':x.td?`<div style="font-weight:800;color:#be185d;font-size:14px">🩷 Telafi dersi: ${x.td}${x.tt?' · '+x.tt:''}</div>`:`<div style="font-weight:700;color:#92400e;font-size:13px">🩷 Telafi hakkı var · son tarih ${x.exp}</div>`):''}
+      </div>`).join('')}
+    </div>`:''}
     ${(data.hwLog&&data.hwLog.length)?`<div class="card mb12">
       <div class="section-lbl">📚 Ödev &amp; Öğretmen Notu (Son 3 Ay)</div>
       ${data.hwLog.map(l=>`<div class="pay-row">
