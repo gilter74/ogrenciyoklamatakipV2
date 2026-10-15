@@ -296,6 +296,7 @@ body:has(#s-veli-view.active) .screen{padding-bottom:20px}
   <div class="tile-grid" style="margin-top:10px">
     <button class="tile primary" onclick="go('s-daily')"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg><span>Günlük Yoklama<small>Bugünün derslerini tek dokunuşla işaretle</small></span></button>
     <button class="tile teal" onclick="go('s-pros')"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M9 15l2 2 4-4"/></svg><span>Ön Görüşme<small>Randevu · Hatırlatma · Deneme dersi</small></span></button>
+    <div id="pros-line" style="grid-column:1/-1;display:none;margin-top:-4px"></div>
   </div>
   <div id="dup-name-warn" style="display:none"></div>
   <div id="rec-banner"></div>
@@ -3463,6 +3464,7 @@ function umOpenDay(ds){document.getElementById('yd-date').value=ds;ydKeepDate=tr
 function umRender(){
   const h=document.getElementById('um-banner');
   if(h)h.innerHTML=umBannerHtml('')+telBannerHtml()+prosBannerHtml();
+  try{prosLineRender();}catch(e){}
   const a=document.querySelector('.screen.active');
   if(a&&a.id==='s-daily'){
     const ds=ydDate||document.getElementById('yd-date').value||todays();
@@ -4268,6 +4270,39 @@ function renderPros(){
     '<div style="display:flex;gap:6px;margin:10px 0">'+tb('up','Yaklaşan')+tb('follow','Karar / Takip')+tb('all','Tümü')+'</div>'+
     (list.length?list.map(prosCardHtml).join(''):'<div class="card" style="text-align:center;color:var(--muted);font-weight:700;font-size:13px">'+(prosTab==='up'?'Planlı ön görüşme yok. "＋ Yeni Randevu" ile ekleyin.':prosTab==='follow'?'Takip bekleyen aday yok.':'Henüz kayıt yok.')+'</div>');
 }
+// ── Tile altı tek satır özet ve periyodik (3 saatte bir) hatırlatma
+const PROS_PERIODIC_H=3;
+function prosKindTxt(p){return !p.interest?'':(p.interest.includes('Satranç')?'satranç':'müzik');}
+function prosUpcoming(){
+  const now=Date.now();
+  return prosList().filter(p=>p.st==='planned'&&p.date&&p.time&&prosApptAt(p)>=now-15*60000).sort((a,b)=>prosApptAt(a)-prosApptAt(b));
+}
+function prosLineText(p){
+  const t=todays(),dn=YD_DAYS[(ydDateObj(p.date).getDay()+6)%7];
+  const diff=Math.round((ydDateObj(p.date)-ydDateObj(t))/864e5);
+  const day=diff<=0?'Bugün':diff===1?'Yarın ('+dn+')':diff<=6?dn+' günü':telDShort(p.date)+' '+dn+' günü';
+  const k=prosKindTxt(p);
+  return day+', saat '+p.time+' — bir '+(k?k+' ':'')+'görüşmen var';
+}
+function prosLineHtml(){
+  const up=prosReady?prosUpcoming():[];
+  if(!up.length)return '';
+  const row=p=>'<div style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:#0f766e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:2px 2px"><span>'+(prosKindTxt(p)==='satranç'?'♟':'🎹')+'</span><span style="overflow:hidden;text-overflow:ellipsis">'+hwEsc(prosLineText(p))+' <span style="color:#6b7280;font-weight:600">· '+hwEsc(p.name)+'</span></span></div>';
+  return up.slice(0,3).map(row).join('')+(up.length>3?'<div style="font-size:12px;font-weight:700;color:#6b7280;padding:0 2px">+ '+(up.length-3)+' görüşme daha</div>':'');
+}
+function prosLineRender(){
+  const el=document.getElementById('pros-line');if(!el)return;
+  const h=prosLineHtml();el.innerHTML=h;el.style.display=h?'block':'none';
+}
+function prosPeriodicCheck(){
+  const up=prosUpcoming();if(!up.length)return;
+  const hr=new Date().getHours();if(hr<9||hr>=21)return; // gece bildirim yok
+  let last=0;try{last=+localStorage.getItem('prosPeriodicLast')||0;}catch(e){}
+  if(Date.now()-last<PROS_PERIODIC_H*3600e3)return;
+  try{localStorage.setItem('prosPeriodicLast',String(Date.now()));}catch(e){}
+  const body=up.slice(0,3).map(prosLineText).join('\n')+(up.length>3?'\n+ '+(up.length-3)+' görüşme daha':'');
+  if('Notification' in window&&Notification.permission==='granted'){try{new Notification('🗓 Yaklaşan ön görüşme',{body:body});}catch(e){}}
+}
 // ── Ana ekran kutusu
 function prosBannerHtml(){
   if(!prosReady)return '';
@@ -4307,6 +4342,7 @@ function prosBannerHtml(){
 // ── Bildirim (1 saat önce + saatinde + deneme günü) ve yenileme
 function prosNotifyCheck(){
   if(!prosReady)return;
+  prosPeriodicCheck();
   const t=todays(),now=new Date(),nm=now.getHours()*60+now.getMinutes();
   const cut=prosAddDays(t,-3);
   Object.keys(prosNotified).forEach(k=>{if(k.slice(0,10)<cut)delete prosNotified[k];});
