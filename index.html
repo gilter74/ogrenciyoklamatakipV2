@@ -246,6 +246,10 @@ input:focus,select:focus{box-shadow:0 0 0 3px rgba(47,63,115,.12)}
 .tile.orange{background:#f97316;color:#fff;border-color:#ea580c}
 .tile.orange:hover{background:#ea580c}
 .tile.orange svg{stroke:#fff}
+.tile.teal{background:#0d9488;color:#fff;border-color:#0f766e;grid-column:1/-1;flex-direction:row;align-items:center;gap:14px}
+.tile.teal:hover{background:#0f766e}
+.tile.teal svg{stroke:#fff}
+.tile.teal small{color:rgba(255,255,255,.8)}
 
 /* öğrenci kartı sekmeleri */
 .dt-nav{display:flex;gap:4px;background:#fff;border:1px solid var(--border);border-radius:11px;padding:4px;margin-bottom:12px;box-shadow:var(--shadow);position:sticky;top:6px;z-index:30;overflow-x:auto}
@@ -291,6 +295,7 @@ body:has(#s-veli-view.active) .screen{padding-bottom:20px}
   <div id="search-res" style="display:none;margin-top:10px"></div>
   <div class="tile-grid" style="margin-top:10px">
     <button class="tile primary" onclick="go('s-daily')"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg><span>Günlük Yoklama<small>Bugünün derslerini tek dokunuşla işaretle</small></span></button>
+    <button class="tile teal" onclick="go('s-pros')"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M9 15l2 2 4-4"/></svg><span>Ön Görüşme<small>Randevu · Hatırlatma · Deneme dersi</small></span></button>
   </div>
   <div id="dup-name-warn" style="display:none"></div>
   <div id="rec-banner"></div>
@@ -818,6 +823,16 @@ body:has(#s-veli-view.active) .screen{padding-bottom:20px}
   </div>
 </div>
 
+<!-- ÖN GÖRÜŞME -->
+<div id="s-pros" class="screen">
+  <button class="btn-ghost mb14" onclick="go('s-list')">← Geri</button>
+  <div class="card mb14">
+    <div class="section-lbl">🗓 Ön Görüşme · Randevular</div>
+    <div style="display:flex;gap:8px;margin-bottom:10px"><button class="btn btn-purple" style="flex:1;justify-content:center" onclick="prosOpen()">＋ Yeni Randevu</button><button class="btn-ghost" onclick="prosAddrEdit()">📍 Adres</button></div>
+    <div id="pros-body"></div>
+  </div>
+</div>
+
 <!-- HAFTALIK PROGRAM -->
 <div id="s-week" class="screen">
   <button class="btn-ghost mb14" onclick="go('s-list')">← Geri</button>
@@ -1170,6 +1185,7 @@ function go(id){
   if(id==='s-fiyat') loadFiyatApp();
   if(id==='s-yform') openYForm();
   if(id==='s-week') renderWeek();
+  if(id==='s-pros') renderPros();
   if(id==='s-daily') openDaily();
   if(id==='s-hw') openHwScreen();
   const bm={'s-list':'home','s-daily':'daily','s-week':'week','s-veli-share':'veli'};
@@ -1644,6 +1660,7 @@ function yfExportExcel(){
 
 // ══ REGISTER ══════════════════════════════════════════════════════════
 function resetReg(){
+  prosFromId=null;
   ['r-name','r-surname','r-phone','r-edu','r-prog','r-fee','r-lesson-fee','r-payday',
    'r-mom-name','r-mom-phone','r-dad-name','r-dad-phone'].forEach(id=>{
     const el=document.getElementById(id);if(el){el.value='';el.classList.remove('err');}
@@ -1794,6 +1811,7 @@ async function saveReg(){
   const student={id,registeredAt:regDate,...d};
   students.push(student);
   await fbSet('students/'+id, student);
+  try{await prosOnRegistered(id);}catch(e){}
   hideLoad();
   go('s-list');
 }
@@ -3349,10 +3367,14 @@ function ydLessons(ds){
       if(r&&r.grant&&r.tDate===ds)arr.push({s:st,times:r.tTime?[r.tTime]:[],first:r.tTime||'',tel:ds0});
     });
   });
+  prosList().forEach(p=>{
+    if(p.trial&&p.tDate===ds&&p.st!=='declined')arr.push({s:{id:'p:'+p.id,name:p.name,surname:'',education:p.interest||''},times:p.tTime?[p.tTime]:[],first:p.tTime||'',pros:p.id});
+  });
   return arr.sort((a,b)=>tmin(a.first)-tmin(b.first)||(a.s.name||'').localeCompare(b.s.name||'','tr'));
 }
 function itSt(it,ds){
   if(it.tel){const r=(telAll[it.s.id]||{})[it.tel];return (r&&r.tStatus)||'';}
+  if(it.pros){const p=prosAll[it.pros];return (p&&p.tStatus)||'';}
   return ydSt(it.s.id,ds);
 }
 async function renderDaily(){
@@ -3362,7 +3384,7 @@ async function renderDaily(){
   const d=ydDateObj(ds);
   document.getElementById('yd-title').textContent=d.getDate()+' '+MONTHS[d.getMonth()]+' '+d.getFullYear()+' · '+YD_DAYS[(d.getDay()+6)%7]+(ds===todays()?'  (Bugün)':'');
   // durumları oku
-  const need=umReady?[]:items.filter(it=>!it.tel&&!(it.s.id in ydStatus)||ydStatus[it.s.id].ds!==ds);
+  const need=umReady?[]:items.filter(it=>!it.tel&&!it.pros&&!(it.s.id in ydStatus)||ydStatus[it.s.id].ds!==ds);
   if(need.length){
     showLoad('Yoklama yükleniyor…');
     await Promise.all(need.map(async it=>{
@@ -3386,6 +3408,7 @@ function startUmWatch(){
     db.ref('attendance').on('value',snap=>{umAtt=snap.val()||{};umReady=true;umRefresh(true);});
     db.ref('ydSkip').on('value',snap=>{umSkip=snap.val()||{};umRefresh(false);});
     startTelWatch();
+    startProsWatch();
   }catch(e){console.warn('umWatch',e);}
   setInterval(()=>umRefresh(true),60000);
 }
@@ -3439,7 +3462,7 @@ function umBannerHtml(excludeDs){
 function umOpenDay(ds){document.getElementById('yd-date').value=ds;ydKeepDate=true;go('s-daily');}
 function umRender(){
   const h=document.getElementById('um-banner');
-  if(h)h.innerHTML=umBannerHtml('')+telBannerHtml();
+  if(h)h.innerHTML=umBannerHtml('')+telBannerHtml()+prosBannerHtml();
   const a=document.querySelector('.screen.active');
   if(a&&a.id==='s-daily'){
     const ds=ydDate||document.getElementById('yd-date').value||todays();
@@ -3506,14 +3529,14 @@ function ydToggleDone(){
   if(a)a.style.transform=ydDoneOpen?'rotate(180deg)':'none';
 }
 function ydCardHtml(it,ds,canSkip){
-  const s=it.s,v=itSt(it,ds),c=eduColor(s.education),tel=!!it.tel;
+  const s=it.s,v=itSt(it,ds),c=eduColor(s.education),tel=!!it.tel,pr=!!it.pros;
   const mk=v&&v!=='came'&&v!=='absent'&&v!=='istisna'; // diğer
-  const bd=v==='absent'?'#fca5a5':v==='istisna'?'#fcd34d':v?'#93c5fd':tel?'#f9a8d4':c.border;
-  const bg=v==='absent'?'#fef2f2':v==='istisna'?'#fffbeb':v?'#eff6ff':tel?'#fdf2f8':'#fff';
+  const bd=v==='absent'?'#fca5a5':v==='istisna'?'#fcd34d':v?'#93c5fd':tel?'#f9a8d4':pr?'#5eead4':c.border;
+  const bg=v==='absent'?'#fef2f2':v==='istisna'?'#fffbeb':v?'#eff6ff':tel?'#fdf2f8':pr?'#f0fdfa':'#fff';
   const bs='flex:1;padding:14px 8px;border-radius:12px;font-family:\'Inter\',system-ui,sans-serif;font-weight:700;font-size:16px;cursor:pointer;border:1px solid ';
   const sm='width:100%;margin-top:8px;padding:10px;border-radius:10px;font-family:\'Inter\',system-ui,sans-serif;font-weight:700;font-size:14px;cursor:pointer;';
-  const fnC=tel?'telMark(\''+s.id+'\',\''+it.tel+'\',\'came\')':'ydMark(\''+s.id+'\',\'came\')';
-  const fnA=tel?'telMark(\''+s.id+'\',\''+it.tel+'\',\'absent\')':'ydMark(\''+s.id+'\',\'absent\')';
+  const fnC=pr?'prosTrialMark(\''+it.pros+'\',\'came\')':tel?'telMark(\''+s.id+'\',\''+it.tel+'\',\'came\')':'ydMark(\''+s.id+'\',\'came\')';
+  const fnA=pr?'prosTrialMark(\''+it.pros+'\',\'absent\')':tel?'telMark(\''+s.id+'\',\''+it.tel+'\',\'absent\')':'ydMark(\''+s.id+'\',\'absent\')';
   const rec=!tel?(telAll[s.id]||{})[ds]:null;
   let extra='';
   if(v==='istisna'&&!tel){
@@ -3524,27 +3547,28 @@ function ydCardHtml(it,ds,canSkip){
   }
   const showBtns=v!=='istisna'||tel;
   return '<div style="background:'+bg+';border:1px solid '+bd+';border-radius:16px;padding:12px;margin-bottom:10px">'+
-    '<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px" onclick="openDet(\''+s.id+'\')">'+
+    '<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px"'+(pr?'':' onclick="openDet(\''+s.id+'\')"')+'>'+
       '<div class="avatar" style="width:40px;height:40px;background:'+c.border+';font-size:18px;flex-shrink:0">'+eduIcon(s.education)+'</div>'+
       '<div style="flex:1;min-width:0"><div style="font-weight:700;font-size:16px">'+hwEsc(s.name+' '+s.surname)+'</div>'+
-      '<div style="font-size:12px;color:var(--muted);font-weight:700">'+(it.times.length?'🕒 '+it.times.join(' · ')+' · ':'➕ Ek ders · ')+hwEsc(s.education||'')+(tel?' · 🩷 Telafi dersi ('+telDShort(it.tel)+' dersi yerine)':mk?' · 🩷 Telafi':'')+'</div></div>'+
+      '<div style="font-size:12px;color:var(--muted);font-weight:700">'+(it.times.length?'🕒 '+it.times.join(' · ')+' · ':'➕ Ek ders · ')+hwEsc(s.education||'')+(pr?' · 🌱 Deneme dersi (ön görüşme adayı)':tel?' · 🩷 Telafi dersi ('+telDShort(it.tel)+' dersi yerine)':mk?' · 🩷 Telafi':'')+'</div></div>'+
     '</div>'+
     (showBtns?'<div style="display:flex;gap:8px">'+
       '<button onclick="'+fnC+'" style="'+bs+(v==='came'?'#1d4ed8;background:#1d4ed8;color:#fff':'#bfdbfe;background:#fff;color:#1d4ed8')+'">✅ Geldi</button>'+
       '<button onclick="'+fnA+'" style="'+bs+(v==='absent'?'#dc2626;background:#dc2626;color:#fff':'#fecaca;background:#fff;color:#dc2626')+'">❌ Gelmedi</button>'+
     '</div>':'')+
     extra+
-    (v==='absent'&&!tel?'<button onclick="ydNotify(\''+s.id+'\')" style="'+sm+'border:none;background:#25d366;color:#fff">📲 Veliye Bildir</button>':'')+
+    (v==='absent'&&!tel&&!pr?'<button onclick="ydNotify(\''+s.id+'\')" style="'+sm+'border:none;background:#25d366;color:#fff">📲 Veliye Bildir</button>':'')+
     (tel&&!v&&ds===todays()?'<button onclick="telWaNotify(\''+s.id+'\',\''+it.tel+'\',true)" style="'+sm+'border:none;background:#25d366;color:#fff">📲 Veliye Hatırlat</button>':'')+
-    (!tel&&!v?'<button onclick="istOpen(\''+s.id+'\',\''+ds+'\')" style="'+sm+'border:1px solid #fcd34d;background:#fffbeb;color:#92400e">⚠️ İstisna (ders yapılamadı)</button>':'')+
-    (canSkip&&!tel?'<button onclick="ydSkipDay(\''+s.id+'\',\''+ds+'\')" style="width:100%;margin-top:8px;padding:8px;border-radius:10px;border:1px dashed #d1d5db;background:transparent;color:#6b7280;font-family:\'Inter\',system-ui,sans-serif;font-weight:700;font-size:12px;cursor:pointer">🚫 Bugün ders yok (listeden kaldır)</button>':'')+
+    (pr&&!v&&ds===todays()?'<button onclick="prosSend(\''+it.pros+'\',\'trial\')" style="'+sm+'border:none;background:#25d366;color:#fff">📲 Veliye Hatırlat</button>':'')+
+    (!tel&&!pr&&!v?'<button onclick="istOpen(\''+s.id+'\',\''+ds+'\')" style="'+sm+'border:1px solid #fcd34d;background:#fffbeb;color:#92400e">⚠️ İstisna (ders yapılamadı)</button>':'')+
+    (canSkip&&!tel&&!pr?'<button onclick="ydSkipDay(\''+s.id+'\',\''+ds+'\')" style="width:100%;margin-top:8px;padding:8px;border-radius:10px;border:1px dashed #d1d5db;background:transparent;color:#6b7280;font-family:\'Inter\',system-ui,sans-serif;font-weight:700;font-size:12px;cursor:pointer">🚫 Bugün ders yok (listeden kaldır)</button>':'')+
   '</div>';
 }
 function drawDaily(items,ds){
   const skipMap=umSkip[ds]||{};
   const pend=[],done=[],skipped=[];
   items.forEach(it=>{
-    if(!it.tel&&skipMap[it.s.id])skipped.push(it);
+    if(!it.tel&&!it.pros&&skipMap[it.s.id])skipped.push(it);
     else if(itSt(it,ds))done.push(it);
     else pend.push(it);
   });
@@ -3610,7 +3634,7 @@ async function ydMark(id,mark,dsOpt,quiet){
 }
 function ydAllCame(){
   const ds=ydDate||todays();
-  const items=ydLessons(ds).filter(it=>!it.tel&&!ydSt(it.s.id,ds));
+  const items=ydLessons(ds).filter(it=>!it.tel&&!it.pros&&!ydSt(it.s.id,ds));
   if(!items.length){showConf('Bekleyen öğrenci yok.','ℹ️','Tamam',()=>{});return;}
   showConf(items.length+' öğrenci "Geldi" olarak işaretlensin mi?','✅','Evet, İşaretle',async()=>{
     for(const it of items)await ydMark(it.s.id,'came',ds,true);
@@ -3625,7 +3649,7 @@ function ydNotify(id,dsOpt){
   const s=students.find(x=>x.id===id);if(!s)return;
   const ds=dsOpt||ydDate||todays();
   const d=ydDateObj(ds);
-  const it=ydLessons(ds).find(x=>x.s.id===id&&!x.tel);
+  const it=ydLessons(ds).find(x=>x.s.id===id&&!x.tel&&!x.pros);
   const tm=it&&it.times.length?' saat '+it.times[0]:'';
   const to=s.momPhone||s.dadPhone||s.phone||'';
   const msg='Sayın Velimiz,\n\n*'+s.name+' '+s.surname+'* bugün ('+d.getDate()+' '+MONTHS[d.getMonth()]+' '+d.getFullYear()+')'+tm+' dersine katılmadı. Gelinmeyen ders paket kapsamında yapılmış sayılır; telafi uygulanmamaktadır. Mazeretiniz varsa lütfen bize bildirin.\n\nSaygılarımla,\nRockJazz Müzik Aletleri ve Silifke Satranç Atölyesi';
@@ -3672,7 +3696,7 @@ function telWaOpen(s,msg){window.open('https://wa.me/'+waPhone(telWaTo(s))+'?tex
 // ── WhatsApp mesajları
 function istMsg(id,ds){
   const s=students.find(x=>x.id===id),r=(telAll[id]||{})[ds];if(!s||!r)return '';
-  const lt=ydLessons(ds).find(x=>x.s.id===id&&!x.tel);
+  const lt=ydLessons(ds).find(x=>x.s.id===id&&!x.tel&&!x.pros);
   const tm=lt&&lt.times.length?' saat '+lt.times[0]:'';
   let m='Sayın Velimiz,\n\n*'+s.name+' '+s.surname+'* için *'+telDLong(ds)+'*'+tm+' tarihli ders ';
   if(r.kind==='kurum')m+='*kurumumuz kaynaklı bir nedenle* ('+(r.reason||'—')+') yapılamamıştır. Bu ders "gelmedi" sayılmaz ve paket hakkından düşmez.';
@@ -3948,6 +3972,319 @@ async function guestSet(ds,k,st){
 async function guestDel(ds,k){
   if(guestAll[ds])delete guestAll[ds][k];umRender();
   try{await fbDel('guests/'+ds+'/'+k);}catch(e){}
+}
+
+// ══ ÖN GÖRÜŞME (kayıt öncesi aday randevuları) ═══════════════════════════
+// prospects/{id}={name,parent,phone,interest,date,time,src,note,trial,tDate,tTime,tStatus,st,followDate,remSent,studentId,created}
+// st: planned | came | noshow | thinking | registered | declined ; tStatus: ''|'came'|'absent' (deneme dersi)
+let prosAll={}, prosReady=false, prosAddr='', prosNotified={}, prosFromId=null, prosTab='up', prosEditId=null;
+try{prosNotified=JSON.parse(localStorage.getItem('prosNotified')||'{}');}catch(e){}
+const PROS_ST={
+  planned:['📅 Planlandı','#1d4ed8','#dbeafe'],
+  came:['✅ Görüşme yapıldı – karar bekliyor','#166534','#dcfce7'],
+  noshow:['❌ Randevuya gelmedi','#b91c1c','#fee2e2'],
+  thinking:['🤔 Düşünüyor','#92400e','#fef3c7'],
+  registered:['🎉 Kayıt oldu','#166534','#bbf7d0'],
+  declined:['🚫 Vazgeçti','#6b7280','#e5e7eb']
+};
+const PROS_SRC=['Instagram','Tavsiye','Tabela / geçerken','Web sitesi','Diğer'];
+const PROS_FOLLOW_DAYS=3;
+function prosList(){return Object.keys(prosAll).map(k=>Object.assign({id:k},prosAll[k]));}
+function prosAddDays(ds,n){const p=ds.split('-').map(Number);const d=new Date(p[0],p[1]-1,p[2]+n);return fmt(d.getFullYear(),d.getMonth(),d.getDate());}
+function prosWaOpen(p,msg){window.open('https://wa.me/'+waPhone(p.phone)+'?text='+encodeURIComponent(msg),'_blank');}
+function prosSave1(p){const o=Object.assign({},p);delete o.id;prosAll[p.id]=o;return fbSet('prospects/'+p.id,o);}
+
+// ── WhatsApp mesajları
+function prosMsg(p,kind){
+  const hi=p.parent?'Sayın '+p.parent+',':'Sayın Velimiz,';
+  const adr=prosAddr?'\n📍 '+prosAddr:'';
+  const when='📅 *'+telDLong(p.date)+(p.time?' · 🕒 '+p.time:'')+'*';
+  const trial=p.trial?'\n🌱 Deneme dersimiz: *'+telDLong(p.tDate||p.date)+(p.tTime?' · 🕒 '+p.tTime:'')+'*':'';
+  const who=p.name?'*'+p.name+'*':'çocuğunuz';
+  let m=hi+'\n\n';
+  if(kind==='confirm')m+=who+' için '+(p.interest?p.interest+' ':'')+'ön görüşme randevunuz oluşturuldu:\n\n'+when+trial+adr+'\n\nUygun olmazsa lütfen önceden haber veriniz.';
+  else if(kind==='tomorrow')m+='Hatırlatma: '+who+' için *yarın* ön görüşme randevumuz var.\n\n'+when+trial+adr+'\n\nGörüşmek üzere.';
+  else if(kind==='today')m+='Hatırlatma: '+who+' için *bugün* ön görüşme randevumuz var.\n\n'+when+trial+adr+'\n\nGörüşmek üzere.';
+  else if(kind==='noshow')m+=who+' için '+telDLong(p.date)+(p.time?' '+p.time:'')+' tarihli ön görüşme randevusuna katılım olmadı. Uygun olduğunuzda yeni bir gün ve saat ayarlayabiliriz; size uygun zamanı yazmanız yeterli.';
+  else if(kind==='follow')m+=who+' için yaptığımız ön görüşmenin ardından ne düşündüğünüzü merak ettik. Aklınıza takılan bir şey varsa memnuniyetle yanıtlayalım; kayıt için de yardımcı olabiliriz.';
+  else if(kind==='trial')m+='Hatırlatma: '+who+' için *deneme dersimiz* var.\n\n🌱 *'+telDLong(p.tDate||p.date)+(p.tTime?' · 🕒 '+p.tTime:'')+'*'+adr+'\n\nGörüşmek üzere.';
+  return m+WA_SIGN+'\nBilgi: 0532 702 6040';
+}
+async function prosSend(id,kind){
+  const p=prosAll[id];if(!p)return;
+  prosWaOpen(Object.assign({id:id},p),prosMsg(p,kind));
+  if(kind==='tomorrow'||kind==='today'){p.remSent=todays()+'|'+kind;try{await fbSet('prospects/'+id+'/remSent',p.remSent);}catch(e){}prosRefresh();}
+  if(kind==='follow'){p.followDate=prosAddDays(todays(),PROS_FOLLOW_DAYS);try{await fbSet('prospects/'+id+'/followDate',p.followDate);}catch(e){}prosRefresh();}
+}
+
+// ── Çakışma kontrolü (ders, telafi, diğer görüşme)
+function prosConflicts(date,time,exceptId){
+  const out=[];if(!date||!time)return out;
+  const tm=tmin(time);
+  ydLessons(date).forEach(it=>{
+    if(it.pros===exceptId)return;
+    (it.times||[]).forEach(t=>{if(Math.abs(tmin(t)-tm)<30)out.push((it.s.name+' '+(it.s.surname||'')).trim()+' · '+t+(it.pros?' (deneme)':it.tel?' (telafi)':' dersi'));});
+  });
+  prosList().forEach(q=>{
+    if(q.id===exceptId||q.date!==date||q.st!=='planned'||!q.time)return;
+    if(Math.abs(tmin(q.time)-tm)<30)out.push(q.name+' · '+q.time+' (ön görüşme)');
+  });
+  return out;
+}
+
+// ── Randevu formu
+function prosOpen(id){
+  const p=id?prosAll[id]:null;prosEditId=id||null;
+  const g=(k,d)=>hwEsc(p&&p[k]!=null?p[k]:(d||''));
+  const eduOpts=document.getElementById('r-edu').innerHTML.replace(/<option value="">[^<]*<\/option>/,'<option value="">— Seçin —</option>');
+  const srcOpts='<option value="">— Seçin —</option>'+PROS_SRC.map(x=>'<option'+(p&&p.src===x?' selected':'')+'>'+x+'</option>').join('');
+  const L='font-size:12px;font-weight:700;color:#374151;display:block;margin:10px 0 4px';
+  istModal(
+    '<div style="font-weight:800;font-size:17px;margin-bottom:4px">🗓 '+(p?'Randevuyu Düzenle':'Yeni Ön Görüşme Randevusu')+'</div>'+
+    '<label style="'+L+'">Aday (öğrenci) adı soyadı *</label><input id="pf-name" value="'+g('name')+'" style="'+IST_INP+'">'+
+    '<label style="'+L+'">Veli adı</label><input id="pf-parent" value="'+g('parent')+'" style="'+IST_INP+'">'+
+    '<label style="'+L+'">Veli telefonu * (WhatsApp)</label><input id="pf-phone" type="tel" value="'+g('phone')+'" placeholder="0500 000 00 00" style="'+IST_INP+'">'+
+    '<label style="'+L+'">İlgilendiği branş</label><select id="pf-edu" style="'+IST_INP+'">'+eduOpts+'</select>'+
+    '<div style="display:flex;gap:8px"><div style="flex:1"><label style="'+L+'">Görüşme tarihi *</label><input id="pf-date" type="date" value="'+g('date',todays())+'" style="'+IST_INP+'"></div>'+
+    '<div style="flex:1"><label style="'+L+'">Saat *</label><input id="pf-time" type="time" value="'+g('time')+'" style="'+IST_INP+'"></div></div>'+
+    '<label style="'+L+'">Bizi nereden duydu?</label><select id="pf-src" style="'+IST_INP+'">'+srcOpts+'</select>'+
+    '<div style="margin-top:12px;background:#ecfdf5;border:1px solid #86efac;border-radius:12px;padding:10px 12px">'+
+      '<label style="display:flex;align-items:center;gap:8px;font-weight:800;font-size:14px;color:#166534"><input type="checkbox" id="pf-trial" '+(p&&p.trial?'checked':'')+' onchange="prosTrialToggle()" style="width:20px;height:20px"> 🌱 Deneme dersi olacak</label>'+
+      '<div id="pf-trial-box" style="display:'+(p&&p.trial?'flex':'none')+';gap:8px;margin-top:6px"><div style="flex:1"><label style="'+L+'">Deneme tarihi</label><input id="pf-tdate" type="date" value="'+g('tDate',p?p.date:todays())+'" style="'+IST_INP+'"></div>'+
+      '<div style="flex:1"><label style="'+L+'">Deneme saati</label><input id="pf-ttime" type="time" value="'+g('tTime')+'" style="'+IST_INP+'"></div></div>'+
+      '<div style="font-size:11px;color:#166534;font-weight:600;margin-top:4px">Deneme günü, Günlük Yoklama listesinde "🌱 Deneme" olarak çıkar.</div></div>'+
+    '<label style="'+L+'">Not</label><textarea id="pf-note" rows="2" style="'+IST_INP+'">'+g('note')+'</textarea>'+
+    '<div style="display:flex;gap:8px;margin-top:14px"><button onclick="istClose()" style="flex:1;'+IST_BTN+'background:#f3f4f6;color:#374151">Vazgeç</button>'+
+    '<button onclick="prosSaveForm()" style="flex:2;'+IST_BTN+'background:#0d9488;color:#fff">Kaydet</button></div>'
+  );
+  if(p&&p.interest)document.getElementById('pf-edu').value=p.interest;
+}
+function prosTrialToggle(){
+  const on=document.getElementById('pf-trial').checked;
+  document.getElementById('pf-trial-box').style.display=on?'flex':'none';
+  if(on){
+    const d=document.getElementById('pf-date').value,t=document.getElementById('pf-time').value;
+    if(!document.getElementById('pf-tdate').value||!prosEditId)document.getElementById('pf-tdate').value=d||todays();
+    if(!document.getElementById('pf-ttime').value)document.getElementById('pf-ttime').value=t;
+  }
+}
+async function prosSaveForm(){
+  const v=id=>(document.getElementById(id).value||'').trim();
+  const rec={name:v('pf-name'),parent:v('pf-parent'),phone:v('pf-phone'),interest:v('pf-edu'),date:v('pf-date'),time:v('pf-time'),src:v('pf-src'),note:v('pf-note'),trial:document.getElementById('pf-trial').checked};
+  const bad=[];
+  if(!rec.name)bad.push('pf-name');if(!rec.phone)bad.push('pf-phone');if(!rec.date)bad.push('pf-date');if(!rec.time)bad.push('pf-time');
+  ['pf-name','pf-phone','pf-date','pf-time'].forEach(i=>document.getElementById(i).style.borderColor=bad.includes(i)?'#dc2626':'#d1d5db');
+  if(bad.length){snack('⚠ Ad, veli telefonu, tarih ve saat zorunlu.');return;}
+  if(rec.trial){rec.tDate=v('pf-tdate')||rec.date;rec.tTime=v('pf-ttime')||rec.time;}
+  const id=prosEditId||('p'+Date.now());
+  const old=prosAll[id]||{};
+  const cf=prosConflicts(rec.date,rec.time,id);
+  if(rec.trial)prosConflicts(rec.tDate,rec.tTime,id).forEach(x=>{if(!cf.includes(x))cf.push(x);});
+  const doSave=async()=>{
+    const full=Object.assign({},old,rec,{id:id});
+    if(!old.st)full.st='planned';
+    if(!old.created)full.created=todays();
+    if(!rec.trial){delete full.tDate;delete full.tTime;delete full.tStatus;}
+    else if(old.tDate&&(old.tDate!==rec.tDate||old.tTime!==rec.tTime))delete full.tStatus;
+    istClose();
+    setSyncing(true);
+    try{await prosSave1(full);}catch(e){showConf('Kaydedilemedi: '+e.message,'⚠️','Tamam',()=>{});}
+    setSyncing(false);
+    prosRefresh();
+    snack('🗓 Randevu kaydedildi: '+hwEsc(rec.name)+' · '+telDShort(rec.date)+' '+hwEsc(rec.time),[{l:'📲 Veliye bildir',f:()=>prosSend(id,'confirm')}]);
+  };
+  if(cf.length)showConf('Bu saatte çakışma var: '+cf.join(', ')+'. Yine de kaydedilsin mi?','⚠️','Evet, Kaydet',doSave);
+  else doSave();
+}
+async function prosDelete(id){
+  showConf('Bu aday kaydı silinsin mi?','🗑️','Evet, Sil',async()=>{
+    delete prosAll[id];prosRefresh();
+    try{await fbDel('prospects/'+id);}catch(e){}
+  });
+}
+// ── Durum değiştirme
+async function prosMark(id,st){
+  const p=prosAll[id];if(!p)return;
+  p.st=st;
+  if(st==='thinking')p.followDate=prosAddDays(todays(),PROS_FOLLOW_DAYS);
+  else delete p.followDate;
+  prosRefresh();
+  setSyncing(true);
+  try{await prosSave1(Object.assign({id:id},p));}catch(e){showConf('Kaydedilemedi: '+e.message,'⚠️','Tamam',()=>{});}
+  setSyncing(false);
+  const acts=[];
+  if(st==='noshow')acts.push({l:'📲 Mesaj gönder',f:()=>prosSend(id,'noshow')});
+  if(st==='thinking')acts.push({l:'📲 Şimdi yaz',f:()=>prosSend(id,'follow')});
+  if(st==='came')acts.push({l:'🎉 Kayıt oldu',f:()=>prosToReg(id)});
+  snack((PROS_ST[st]||[''])[0]+' · '+hwEsc(p.name),acts);
+}
+async function prosTrialMark(id,mark){
+  const p=prosAll[id];if(!p)return;
+  const nv=p.tStatus===mark?'':mark;
+  if(nv)p.tStatus=nv;else delete p.tStatus;
+  prosRefresh();
+  setSyncing(true);
+  try{await prosSave1(Object.assign({id:id},p));}catch(e){}
+  setSyncing(false);
+}
+// ── Kayda dönüştür
+function prosToReg(id){
+  const p=prosAll[id];if(!p)return;
+  go('s-reg');
+  prosFromId=id;
+  const parts=String(p.name||'').trim().split(/\s+/);
+  const sur=parts.length>1?parts.pop():'';
+  const set=(i,val)=>{const el=document.getElementById(i);if(el&&val)el.value=val;};
+  set('r-name',parts.join(' '));set('r-surname',sur);
+  set('r-mom-name',p.parent);set('r-mom-phone',p.phone);
+  if(p.interest){const sel=document.getElementById('r-edu');if([...sel.options].some(o=>o.value===p.interest||o.text===p.interest))sel.value=p.interest;}
+  snack('📝 Ön görüşme bilgileri forma aktarıldı. Eksikleri tamamlayıp kaydedin.');
+}
+async function prosOnRegistered(studentId){
+  const id=prosFromId;prosFromId=null;
+  if(!id||!prosAll[id])return;
+  const p=prosAll[id];p.st='registered';p.studentId=studentId;delete p.followDate;
+  await prosSave1(Object.assign({id:id},p));
+  prosRefresh();
+}
+// ── Adres / konum notu (mesajlara eklenir)
+function prosAddrEdit(){
+  istModal('<div style="font-weight:800;font-size:17px;margin-bottom:8px">📍 Randevu mesajına eklenecek adres / not</div>'+
+    '<textarea id="pf-addr" rows="3" placeholder="Örn: Silifke, … Cad. No: … (Konum linki de yazabilirsiniz)" style="'+IST_INP+'">'+hwEsc(prosAddr)+'</textarea>'+
+    '<div style="display:flex;gap:8px;margin-top:12px"><button onclick="istClose()" style="flex:1;'+IST_BTN+'background:#f3f4f6;color:#374151">Vazgeç</button><button onclick="prosAddrSave()" style="flex:2;'+IST_BTN+'background:#0d9488;color:#fff">Kaydet</button></div>');
+}
+async function prosAddrSave(){
+  prosAddr=(document.getElementById('pf-addr').value||'').trim();
+  istClose();
+  try{await fbSet('settings/prosAddr',prosAddr);}catch(e){}
+  snack('📍 Adres kaydedildi.');
+}
+
+// ── Ekran
+function openPros(){go('s-pros');}
+function prosTabSet(t){prosTab=t;renderPros();}
+function prosStatsHtml(){
+  const mk=todays().slice(0,7);
+  const ms=prosList().filter(p=>(p.date||'').startsWith(mk));
+  const total=ms.length,reg=ms.filter(p=>p.st==='registered').length;
+  const done=ms.filter(p=>p.st!=='planned').length;
+  const src={};ms.forEach(p=>{if(p.src)src[p.src]=(src[p.src]||0)+1;});
+  const srcTxt=Object.keys(src).sort((a,b)=>src[b]-src[a]).slice(0,3).map(k=>k+' '+src[k]).join(' · ');
+  const cell=(n,l,c)=>'<div class="stat" style="flex:1;background:'+c[0]+';border:1px solid '+c[1]+'"><div class="n" style="color:'+c[2]+'">'+n+'</div><div class="l" style="color:'+c[2]+'">'+l+'</div></div>';
+  return '<div style="display:flex;gap:8px;margin-bottom:6px">'+cell(total,'Bu ay görüşme',['#eff6ff','#bfdbfe','#1d4ed8'])+cell(reg,'Kayıt oldu',['#f0fdf4','#86efac','#166534'])+cell(done?Math.round(reg/done*100)+'%':'—','Dönüşüm',['#faf5ff','#d8b4fe','#7c3aed'])+'</div>'+
+    (srcTxt?'<div style="font-size:11px;font-weight:700;color:#6b7280;text-align:center">Kaynak: '+hwEsc(srcTxt)+'</div>':'');
+}
+function prosCardHtml(p){
+  const stc=PROS_ST[p.st]||PROS_ST.planned;
+  const bs='border:1px solid #d1d5db;background:#fff;border-radius:9px;padding:7px 10px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;';
+  const bg=(c)=>bs+'border-color:'+c+';color:'+c+';';
+  let btns='';
+  if(p.st==='planned'){
+    btns+='<button onclick="prosMark(\''+p.id+'\',\'came\')" style="'+bg('#1d4ed8')+'">✅ Geldi</button><button onclick="prosMark(\''+p.id+'\',\'noshow\')" style="'+bg('#dc2626')+'">❌ Gelmedi</button>'+
+      '<button onclick="prosSend(\''+p.id+'\',\''+(p.date===todays()?'today':'tomorrow')+'\')" style="'+bg('#16a34a')+'">📲 Hatırlat</button>';
+  }else if(p.st==='came'){
+    btns+='<button onclick="prosToReg(\''+p.id+'\')" style="'+bg('#16a34a')+'">🎉 Kayıt Oldu</button><button onclick="prosMark(\''+p.id+'\',\'thinking\')" style="'+bg('#b45309')+'">🤔 Düşünüyor</button><button onclick="prosMark(\''+p.id+'\',\'declined\')" style="'+bs+'">🚫 Vazgeçti</button>';
+  }else if(p.st==='noshow'){
+    btns+='<button onclick="prosSend(\''+p.id+'\',\'noshow\')" style="'+bg('#16a34a')+'">📲 Yeni randevu mesajı</button><button onclick="prosOpen(\''+p.id+'\')" style="'+bg('#1d4ed8')+'">📅 Yeniden planla</button><button onclick="prosMark(\''+p.id+'\',\'declined\')" style="'+bs+'">🚫 Vazgeçti</button>';
+  }else if(p.st==='thinking'){
+    btns+='<button onclick="prosSend(\''+p.id+'\',\'follow\')" style="'+bg('#16a34a')+'">📲 Takip mesajı</button><button onclick="prosToReg(\''+p.id+'\')" style="'+bg('#16a34a')+'">🎉 Kayıt Oldu</button><button onclick="prosMark(\''+p.id+'\',\'declined\')" style="'+bs+'">🚫 Vazgeçti</button>';
+  }else if(p.st==='registered'&&p.studentId&&students.some(s=>s.id===p.studentId)){
+    btns+='<button onclick="curId=\''+p.studentId+'\';go(\'s-detail\')" style="'+bs+'">👤 Öğrenci kartı</button>';
+  }
+  if(p.st==='declined'||p.st==='noshow')btns+='<button onclick="prosMark(\''+p.id+'\',\'planned\')" style="'+bs+'">↩ Planlıya al</button>';
+  btns+='<button onclick="prosOpen(\''+p.id+'\')" style="'+bs+'">✏️</button><button onclick="prosDelete(\''+p.id+'\')" style="'+bs+'color:#dc2626">🗑</button>';
+  let trial='';
+  if(p.trial){
+    const ts=p.tStatus==='came'?' · ✅ geldi':p.tStatus==='absent'?' · ❌ gelmedi':'';
+    trial='<div style="font-size:12px;font-weight:700;color:#166534;margin-top:3px">🌱 Deneme: '+telDLong(p.tDate||p.date)+(p.tTime?' · '+p.tTime:'')+ts+'</div>';
+  }
+  return '<div style="background:#fff;border:1px solid var(--border);border-radius:14px;padding:12px;margin-bottom:10px;box-shadow:var(--shadow)">'+
+    '<div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><div style="min-width:0"><div style="font-weight:800;font-size:16px">'+hwEsc(p.name)+'</div>'+
+    '<div style="font-size:12px;font-weight:600;color:#6b7280">'+hwEsc((p.parent?p.parent+' · ':'')+(p.phone||''))+'</div></div>'+
+    '<span style="background:'+stc[2]+';color:'+stc[1]+';border-radius:8px;padding:3px 8px;font-size:11px;font-weight:700;text-align:right">'+stc[0]+'</span></div>'+
+    '<div style="font-size:13px;font-weight:700;margin-top:6px">🗓 '+telDLong(p.date)+(p.time?' · 🕒 '+hwEsc(p.time):'')+(p.interest?' · '+hwEsc(p.interest):'')+'</div>'+
+    trial+
+    (p.src?'<div style="font-size:11px;font-weight:600;color:#6b7280;margin-top:2px">Kaynak: '+hwEsc(p.src)+'</div>':'')+
+    (p.st==='thinking'&&p.followDate?'<div style="font-size:11px;font-weight:700;color:#b45309;margin-top:2px">⏰ Takip: '+telDShort(p.followDate)+'</div>':'')+
+    (p.note?'<div style="font-size:12px;color:#374151;margin-top:4px;background:#f9fafb;border-radius:8px;padding:5px 8px">'+hwEsc(p.note)+'</div>':'')+
+    '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:9px">'+btns+'</div></div>';
+}
+function renderPros(){
+  const el=document.getElementById('pros-body');if(!el)return;
+  const t=todays();
+  let list=prosList();
+  if(prosTab==='up')list=list.filter(p=>p.st==='planned').sort((a,b)=>(a.date+(a.time||'')).localeCompare(b.date+(b.time||'')));
+  else if(prosTab==='follow')list=list.filter(p=>['came','thinking','noshow'].includes(p.st)).sort((a,b)=>(b.date+(b.time||'')).localeCompare(a.date+(a.time||'')));
+  else list=list.sort((a,b)=>(b.date+(b.time||'')).localeCompare(a.date+(a.time||'')));
+  const cnt=k=>prosList().filter(p=>k==='up'?p.st==='planned':k==='follow'?['came','thinking','noshow'].includes(p.st):true).length;
+  const tb=(k,l)=>'<button onclick="prosTabSet(\''+k+'\')" style="flex:1;padding:9px 6px;border-radius:10px;border:1px solid '+(prosTab===k?'#0d9488':'#d1d5db')+';background:'+(prosTab===k?'#0d9488':'#fff')+';color:'+(prosTab===k?'#fff':'#374151')+';font-weight:700;font-size:13px;cursor:pointer;font-family:inherit">'+l+' ('+cnt(k)+')</button>';
+  el.innerHTML=prosStatsHtml()+
+    '<div style="display:flex;gap:6px;margin:10px 0">'+tb('up','Yaklaşan')+tb('follow','Karar / Takip')+tb('all','Tümü')+'</div>'+
+    (list.length?list.map(prosCardHtml).join(''):'<div class="card" style="text-align:center;color:var(--muted);font-weight:700;font-size:13px">'+(prosTab==='up'?'Planlı ön görüşme yok. "＋ Yeni Randevu" ile ekleyin.':prosTab==='follow'?'Takip bekleyen aday yok.':'Henüz kayıt yok.')+'</div>');
+}
+// ── Ana ekran kutusu
+function prosBannerHtml(){
+  if(!prosReady)return '';
+  const t=todays(),tm=prosAddDays(t,1),rows=[];
+  prosList().forEach(p=>{
+    if(p.st==='planned'){
+      if(p.date===t)rows.push({p:p,k:'today',o:0});
+      else if(p.date<t)rows.push({p:p,k:'over',o:1});
+      else if(p.date===tm&&p.remSent!==t+'|tomorrow'&&p.remSent!==tm+'|today')rows.push({p:p,k:'tomorrow',o:2});
+    }else if(p.st==='thinking'&&p.followDate&&p.followDate<=t)rows.push({p:p,k:'follow',o:3});
+    else if(p.st==='came')rows.push({p:p,k:'decide',o:3});
+  });
+  if(!rows.length)return '';
+  rows.sort((a,b)=>a.o-b.o||(a.p.date+(a.p.time||'')).localeCompare(b.p.date+(b.p.time||'')));
+  const bt='border:1px solid #d1d5db;background:#fff;border-radius:10px;padding:7px 10px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;';
+  return '<div class="card mb14" id="pros-card" style="border:1px solid #5eead4;background:#f0fdfa">'+
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><div style="font-weight:700;font-size:14px;color:#0f766e">🗓 Ön Görüşmeler ('+rows.length+')</div><button onclick="openPros()" style="'+bt+'font-size:12px;padding:5px 9px">Tümü ›</button></div>'+
+    rows.slice(0,6).map(x=>{
+      const p=x.p,id=p.id;
+      const lab={today:'Bugün '+hwEsc(p.time||''),over:telDShort(p.date)+' · işaretlenmedi',tomorrow:'Yarın '+hwEsc(p.time||'')+' · hatırlat',follow:'Takip zamanı',decide:'Görüşme yapıldı · karar bekliyor'}[x.k];
+      let b='';
+      if(x.k==='today')b='<button onclick="prosSend(\''+id+'\',\'today\')" style="'+bt+'">📲</button><button onclick="prosMark(\''+id+'\',\'came\')" style="'+bt+'">✅</button><button onclick="prosMark(\''+id+'\',\'noshow\')" style="'+bt+'">❌</button>';
+      else if(x.k==='over')b='<button onclick="prosMark(\''+id+'\',\'came\')" style="'+bt+'">✅</button><button onclick="prosMark(\''+id+'\',\'noshow\')" style="'+bt+'">❌</button>';
+      else if(x.k==='tomorrow')b='<button onclick="prosSend(\''+id+'\',\'tomorrow\')" style="'+bt+'">📲 Hatırlat</button>';
+      else if(x.k==='follow')b='<button onclick="prosSend(\''+id+'\',\'follow\')" style="'+bt+'">📲 Takip</button>';
+      else b='<button onclick="prosToReg(\''+id+'\')" style="'+bt+'">🎉</button><button onclick="prosMark(\''+id+'\',\'thinking\')" style="'+bt+'">🤔</button>';
+      return '<div style="display:flex;align-items:center;gap:6px;padding:7px 0;border-top:1px solid #99f6e4"><div style="flex:1;min-width:0"><div style="font-weight:700;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+hwEsc(p.name)+(p.trial?' 🌱':'')+'</div><div style="font-size:11px;font-weight:700;color:#0f766e">'+lab+(p.interest?' · '+hwEsc(p.interest):'')+'</div></div>'+b+'</div>';
+    }).join('')+
+    (rows.length>6?'<div style="font-size:12px;font-weight:700;color:#0f766e;padding-top:6px;border-top:1px solid #99f6e4">+ '+(rows.length-6)+' kayıt daha</div>':'')+
+  '</div>';
+}
+// ── Bildirim (1 saat önce + saatinde + deneme günü) ve yenileme
+function prosNotifyCheck(){
+  if(!prosReady)return;
+  const t=todays(),now=new Date(),nm=now.getHours()*60+now.getMinutes();
+  Object.keys(prosNotified).forEach(k=>{if(k.slice(0,10)<t)delete prosNotified[k];});
+  const fire=(key,body)=>{
+    if(prosNotified[key])return;prosNotified[key]=1;
+    try{localStorage.setItem('prosNotified',JSON.stringify(prosNotified));}catch(e){}
+    if('Notification' in window&&Notification.permission==='granted'){try{new Notification('🗓 Ön Görüşme',{body:body});}catch(e){}}
+  };
+  prosList().forEach(p=>{
+    if(p.st==='planned'&&p.date===t&&p.time){
+      const a=tmin(p.time);
+      if(nm>=a-60&&nm<a)fire(t+'|'+p.id+'|pre',p.name+' ile ön görüşme '+p.time+' (1 saat içinde)'+(p.trial?' · deneme dersi de var':'')+'.');
+      else if(nm>=a&&nm<a+15)fire(t+'|'+p.id+'|now',p.name+' ile ön görüşme saati geldi ('+p.time+').');
+    }
+    if(p.trial&&p.tDate===t&&p.tTime&&!p.tStatus&&p.st!=='declined'){
+      const a=tmin(p.tTime);
+      if(nm>=a-30&&nm<a+10)fire(t+'|'+p.id+'|trial','🌱 '+p.name+' deneme dersi '+p.tTime+'.');
+    }
+  });
+}
+function prosRefresh(){
+  try{umRender();}catch(e){}
+  try{const a=document.querySelector('.screen.active');if(a&&a.id==='s-pros')renderPros();}catch(e){}
+}
+function startProsWatch(){
+  try{
+    db.ref('prospects').on('value',snap=>{prosAll=snap.val()||{};prosReady=true;prosRefresh();prosNotifyCheck();});
+    db.ref('settings/prosAddr').on('value',snap=>{prosAddr=snap.val()||'';});
+  }catch(e){console.warn('prosWatch',e);}
+  setInterval(prosNotifyCheck,60000);
 }
 
 // ══ ÖDEV TAKİBİ: toplu haftalık/aylık görünüm + otomatik aylık özet ══════════
