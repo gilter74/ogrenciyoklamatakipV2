@@ -3989,6 +3989,32 @@ const PROS_ST={
 };
 const PROS_SRC=['Instagram','Tavsiye','Tabela / geçerken','Web sitesi','Diğer'];
 const PROS_FOLLOW_DAYS=3;
+// 3 hatırlatma: randevudan 1 gün önce 17:00 · 1 gün önce 20:00 · randevu günü saatinden 2 saat önce
+const PROS_SLOTS=[
+  {k:'d1a',l:'1 gün önce 17:00',kind:'tomorrow'},
+  {k:'d1b',l:'1 gün önce 20:00',kind:'tomorrow2'},
+  {k:'d0',l:'Randevudan 2 saat önce',kind:'today'}
+];
+function prosApptAt(p){const q=String(p.date||'').split('-').map(Number);return new Date(q[0],q[1]-1,q[2],0,tmin(p.time)).getTime();}
+function prosSlotAt(p,k){
+  const q=String(p.date||'').split('-').map(Number);
+  if(k==='d1a')return new Date(q[0],q[1]-1,q[2]-1,17,0).getTime();
+  if(k==='d1b')return new Date(q[0],q[1]-1,q[2]-1,20,0).getTime();
+  return new Date(q[0],q[1]-1,q[2],0,tmin(p.time)-120).getTime();
+}
+// durum: sent (gönderildi) · skip (randevu bu saatten sonra alındı) · due (zamanı geldi, gönderilmedi) · wait (bekliyor)
+function prosSlots(p){
+  const now=Date.now(),ca=p.createdAt?Date.parse(p.createdAt):0,end=prosApptAt(p);
+  return PROS_SLOTS.map((sl,i)=>{
+    const at=prosSlotAt(p,sl.k),sent=!!(p.rem&&p.rem[sl.k]),skip=!sent&&at<ca;
+    const due=!sent&&!skip&&now>=at&&now<end;
+    return Object.assign({n:i+1,at:at,sent:sent,skip:skip,due:due,st:sent?'sent':skip?'skip':due?'due':'wait'},sl);
+  });
+}
+function prosSlotTxt(sl,p){
+  const d=new Date(sl.at);
+  return sl.n+'/3 · '+telDShort(fmt(d.getFullYear(),d.getMonth(),d.getDate()))+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+}
 function prosList(){return Object.keys(prosAll).map(k=>Object.assign({id:k},prosAll[k]));}
 function prosAddDays(ds,n){const p=ds.split('-').map(Number);const d=new Date(p[0],p[1]-1,p[2]+n);return fmt(d.getFullYear(),d.getMonth(),d.getDate());}
 function prosWaOpen(p,msg){window.open('https://wa.me/'+waPhone(p.phone)+'?text='+encodeURIComponent(msg),'_blank');}
@@ -4004,19 +4030,33 @@ function prosMsg(p,kind){
   let m=hi+'\n\n';
   if(kind==='confirm')m+=who+' için '+(p.interest?p.interest+' ':'')+'ön görüşme randevunuz oluşturuldu:\n\n'+when+trial+adr+'\n\nUygun olmazsa lütfen önceden haber veriniz.';
   else if(kind==='tomorrow')m+='Hatırlatma: '+who+' için *yarın* ön görüşme randevumuz var.\n\n'+when+trial+adr+'\n\nGörüşmek üzere.';
-  else if(kind==='today')m+='Hatırlatma: '+who+' için *bugün* ön görüşme randevumuz var.\n\n'+when+trial+adr+'\n\nGörüşmek üzere.';
+  else if(kind==='tomorrow2')m+='Yarınki randevumuzu bir kez daha hatırlatmak istedik: '+who+' için ön görüşme.\n\n'+when+trial+adr+'\n\nUygun olmazsa lütfen haber veriniz; görüşmek üzere.';
+  else if(kind==='today')m+='Hatırlatma: '+who+' için *bugün* ön görüşme randevumuz yaklaşık *2 saat sonra*.\n\n'+when+trial+adr+'\n\nGörüşmek üzere.';
   else if(kind==='noshow')m+=who+' için '+telDLong(p.date)+(p.time?' '+p.time:'')+' tarihli ön görüşme randevusuna katılım olmadı. Uygun olduğunuzda yeni bir gün ve saat ayarlayabiliriz; size uygun zamanı yazmanız yeterli.';
   else if(kind==='follow')m+=who+' için yaptığımız ön görüşmenin ardından ne düşündüğünüzü merak ettik. Aklınıza takılan bir şey varsa memnuniyetle yanıtlayalım; kayıt için de yardımcı olabiliriz.';
   else if(kind==='trial')m+='Hatırlatma: '+who+' için *deneme dersimiz* var.\n\n🌱 *'+telDLong(p.tDate||p.date)+(p.tTime?' · 🕒 '+p.tTime:'')+'*'+adr+'\n\nGörüşmek üzere.';
   return m+WA_SIGN+'\nBilgi: 0532 702 6040';
 }
-async function prosSend(id,kind){
+async function prosSend(id,kind,slotKey){
   const p=prosAll[id];if(!p)return;
   prosWaOpen(Object.assign({id:id},p),prosMsg(p,kind));
-  if(kind==='tomorrow'||kind==='today'){p.remSent=todays()+'|'+kind;try{await fbSet('prospects/'+id+'/remSent',p.remSent);}catch(e){}prosRefresh();}
   if(kind==='follow'){p.followDate=prosAddDays(todays(),PROS_FOLLOW_DAYS);try{await fbSet('prospects/'+id+'/followDate',p.followDate);}catch(e){}prosRefresh();}
+  if(slotKey){
+    p.rem=p.rem||{};
+    const sl=prosSlots(p);const idx=sl.findIndex(x=>x.k===slotKey);
+    sl.forEach((x,i)=>{if(i<=idx&&!x.skip)p.rem[x.k]=true;}); // bu ve daha önceki bekleyenler tamam
+    try{await fbSet('prospects/'+id+'/rem',p.rem);}catch(e){}
+    prosRefresh();
+  }
 }
-
+// Sıradaki hatırlatmayı gönder (zamanı gelmiş en son olan; yoksa sıradaki bekleyen; hepsi bittiyse tekrar)
+function prosRemind(id){
+  const p=prosAll[id];if(!p)return;
+  const sl=prosSlots(p);
+  let x=sl.filter(y=>y.due).pop()||sl.find(y=>y.st==='wait');
+  if(x)return prosSend(id,x.kind,x.k);
+  prosSend(id,p.date===todays()?'today':'tomorrow');
+}
 // ── Çakışma kontrolü (ders, telafi, diğer görüşme)
 function prosConflicts(date,time,exceptId){
   const out=[];if(!date||!time)return out;
@@ -4084,6 +4124,7 @@ async function prosSaveForm(){
     const full=Object.assign({},old,rec,{id:id});
     if(!old.st)full.st='planned';
     if(!old.created)full.created=todays();
+    if(!old.createdAt||old.date!==rec.date||old.time!==rec.time){full.createdAt=new Date().toISOString();full.rem={};delete full.remSent;} // tarih/saat değişince 3 hatırlatma yeniden planlanır
     if(!rec.trial){delete full.tDate;delete full.tTime;delete full.tStatus;}
     else if(old.tDate&&(old.tDate!==rec.tDate||old.tTime!==rec.tTime))delete full.tStatus;
     istClose();
@@ -4174,6 +4215,10 @@ function prosStatsHtml(){
   return '<div style="display:flex;gap:8px;margin-bottom:6px">'+cell(total,'Bu ay görüşme',['#eff6ff','#bfdbfe','#1d4ed8'])+cell(reg,'Kayıt oldu',['#f0fdf4','#86efac','#166534'])+cell(done?Math.round(reg/done*100)+'%':'—','Dönüşüm',['#faf5ff','#d8b4fe','#7c3aed'])+'</div>'+
     (srcTxt?'<div style="font-size:11px;font-weight:700;color:#6b7280;text-align:center">Kaynak: '+hwEsc(srcTxt)+'</div>':'');
 }
+function prosChipsHtml(p){
+  const col={sent:['#dcfce7','#166534','✅'],due:['#fef3c7','#b45309','🔔'],wait:['#f3f4f6','#6b7280','⏳'],skip:['#f3f4f6','#9ca3af','—']};
+  return '<div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:6px">'+prosSlots(p).map(x=>{const c=col[x.st];return '<span title="'+x.l+'" style="background:'+c[0]+';color:'+c[1]+';border-radius:8px;padding:3px 7px;font-size:11px;font-weight:700">'+c[2]+' '+prosSlotTxt(x,p)+'</span>';}).join('')+'</div>';
+}
 function prosCardHtml(p){
   const stc=PROS_ST[p.st]||PROS_ST.planned;
   const bs='border:1px solid #d1d5db;background:#fff;border-radius:9px;padding:7px 10px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;';
@@ -4181,7 +4226,7 @@ function prosCardHtml(p){
   let btns='';
   if(p.st==='planned'){
     btns+='<button onclick="prosMark(\''+p.id+'\',\'came\')" style="'+bg('#1d4ed8')+'">✅ Geldi</button><button onclick="prosMark(\''+p.id+'\',\'noshow\')" style="'+bg('#dc2626')+'">❌ Gelmedi</button>'+
-      '<button onclick="prosSend(\''+p.id+'\',\''+(p.date===todays()?'today':'tomorrow')+'\')" style="'+bg('#16a34a')+'">📲 Hatırlat</button>';
+      '<button onclick="prosRemind(\''+p.id+'\')" style="'+bg('#16a34a')+'">📲 Hatırlat</button>';
   }else if(p.st==='came'){
     btns+='<button onclick="prosToReg(\''+p.id+'\')" style="'+bg('#16a34a')+'">🎉 Kayıt Oldu</button><button onclick="prosMark(\''+p.id+'\',\'thinking\')" style="'+bg('#b45309')+'">🤔 Düşünüyor</button><button onclick="prosMark(\''+p.id+'\',\'declined\')" style="'+bs+'">🚫 Vazgeçti</button>';
   }else if(p.st==='noshow'){
@@ -4204,6 +4249,7 @@ function prosCardHtml(p){
     '<span style="background:'+stc[2]+';color:'+stc[1]+';border-radius:8px;padding:3px 8px;font-size:11px;font-weight:700;text-align:right">'+stc[0]+'</span></div>'+
     '<div style="font-size:13px;font-weight:700;margin-top:6px">🗓 '+telDLong(p.date)+(p.time?' · 🕒 '+hwEsc(p.time):'')+(p.interest?' · '+hwEsc(p.interest):'')+'</div>'+
     trial+
+    (p.st==='planned'?prosChipsHtml(p):'')+
     (p.src?'<div style="font-size:11px;font-weight:600;color:#6b7280;margin-top:2px">Kaynak: '+hwEsc(p.src)+'</div>':'')+
     (p.st==='thinking'&&p.followDate?'<div style="font-size:11px;font-weight:700;color:#b45309;margin-top:2px">⏰ Takip: '+telDShort(p.followDate)+'</div>':'')+
     (p.note?'<div style="font-size:12px;color:#374151;margin-top:4px;background:#f9fafb;border-radius:8px;padding:5px 8px">'+hwEsc(p.note)+'</div>':'')+
@@ -4225,12 +4271,13 @@ function renderPros(){
 // ── Ana ekran kutusu
 function prosBannerHtml(){
   if(!prosReady)return '';
-  const t=todays(),tm=prosAddDays(t,1),rows=[];
+  const t=todays(),now=Date.now(),rows=[];
   prosList().forEach(p=>{
-    if(p.st==='planned'){
-      if(p.date===t)rows.push({p:p,k:'today',o:0});
-      else if(p.date<t)rows.push({p:p,k:'over',o:1});
-      else if(p.date===tm&&p.remSent!==t+'|tomorrow'&&p.remSent!==tm+'|today')rows.push({p:p,k:'tomorrow',o:2});
+    if(p.st==='planned'&&p.date&&p.time){
+      const end=prosApptAt(p),due=prosSlots(p).filter(x=>x.due).pop();
+      if(end<now)rows.push({p:p,k:'over',o:1});
+      else if(due)rows.push({p:p,k:'rem',o:p.date===t?0:2,sl:due});
+      else if(p.date===t)rows.push({p:p,k:'today',o:0});
     }else if(p.st==='thinking'&&p.followDate&&p.followDate<=t)rows.push({p:p,k:'follow',o:3});
     else if(p.st==='came')rows.push({p:p,k:'decide',o:3});
   });
@@ -4241,11 +4288,15 @@ function prosBannerHtml(){
     '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><div style="font-weight:700;font-size:14px;color:#0f766e">🗓 Ön Görüşmeler ('+rows.length+')</div><button onclick="openPros()" style="'+bt+'font-size:12px;padding:5px 9px">Tümü ›</button></div>'+
     rows.slice(0,6).map(x=>{
       const p=x.p,id=p.id;
-      const lab={today:'Bugün '+hwEsc(p.time||''),over:telDShort(p.date)+' · işaretlenmedi',tomorrow:'Yarın '+hwEsc(p.time||'')+' · hatırlat',follow:'Takip zamanı',decide:'Görüşme yapıldı · karar bekliyor'}[x.k];
+      const whenTxt=(p.date===t?'Bugün ':'Yarın ')+hwEsc(p.time||'');
+      const lab={rem:'🔔 Hatırlatma '+(x.sl?x.sl.n:'')+'/3 · '+whenTxt,today:'Bugün '+hwEsc(p.time||''),over:telDShort(p.date)+' · işaretlenmedi',follow:'Takip zamanı',decide:'Görüşme yapıldı · karar bekliyor'}[x.k];
       let b='';
-      if(x.k==='today')b='<button onclick="prosSend(\''+id+'\',\'today\')" style="'+bt+'">📲</button><button onclick="prosMark(\''+id+'\',\'came\')" style="'+bt+'">✅</button><button onclick="prosMark(\''+id+'\',\'noshow\')" style="'+bt+'">❌</button>';
+      if(x.k==='rem'){
+        b='<button onclick="prosSend(\''+id+'\',\''+x.sl.kind+'\',\''+x.sl.k+'\')" style="'+bt+'background:#16a34a;color:#fff;border-color:#16a34a">📲 Hatırlat</button>';
+        if(p.date===t)b+='<button onclick="prosMark(\''+id+'\',\'came\')" style="'+bt+'">✅</button><button onclick="prosMark(\''+id+'\',\'noshow\')" style="'+bt+'">❌</button>';
+      }
+      else if(x.k==='today')b='<button onclick="prosMark(\''+id+'\',\'came\')" style="'+bt+'">✅</button><button onclick="prosMark(\''+id+'\',\'noshow\')" style="'+bt+'">❌</button>';
       else if(x.k==='over')b='<button onclick="prosMark(\''+id+'\',\'came\')" style="'+bt+'">✅</button><button onclick="prosMark(\''+id+'\',\'noshow\')" style="'+bt+'">❌</button>';
-      else if(x.k==='tomorrow')b='<button onclick="prosSend(\''+id+'\',\'tomorrow\')" style="'+bt+'">📲 Hatırlat</button>';
       else if(x.k==='follow')b='<button onclick="prosSend(\''+id+'\',\'follow\')" style="'+bt+'">📲 Takip</button>';
       else b='<button onclick="prosToReg(\''+id+'\')" style="'+bt+'">🎉</button><button onclick="prosMark(\''+id+'\',\'thinking\')" style="'+bt+'">🤔</button>';
       return '<div style="display:flex;align-items:center;gap:6px;padding:7px 0;border-top:1px solid #99f6e4"><div style="flex:1;min-width:0"><div style="font-weight:700;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+hwEsc(p.name)+(p.trial?' 🌱':'')+'</div><div style="font-size:11px;font-weight:700;color:#0f766e">'+lab+(p.interest?' · '+hwEsc(p.interest):'')+'</div></div>'+b+'</div>';
@@ -4257,17 +4308,21 @@ function prosBannerHtml(){
 function prosNotifyCheck(){
   if(!prosReady)return;
   const t=todays(),now=new Date(),nm=now.getHours()*60+now.getMinutes();
-  Object.keys(prosNotified).forEach(k=>{if(k.slice(0,10)<t)delete prosNotified[k];});
+  const cut=prosAddDays(t,-3);
+  Object.keys(prosNotified).forEach(k=>{if(k.slice(0,10)<cut)delete prosNotified[k];});
   const fire=(key,body)=>{
     if(prosNotified[key])return;prosNotified[key]=1;
     try{localStorage.setItem('prosNotified',JSON.stringify(prosNotified));}catch(e){}
+    try{blinkPageTitle('🔔 Randevu hatırlatması',15000);}catch(e){}
     if('Notification' in window&&Notification.permission==='granted'){try{new Notification('🗓 Ön Görüşme',{body:body});}catch(e){}}
   };
   prosList().forEach(p=>{
-    if(p.st==='planned'&&p.date===t&&p.time){
-      const a=tmin(p.time);
-      if(nm>=a-60&&nm<a)fire(t+'|'+p.id+'|pre',p.name+' ile ön görüşme '+p.time+' (1 saat içinde)'+(p.trial?' · deneme dersi de var':'')+'.');
-      else if(nm>=a&&nm<a+15)fire(t+'|'+p.id+'|now',p.name+' ile ön görüşme saati geldi ('+p.time+').');
+    if(p.st==='planned'&&p.date&&p.time){
+      prosSlots(p).filter(x=>x.due).forEach(x=>{
+        const sd=new Date(x.at),key=fmt(sd.getFullYear(),sd.getMonth(),sd.getDate())+'|'+p.id+'|'+x.k;
+        fire(key,'Hatırlatma '+x.n+'/3 · '+p.name+' · '+(p.date===t?'bugün '+p.time:'yarın '+p.time)+' randevu — veliye WhatsApp hatırlatması gönderin.');
+      });
+      if(p.date===t){const a=tmin(p.time);if(nm>=a&&nm<a+15)fire(t+'|'+p.id+'|now',p.name+' ile ön görüşme saati geldi ('+p.time+').');}
     }
     if(p.trial&&p.tDate===t&&p.tTime&&!p.tStatus&&p.st!=='declined'){
       const a=tmin(p.tTime);
