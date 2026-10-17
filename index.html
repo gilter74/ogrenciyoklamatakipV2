@@ -194,6 +194,19 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
 .ra-pay{background:#059669;color:#fff}.ra-wa{background:#25d366;color:#fff}.ra-snz{background:#fef3c7;color:#92400e}.ra-del{background:#fee2e2;color:#991b1b}
 .rec-banner-card{background:#fff;border:1px solid #fdba74;border-radius:14px;padding:13px 14px;margin-bottom:14px;box-shadow:var(--shadow)}
 .rec-banner-card.has-due{border-color:#dc2626}
+.late-card{background:linear-gradient(135deg,#7f1d1d,#dc2626 55%,#f97316);color:#fff;border-radius:16px;padding:14px;margin-bottom:14px;box-shadow:0 6px 22px rgba(220,38,38,.35);border:2px solid #fecaca}
+.late-card.pulse{animation:lateGlow .8s ease-in-out 4}
+@keyframes lateGlow{0%,100%{box-shadow:0 6px 22px rgba(220,38,38,.35)}50%{box-shadow:0 0 0 7px rgba(249,115,22,.45),0 6px 26px rgba(220,38,38,.6)}}
+.late-row{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.28);border-radius:12px;padding:9px 11px;margin-top:8px}
+.late-row b{font-weight:700}
+.late-btn{border:0;border-radius:9px;padding:7px 11px;font-weight:700;font-size:12px;cursor:pointer;font-family:inherit}
+.late-btn.wa{background:#25d366;color:#fff}
+.late-btn.see{background:#fff;color:#991b1b}
+.late-msg{width:100%;min-height:210px;border:1px solid #d1d5db;border-radius:10px;padding:10px;font-family:inherit;font-size:13px;line-height:1.5;resize:vertical;box-sizing:border-box}
+.late-item{background:#fff;border:1px solid #fecaca;border-radius:14px;padding:12px;margin-bottom:12px}
+.rcpt-ok{display:inline-block;margin-top:4px;font-size:11px;font-weight:700;border-radius:7px;padding:2px 8px;background:#dcfce7;color:#166534}
+.rcpt-no{display:inline-block;margin-top:4px;font-size:11px;font-weight:700;border-radius:7px;padding:2px 8px;background:#fef3c7;color:#92400e}
+
 
 /* ===== KURUMSAL TEMA ===== */
 :root{--bg:#f3f4f8;--card:#fff;--card2:#f7f8fb;--border:#dfe3ec;--text:#1b2340;--text2:#4a5470;--muted:#7a8399;--dim:#a3abbd;
@@ -299,6 +312,7 @@ body:has(#s-veli-view.active) .screen{padding-bottom:20px}
     <div id="pros-line" style="grid-column:1/-1;display:none;margin-top:-4px"></div>
   </div>
   <div id="dup-name-warn" style="display:none"></div>
+  <div id="late-banner"></div>
   <div id="rec-banner"></div>
   <div id="lvl-banner"></div>
   <div id="um-banner"></div>
@@ -564,6 +578,7 @@ body:has(#s-veli-view.active) .screen{padding-bottom:20px}
     <div class="stats" id="cal-stats"></div>
   </div>
   <div class="card mb12" id="tel-box" style="display:none;border:1px solid #fcd34d;background:#fffbeb"></div>
+  <div id="rcpt-sent-box" style="display:none"></div>
   <div id="pay-status-box" style="display:none;border-radius:13px;padding:13px 16px;margin-bottom:12px;border:1px solid;font-weight:600;font-size:14px;text-align:center"></div>
   <div class="card mb12" id="pay-list-card" style="display:none">
     <div id="pay-list-title" style="font-weight:700;font-size:15px;margin-bottom:10px"></div>
@@ -958,12 +973,13 @@ body:has(#s-veli-view.active) .screen{padding-bottom:20px}
   </div>
 </div>
 
+
 <!-- RECEIPT -->
 <div class="rec-bg" id="rec-modal">
   <div class="rec-wrap">
     <div class="rec-acts">
       <button class="btn-ghost" onclick="closeReceipt()">← Geri</button>
-      <button class="btn btn-purple" onclick="window.print()">🖨️ Yazdır / PDF</button>
+      <button class="btn btn-purple" onclick="printReceipt()">🖨️ Yazdır / PDF</button>
       <button class="btn btn-wa" onclick="sendWA()">📲 WhatsApp</button>
     </div>
     <div id="rec-card">
@@ -1281,7 +1297,7 @@ function stuRow(s,dupSet){
           <div style="font-weight:700;font-size:15px">${s.name} ${s.surname}${dup?' <span style="color:#dc2626;font-size:11px;font-weight:700">⚠️ aynı isim</span>':''}</div>
           <div style="font-size:12px;color:var(--muted);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${s.education} · ${s.program}</div>
           <div style="font-size:12px;color:var(--dim);margin-top:1px">${s.phone?'📞 '+s.phone:''}${s.momPhone?' · 👩 '+s.momPhone:''}${dup?' · Kayıt no: '+s.id:''}</div>
-          ${recBadge(s.id)}
+          ${recBadge(s.id)}${rcptBadge(s.id)}
         </div>
         <button class="btn-del" onclick="event.stopPropagation();delStudent('${s.id}')">Sil</button>
       </div>`;
@@ -1302,6 +1318,7 @@ function renderList(){
   renderTodaySched();
   try{umRender();}catch(e){}
   renderRecBanner();
+  try{renderLateBanner();}catch(e){}
   renderDupNameWarning();
   const q=(document.getElementById('search').value||'').toLowerCase();
   const shown=students.filter(s=>(s.name+' '+s.surname).toLowerCase().includes(q));
@@ -2778,6 +2795,7 @@ function startRecWatch(){
 
 // ══ OVERDUE ═══════════════════════════════════════════════════════════
 function checkOverdue(){
+  try{updateRcptBox();}catch(e){}
   const s=students.find(x=>x.id===curId);
   const box=document.getElementById('overdue-box');
   const rng=parseRange(s&&s.payDay);
@@ -2864,7 +2882,113 @@ function sendWA(){
   const note=document.getElementById('rec-note').value;
   const now=new Date();
   const msg='🎵♟ *RockJazz Müzik Aletleri ve Silifke Satranç Atölyesi*\n━━━━━━━━━━━━━━━━━━━━\n✅ *ÖDEME MAKBUZU*\n━━━━━━━━━━━━━━━━━━━━\n👤 *Öğrenci:* '+student+'\n👨‍👩‍👦 *Veli:* '+parent+'\n📚 *Ders:* '+lesson+'\n📅 *Dönem:* '+mon+' '+yr+'\n💰 *Ücret:* '+parseFloat(amt).toLocaleString('tr-TR')+' ₺\n'+(note?'📝 *Not:* '+note+'\n':'')+'━━━━━━━━━━━━━━━━━━━━\n🗓 Tarih: '+now.getDate()+'.'+String(now.getMonth()+1).padStart(2,'0')+'.'+now.getFullYear()+'\n✍️ RockJazz Müzik Aletleri ve Silifke Satranç Atölyesi';
-  window.open('https://wa.me/?text='+encodeURIComponent(msg),'_blank');
+  const _st=students.find(x=>x.id===curId);
+  const _ph=_st?waPhone(_st.momPhone||_st.dadPhone||_st.phone):'';
+  window.open('https://wa.me/'+_ph+'?text='+encodeURIComponent(msg),'_blank');
+  markReceiptSent('WhatsApp');
+}
+function printReceipt(){
+  markReceiptSent('PDF');
+  window.print();
+}
+
+// ══ MAKBUZ GÖNDERİLDİ KAYDI ═══════════════════════════════════════════
+let rcptSent={}, lateAllPay={}, lateLog={};
+function rcptInfo(sid,mk){return ((rcptSent[sid]||{})[mk])||null;}
+function markReceiptSent(via){
+  const sid=curId;if(!sid)return;
+  const mi=document.getElementById('rec-month').selectedIndex;
+  const yr=parseInt(document.getElementById('rec-year').value)||curY;
+  const mk=mkey(yr,mi);
+  const rec={via:via,date:todays(),amount:parseFloat(document.getElementById('rec-amount').value)||0};
+  if(!rcptSent[sid])rcptSent[sid]={};
+  rcptSent[sid][mk]=rec;
+  try{fbSet('receiptSent/'+sid+'/'+mk,rec);}catch(e){}
+  try{updateRcptBox();}catch(e){}
+  try{renderLateBanner();}catch(e){}
+}
+function updateRcptBox(){
+  const box=document.getElementById('rcpt-sent-box');if(!box)return;
+  if(!curId){box.style.display='none';return;}
+  const mk=mkey(curY,curM);
+  const r=rcptInfo(curId,mk);
+  const hasPaid=payData.some(p=>p.date.startsWith(mk)&&!p.recId);
+  if(r){
+    box.style.display='block';
+    box.innerHTML='<div style="background:#dcfce7;border:1px solid #86efac;border-radius:13px;padding:11px 14px;margin-bottom:12px;font-weight:700;font-size:13px;color:#166534;text-align:center">✅ '+MONTHS[curM]+' '+curY+' makbuzu '+r.via+' ile gönderildi · '+repDL(r.date)+'</div>';
+  }else if(hasPaid){
+    box.style.display='block';
+    box.innerHTML='<div style="background:#fef3c7;border:1px solid #fcd34d;border-radius:13px;padding:11px 14px;margin-bottom:12px;font-weight:700;font-size:13px;color:#92400e;text-align:center">🧾 '+MONTHS[curM]+' ödemesi alındı ama makbuz henüz gönderilmedi</div>';
+  }else{box.style.display='none';box.innerHTML='';}
+}
+function rcptBadge(sid){
+  const now=new Date();const mk=mkey(now.getFullYear(),now.getMonth());
+  const r=rcptInfo(sid,mk);
+  if(r)return '<div class="rcpt-ok">🧾 '+MONTHS[now.getMonth()]+' makbuzu gönderildi ('+r.via+')</div>';
+  const pays=Object.values(lateAllPay[sid]||{}).filter(x=>x.date&&x.date.startsWith(mk)&&!x.recId);
+  if(pays.length)return '<div class="rcpt-no">🧾 Makbuz gönderilmedi</div>';
+  return '';
+}
+
+// ══ 20'SİNDEN SONRA ÖDEMEYENLER ═══════════════════════════════════════
+const LATE_DAY=20;
+function lateList(){
+  const now=new Date();
+  if(now.getDate()<=LATE_DAY)return [];
+  const y=now.getFullYear(),m=now.getMonth(),mk=mkey(y,m);
+  const out=[];
+  students.forEach(st=>{
+    const pays=Object.values(lateAllPay[st.id]||{}).filter(x=>x.date&&x.date.startsWith(mk)&&!x.recId);
+    const paid=pays.reduce((a,x)=>a+parseFloat(x.amount||0),0);
+    const fee=parseFloat(String(st.fee||'').replace(',','.'))||0;
+    if(pays.length&&(fee<=0||paid>=fee*0.94))return;
+    const rem=fee>0?Math.max(0,fee-paid):0;
+    out.push({s:st,fee,paid,rem,daysLate:now.getDate()-LATE_DAY,mk});
+  });
+  return out.sort((a,b)=>b.rem-a.rem);
+}
+function lateWaUrl(st){return 'https://wa.me/'+waPhone(st.momPhone||st.dadPhone||st.phone);}
+function renderLateBanner(){
+  const box=document.getElementById('late-banner');if(!box)return;
+  const list=lateList();
+  if(!list.length){box.innerHTML='';return;}
+  const now=new Date();const mon=MONTHS[now.getMonth()];
+  const total=list.reduce((a,x)=>a+x.rem,0);
+  const rows=list.map(x=>{
+    const sent=((lateLog[x.s.id]||{})[x.mk])||null;
+    return '<div class="late-row"><div style="display:flex;justify-content:space-between;gap:10px;align-items:center">'+
+      '<div style="min-width:0"><div style="font-size:14px"><b style="cursor:pointer" onclick="openDetNewWin(\''+x.s.id+'\')">'+repEsc(x.s.name+' '+x.s.surname)+'</b></div>'+
+      '<div style="font-size:11px;opacity:.9;margin-top:2px">'+x.daysLate+' gün gecikti'+(sent?' · 📲 son hatırlatma: '+repDL(sent):'')+'</div></div>'+
+      '<div style="text-align:right;flex-shrink:0">'+(x.rem>0?'<div style="font-weight:700;font-size:15px">'+fmtTL(x.rem)+' ₺</div>':'')+
+      '<button class="late-btn wa" style="margin-top:4px" onclick="lateOpen(\''+x.s.id+'\')">📲 WhatsApp</button></div></div></div>';
+  }).join('');
+  box.innerHTML='<div class="late-card" id="late-card"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">'+
+    '<div style="font-weight:700;font-size:15px">🚨 '+mon+' ödemesi gelmeyenler ('+list.length+')</div>'+
+    (total>0?'<div style="font-weight:700;font-size:14px">Toplam '+fmtTL(total)+' ₺</div>':'')+'</div>'+
+    '<div style="font-size:11px;opacity:.9;margin:3px 0 4px">Ayın '+LATE_DAY+"'sinden sonra ödeme yapmayan öğrenciler"+'</div>'+rows+'</div>';
+}
+function lateOpen(sid){
+  const st=students.find(x=>x.id===sid);if(!st)return;
+  const ph=waPhone(st.momPhone||st.dadPhone||st.phone);
+  if(!ph){alert('Bu öğrenci için kayıtlı telefon yok.');return;}
+  window.open(lateWaUrl(st),'_blank');
+  const mk=mkey(new Date().getFullYear(),new Date().getMonth());
+  if(!lateLog[sid])lateLog[sid]={};
+  lateLog[sid][mk]=todays();
+  try{fbSet('lateRemind/'+sid+'/'+mk,todays());}catch(e){}
+}
+function startLateWatch(){
+  const refresh=()=>{
+    renderLateBanner();
+    const a=document.querySelector('.screen.active');
+    if(a&&a.id==='s-list')renderList();
+  };
+  try{
+    db.ref('payments').on('value',sn=>{lateAllPay=sn.val()||{};refresh();});
+    db.ref('receiptSent').on('value',sn=>{rcptSent=sn.val()||{};refresh();try{updateRcptBox();}catch(e){}});
+    db.ref('lateRemind').on('value',sn=>{lateLog=sn.val()||{};renderLateBanner();});
+  }catch(e){}
+  setTimeout(()=>{const c=document.getElementById('late-card');if(c){c.classList.add('pulse');setTimeout(()=>c.classList.remove('pulse'),3500);}},1500);
 }
 
 // ══ EXCEL (bireysel) ══════════════════════════════════════════════════
@@ -5520,6 +5644,7 @@ if(location.hash.indexOf('#vid=')===0){
     }
     autoFillSchedules();
     startRecWatch();
+    try{startLateWatch();}catch(e){}
     startUmWatch();
     setTimeout(autoQuarterReports,2500); // 3 ayda bir otomatik rapor kontrolü
     db.ref('students').on('value',snap2=>{
