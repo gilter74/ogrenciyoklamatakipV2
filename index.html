@@ -715,17 +715,27 @@ body:has(#s-veli-view.active) .screen{padding-bottom:20px}
     <details id="rec-closed-wrap" style="display:none;margin-top:12px"><summary style="cursor:pointer;font-weight:600;font-size:13px;color:#166534" id="rec-closed-sum"></summary><div id="rec-closed-list" style="margin-top:8px"></div></details>
   </div>
   <div class="card mb12" id="discount-card">
-    <div class="section-lbl">🏷️ Erken Ödeme İndirimi (%5)</div>
+    <div class="section-lbl">🏷️ Erken Ödeme İndirimi (%7)</div>
     <label style="display:flex;align-items:center;gap:10px;cursor:pointer;margin-bottom:8px">
       <input type="checkbox" id="disc-enabled" onchange="toggleDiscPreview()" style="width:20px;height:20px;accent-color:#2f3f73;cursor:pointer;flex-shrink:0">
       <span style="font-weight:600;font-size:14px;color:var(--text)">Bu öğrenci için erken ödeme indirim politikasını uygula</span>
     </label>
-    <div style="background:#f5f3ff;border:1px solid #d3d9ea;border-radius:10px;padding:10px 13px;margin-bottom:12px;font-size:12px;font-weight:700;color:#26335e;line-height:1.5">📌 Kural: Öğrenci ayın <b>1. ile 10. günleri</b> arasında ödeme yaparsa, <b>bir sonraki ayki</b> ders ücretinden otomatik olarak <b>%5 indirim</b> uygulanır.</div>
+    <div style="background:#f5f3ff;border:1px solid #d3d9ea;border-radius:10px;padding:10px 13px;margin-bottom:12px;font-size:12px;font-weight:700;color:#26335e;line-height:1.5">📌 Kural: Öğrenci ayın <b>1. ile 10. günleri</b> arasında ödeme yaparsa, <b>bir sonraki ayki</b> ders ücretinden otomatik olarak <b>%7 indirim</b> uygulanır.</div>
     <div id="disc-reward-box" style="display:none;background:#f0fdf4;border:1px solid #a7f3d0;border-radius:10px;padding:10px 13px;margin-bottom:12px;font-weight:600;font-size:13px;color:#065f46;line-height:1.5"></div>
     <div id="disc-preview" style="display:none;background:#f0fdf4;border:1px solid #a7f3d0;border-radius:10px;padding:10px 13px;margin-bottom:12px;font-weight:600;font-size:13px;color:#065f46"></div>
     <label class="lbl">İndirim Notu (hatırlatma) <span style="font-weight:600;text-transform:none;font-size:11px;color:var(--dim)" id="disc-count">0/250</span></label>
     <textarea id="disc-note" maxlength="250" rows="3" placeholder="Bu indirimi neden verdiğinizi ve avantajlarını buraya yazabilirsiniz. Örn: Ayın 1-10. günleri arasında ödeme yapan velilere teşvik amaçlı erken ödeme indirimi uygulanır; düzenli ödemeyi teşvik eder, hem veli hem kurum için avantajlıdır." oninput="updateDiscCount()" style="width:100%;padding:11px 14px;border-radius:10px;border:1px solid var(--border);font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;font-size:14px;font-weight:600;color:var(--text);resize:vertical;outline:none;margin-bottom:12px"></textarea>
     <button class="btn btn-purple btn-sm" onclick="saveDiscount()">💾 Kaydet</button>
+  </div>
+  <div class="card mb12" id="ref-card">
+    <div class="section-lbl">🤝 Öğrenci Kazandırma İndirimi (her öğrenci için %5)</div>
+    <div style="background:#f5f3ff;border:1px solid #d3d9ea;border-radius:10px;padding:10px 13px;margin-bottom:12px;font-size:12px;font-weight:700;color:#26335e;line-height:1.5">📌 Kural: Bu öğrenci (veli) kuruma <b>yeni bir öğrenci kazandırırsa</b>, kazandırdığı <b>her öğrenci için %5 indirim hakkı</b> tanınır. Haklar istediğiniz aya uygulanır; her hak tek aya <b>%5</b> indirim sağlar ve erken ödeme indirimi (%7) ile <b>birlikte</b> işler.</div>
+    <div id="ref-summary" style="font-size:13px;font-weight:700;color:#065f46;background:#f0fdf4;border:1px solid #a7f3d0;border-radius:10px;padding:9px 12px;margin-bottom:10px"></div>
+    <div id="ref-list" style="margin-bottom:12px"></div>
+    <label class="lbl">Kazandırılan Öğrenci</label>
+    <select id="ref-pick" style="margin-bottom:8px"></select>
+    <input id="ref-name" type="text" placeholder="Kayıtlı değilse ad soyad yazın" style="margin-bottom:10px;font-size:14px">
+    <button class="btn btn-purple btn-sm" onclick="addReferral()">➕ İndirim Hakkı Ekle (%5)</button>
   </div>
   </div>
 </div>
@@ -1873,7 +1883,7 @@ function fillExForm(p,s){
 }
 // Öğrenciye özel tek aylık istisna ücreti: yalnızca o ay geçerli, diğer aylar normal bedel
 function stuExFor(s,mk){return(s&&s.exMonth&&s.exMonth.ym===mk&&s.exMonth.amount>=0)?s.exMonth:null;}
-function stuFeeMk(s,mk,discApplied){const ex=stuExFor(s,mk);return ex?parseFloat(ex.amount||0):effectiveFee(s&&s.fee,discApplied);}
+function stuFeeMk(s,mk,discApplied,disc){const ex=stuExFor(s,mk);return ex?parseFloat(ex.amount||0):effectiveFee(s&&s.fee,monthPct(disc,discApplied,mk));}
 
 function readForm(p){
   return{
@@ -2058,16 +2068,31 @@ function renderDetail(){
   document.getElementById('disc-note').value=discountData.note||'';
   updateDiscCount();
   toggleDiscPreview();
+  renderRefCard();
   updateTabUI();
   renderCal();
   checkOverdue();
   renderRecCard();
 }
 
+const EARLY_PCT=7;   // erken ödeme indirimi (%)
+const REF_PCT=5;     // öğrenci kazandırma: her öğrenci için indirim hakkı (%)
+// discApplied: true → erken ödeme indirimi; sayı → doğrudan toplam yüzde
 function effectiveFee(feeVal,discApplied){
   const f=parseFloat(feeVal||0);
-  if(!discApplied||!f)return f;
-  return Math.round(f*0.95*100)/100;
+  const pct=discApplied===true?EARLY_PCT:(typeof discApplied==='number'?discApplied:0);
+  if(!pct||!f)return f;
+  return Math.round(f*(1-pct/100)*100)/100;
+}
+// Öğrenci kazandırma hakları: discountData.referrals=[{id,name,date,usedMonth:'YYYY-MM'|null}]
+function refPctFor(disc,mk){
+  return ((disc&&disc.referrals)||[]).filter(r=>r.usedMonth===mk).length*REF_PCT;
+}
+function monthPct(disc,discApplied,mk){return (discApplied?EARLY_PCT:0)+refPctFor(disc,mk);}
+function discTags(disc,discApplied,mk){
+  const rp=refPctFor(disc,mk);
+  return (discApplied?'<div style="font-size:10px;color:#2f3f73;font-weight:600;margin-top:2px">🏷️ %'+EARLY_PCT+' erken ödeme indirimi uygulandı</div>':'')+
+    (rp?'<div style="font-size:10px;color:#7c3aed;font-weight:600;margin-top:2px">🤝 Öğrenci kazandırma indirimi %'+rp+' uygulandı</div>':'');
 }
 
 // Bir (y,m) ayında, ayın 1-10. günleri arasında yapılmış ödeme var mı?
@@ -2118,6 +2143,54 @@ function renderDiscReward(){
   }
 }
 
+function refSave(){
+  setSyncing(true);
+  return fbSet('discount/'+curId,discountData).then(()=>{setSyncing(false);renderRefCard();try{renderCal();}catch(e){}});
+}
+function renderRefCard(){
+  const box=document.getElementById('ref-list');if(!box)return;
+  const refs=discountData.referrals||[];
+  const used=refs.filter(r=>r.usedMonth).length;
+  document.getElementById('ref-summary').innerHTML='🎁 Toplam hak: <b>'+refs.length+'</b> · Kullanılan: <b>'+used+'</b> · Kalan: <b>'+(refs.length-used)+'</b> <span style="font-weight:600">(her hak %'+REF_PCT+')</span>';
+  const pick=document.getElementById('ref-pick');
+  const taken=new Set(refs.map(r=>r.sid).filter(Boolean));
+  pick.innerHTML='<option value="">— Kayıtlı öğrenci seç —</option>'+students.filter(x=>x.id!==curId&&!taken.has(x.id)).map(x=>'<option value="'+x.id+'">'+repEsc(x.name+' '+x.surname)+'</option>').join('');
+  const n=new Date(),defYm=mkey(n.getFullYear(),n.getMonth());
+  box.innerHTML=refs.map((r,i)=>{
+    const st=r.usedMonth
+      ?'<div style="font-size:12px;font-weight:700;color:#065f46;margin-top:4px">✅ Kullanıldı: '+MONTHS[+r.usedMonth.split('-')[1]-1]+' '+r.usedMonth.split('-')[0]+' (%'+REF_PCT+' indirim)</div><button class="btn-ghost" style="padding:5px 10px;font-size:12px;margin-top:6px" onclick="refUnuse('+i+')">↩️ Geri al</button>'
+      :'<div style="display:flex;gap:6px;align-items:center;margin-top:6px;flex-wrap:wrap"><input type="month" id="ref-m-'+i+'" value="'+defYm+'" style="width:auto;padding:6px 8px;font-size:13px"><button class="btn btn-purple btn-sm" style="padding:6px 10px;font-size:12px" onclick="refUse('+i+')">Bu aya uygula</button></div>';
+    return '<div style="border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:8px;background:'+(r.usedMonth?'#f0fdf4':'#fff')+'">'+
+      '<div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><div><div style="font-weight:700;font-size:14px">🤝 '+repEsc(r.name)+'</div><div style="font-size:11px;color:var(--muted);font-weight:600">Eklenme: '+(r.date||'')+'</div></div><button class="btn-del" onclick="refDel('+i+')">Sil</button></div>'+st+'</div>';
+  }).join('')||'<p style="color:var(--dim);font-size:13px;text-align:center;margin:4px 0 8px">Henüz kazandırılan öğrenci yok.</p>';
+}
+async function addReferral(){
+  const sid=document.getElementById('ref-pick').value;
+  const st=sid?students.find(x=>x.id===sid):null;
+  const name=st?(st.name+' '+st.surname):document.getElementById('ref-name').value.trim();
+  if(!name){showConf('Kazandırılan öğrenciyi seçin veya ad soyad yazın.','⚠️','Tamam',()=>{});return;}
+  discountData.referrals=[...(discountData.referrals||[]),{id:String(Date.now()),sid:sid||'',name,date:todays(),usedMonth:null}];
+  document.getElementById('ref-name').value='';
+  await refSave();
+}
+async function refUse(i){
+  const ym=(document.getElementById('ref-m-'+i)||{}).value;
+  if(!ym){showConf('Hangi aya uygulanacağını seçin.','⚠️','Tamam',()=>{});return;}
+  const refs=discountData.referrals||[];
+  discountData.referrals=refs.map((r,k)=>k===i?{...r,usedMonth:ym}:r);
+  await refSave();
+}
+async function refUnuse(i){
+  discountData.referrals=(discountData.referrals||[]).map((r,k)=>k===i?{...r,usedMonth:null}:r);
+  await refSave();
+}
+function refDel(i){
+  showConf('Bu indirim hakkı silinsin mi?','🤝','Evet, Sil',async()=>{
+    discountData.referrals=(discountData.referrals||[]).filter((r,k)=>k!==i);
+    await refSave();
+  });
+}
+
 function updateDiscCount(){
   const v=document.getElementById('disc-note').value;
   document.getElementById('disc-count').textContent=v.length+'/250';
@@ -2126,7 +2199,7 @@ function updateDiscCount(){
 async function saveDiscount(){
   const enabled=document.getElementById('disc-enabled').checked;
   const note=document.getElementById('disc-note').value.trim().slice(0,250);
-  discountData={enabled,note,updatedAt:todays()};
+  discountData={...discountData,enabled,note,updatedAt:todays()};
   setSyncing(true);
   await fbSet('discount/'+curId,discountData);
   setSyncing(false);
@@ -2560,7 +2633,7 @@ function renderYearlyTable(){
     if(isFuture&&moPaysAll.length===0)continue;
     const discApplied=monthDiscountApplied(payData,policyOn,tableYear,m);
     const stuEx=stuExFor(s,mk);
-    const fee=stuEx?parseFloat(stuEx.amount||0):effectiveFee(baseFee,discApplied);
+    const fee=stuFeeMk(s,mk,discApplied,discountData);
     const earlyPay=hadEarlyPayment(payData,tableYear,m);
     const lPaid=moPays.reduce((a,p)=>a+parseFloat(p.amount||0),0);
     const desc=moPaysAll.map(p=>p.desc).filter(Boolean).join(', ');
@@ -2602,8 +2675,8 @@ function renderYearlyTable(){
     remLines.forEach(x=>parts.push(x));
     const tags=(stuEx?'<div style="font-size:10px;color:#92400e;background:#fef3c7;border-radius:6px;padding:2px 6px;font-weight:700;margin-top:3px;display:inline-block">🎫 İstisna: sadece bu ay '+fmtTL(stuEx.amount)+' ₺ (normal bedel '+fmtTL(baseFee)+' ₺)'+(stuEx.note?' — '+repEsc(stuEx.note):'')+'</div>':'')+
       (exM.on?'<div style="font-size:10px;color:#92400e;background:#fef3c7;border-radius:6px;padding:2px 6px;font-weight:700;margin-top:3px;display:inline-block">🎫 İstisna: '+repEsc(exM.notes||'Kısmi ay ücreti')+(exWaive>0?' (tam ücret '+fmtTL(fee)+' ₺, tam ödendi sayıldı)':'')+'</div>':'')+
-      (discApplied?'<div style="font-size:10px;color:#2f3f73;font-weight:600;margin-top:2px">🏷️ %5 indirim uygulandı</div>':'')+
-      (earlyPay?'<div style="font-size:10px;color:#059669;font-weight:600;margin-top:2px">⏱ Erken ödendi (sonraki ay %5 indirim kazandırır)</div>':'')+
+      (stuEx?'':discTags(discountData,discApplied,mk))+
+      (earlyPay?'<div style="font-size:10px;color:#059669;font-weight:600;margin-top:2px">⏱ Erken ödendi (sonraki ay %'+EARLY_PCT+' indirim kazandırır)</div>':'')+
       addLines.map(t=>'<div style="font-size:10px;color:#b45309;font-weight:600;margin-top:2px">➕ '+t+'</div>').join('')+
       ((iExp>0||iRem>0)&&balance>0?'<div style="font-size:10px;color:#991b1b;font-weight:600;margin-top:2px">Kalan: '+parts.join(' + ')+'</div>':'');
     html+='<tr style="border-bottom:1.5px solid var(--border);background:'+rowBg+'">'+
@@ -3005,13 +3078,16 @@ function openReceipt(){
   const lp=[...moPays].sort((a,b)=>b.date.localeCompare(a.date))[0];
   const totalPaid=moPays.filter(p=>!p.recId).reduce((a,p)=>a+parseFloat(p.amount||0),0);
   const discApplied=monthDiscountApplied(payData,!!discountData.enabled,curY,curM);
-  const fee=stuFeeMk(s,mk,discApplied);
+  const fee=stuFeeMk(s,mk,discApplied,discountData);
   document.getElementById('rec-amount').value=lp?lp.amount:(fee||'');
   document.getElementById('rec-month').selectedIndex=curM;
   document.getElementById('rec-year').value=curY;
   let autoNote='';
   if(discApplied){
-    autoNote='🏷️ Bir önceki ay 1-10. günler arasında ödeme yapıldığı için %5 erken ödeme indirimi uygulanmıştır. ';
+    autoNote='🏷️ Bir önceki ay 1-10. günler arasında ödeme yapıldığı için %'+EARLY_PCT+' erken ödeme indirimi uygulanmıştır. ';
+  }
+  if(refPctFor(discountData,mk)){
+    autoNote+='🤝 Öğrenci kazandırma hakkı kullanılmış, %'+refPctFor(discountData,mk)+' indirim uygulanmıştır. ';
   }
   if(lp&&lp.recId){
     const it=recData.find(r=>r.id===lp.recId);
@@ -5289,7 +5365,7 @@ async function makeVeliUrl(id,loadMsg){
       };
     });
 
-  // Kayıt tarihinden bugüne aylık ödeme takvimi — erken ödeyince bir sonraki ay %5 indirim uygulanır
+  // Kayıt tarihinden bugüne aylık ödeme takvimi — erken ödeyince bir sonraki ay %7 indirim uygulanır
   const baseFee=parseFloat(s.fee||0);
   let regY=0,regM2=0;
   if(s.registeredAt){const p=s.registeredAt.split('-');regY=+p[0];regM2=+p[1]-1;}
@@ -5304,14 +5380,14 @@ async function makeVeliUrl(id,loadMsg){
     const moPays=pays.filter(p=>p.date.startsWith(mk)&&!p.recId);
     const got=moPays.reduce((a,p)=>a+parseFloat(p.amount||0),0);
     const discApplied=monthDiscountApplied(pays,policyOn,cy,cm);
-    const monthFee=stuFeeMk(s,mk,discApplied);
+    const monthFee=stuFeeMk(s,mk,discApplied,disc);
     const exM2=exMonth(pays.filter(p=>p.date.startsWith(mk)));
     const exWaive2=exM2.on?Math.max(0,monthFee-got):0;
     const expected=(monthFee>0?monthFee+carryover:carryover)-exWaive2;
     const balance=expected-got;
     carryover=balance>0?balance:0;
     const earlyPay=hadEarlyPayment(pays,cy,cm);
-    schedule.push({l:MONTHS[cm]+' '+cy,paid:monthFee>0&&balance<=0,exp:expected,got:got,discApplied:discApplied,earlyPay:earlyPay});
+    schedule.push({l:MONTHS[cm]+' '+cy,paid:monthFee>0&&balance<=0,exp:expected,got:got,discApplied:discApplied,refPct:refPctFor(disc,mk),earlyPay:earlyPay});
     cm++; if(cm>11){cm=0;cy++;}
   }
   const last5=baseFee>0?schedule.slice(-5):[];
@@ -5395,7 +5471,7 @@ function renderVeliView(data){
         <div style="font-size:26px;margin-bottom:6px">✅</div>
         <div style="font-weight:700;font-size:13px">Ödeme Alınmıştır</div>
         <div style="font-size:11px;font-weight:700;margin-top:4px;opacity:.85">${p.got.toLocaleString('tr-TR')} ₺</div>
-        ${p.discApplied?'<div style="font-size:10px;font-weight:700;margin-top:6px;background:rgba(255,255,255,.2);border-radius:8px;padding:3px 6px">🏷️ %5 indirimli</div>':''}
+        ${p.discApplied?'<div style="font-size:10px;font-weight:700;margin-top:6px;background:rgba(255,255,255,.2);border-radius:8px;padding:3px 6px">🏷️ %7 erken ödeme indirimli</div>':''}${p.refPct?'<div style="font-size:10px;font-weight:700;margin-top:6px;background:rgba(255,255,255,.2);border-radius:8px;padding:3px 6px">🤝 %'+p.refPct+' kazandırma indirimli</div>':''}
         ${p.earlyPay?'<div style="font-size:10px;font-weight:700;margin-top:4px;opacity:.9">⏱ Erken ödendi</div>':''}
       </div>`;
     }
@@ -5412,13 +5488,13 @@ function renderVeliView(data){
       :p.st==='late'
       ?'<span style="background:var(--red-l);color:var(--red);border:1px solid #fecaca;border-radius:20px;padding:3px 11px;font-size:11px;font-weight:700;white-space:nowrap">⚠️ Gecikmeli</span>'
       :'';
-    const earlyBadge=p.early?'<span style="background:#e9ecf5;color:#2f3f73;border:1px solid #d3d9ea;border-radius:20px;padding:3px 11px;font-size:11px;font-weight:700;white-space:nowrap">🏷️ %5 İndirim Kazandı</span>':'';
+    const earlyBadge=p.early?'<span style="background:#e9ecf5;color:#2f3f73;border:1px solid #d3d9ea;border-radius:20px;padding:3px 11px;font-size:11px;font-weight:700;white-space:nowrap">🏷️ %7 İndirim Kazandı</span>':'';
     return `<div class="pay-row">
       <div style="min-width:0;flex:1">
         <div style="font-size:14px;font-weight:700">📅 ${p.dl}</div>
         ${p.desc?`<div style="font-size:12px;color:var(--muted);margin-top:2px;font-weight:600">💬 ${p.desc}</div>`:''}
         ${p.ex?`<div style="font-size:11px;color:#92400e;background:#fef3c7;border-radius:6px;padding:3px 7px;margin-top:4px;font-weight:700;display:inline-block">🎫 İstisna – ay tam ödendi sayıldı: ${repEsc(p.ex)}</div>`:''}
-        ${p.early?`<div style="font-size:11px;color:#2f3f73;margin-top:4px;font-weight:700">Ayın 1-10. günleri arasında ödendiği için bir sonraki ay ödemenize %5 indirim yansıtılacaktır.</div>`:''}
+        ${p.early?`<div style="font-size:11px;color:#2f3f73;margin-top:4px;font-weight:700">Ayın 1-10. günleri arasında ödendiği için bir sonraki ay ödemenize %7 indirim yansıtılacaktır.</div>`:''}
       </div>
       <div style="display:flex;align-items:center;gap:9px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end">
         ${badge}${earlyBadge}
@@ -5466,7 +5542,7 @@ function renderVeliView(data){
     ${data.nd?`<div class="card mb12" style="background:linear-gradient(135deg,#e9ecf5,#f5f3ff);border-color:#d3d9ea">
       <div style="display:flex;align-items:center;gap:10px">
         <div style="font-size:30px">🎉</div>
-        <div style="font-weight:600;font-size:13px;color:#26335e;line-height:1.5">Ayın 1-10. günleri arasında ödeme yaptığınız için <b>%5 indirim kazandınız</b>. İndiriminiz bir sonraki ay ödemenize yansıtılacaktır. Bu bilgi ayrıca mesaj ile tarafınıza iletilecektir.</div>
+        <div style="font-weight:600;font-size:13px;color:#26335e;line-height:1.5">Ayın 1-10. günleri arasında ödeme yaptığınız için <b>%7 indirim kazandınız</b>. İndiriminiz bir sonraki ay ödemenize yansıtılacaktır. Bu bilgi ayrıca mesaj ile tarafınıza iletilecektir.</div>
       </div>
     </div>`:''}
     <div class="card mb12">
