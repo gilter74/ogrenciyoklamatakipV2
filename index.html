@@ -982,7 +982,17 @@ body:has(#s-veli-view.active) .screen{padding-bottom:20px}
     <label class="lbl">Ödeme Tutarı (₺)</label>
     <input id="pay-amt" type="number" placeholder="Örn: 500" style="margin-bottom:12px;font-size:16px">
     <label class="lbl">Açıklama <span style="font-weight:600;text-transform:none;font-size:11px;color:var(--dim)">(isteğe bağlı)</span></label>
-    <input id="pay-desc" type="text" placeholder="Nakit, EFT, eksik ödeme vb." style="margin-bottom:16px;font-size:14px" onkeydown="if(event.key==='Enter')doSavePay()">
+    <input id="pay-desc" type="text" placeholder="Nakit, EFT, eksik ödeme vb." style="margin-bottom:12px;font-size:14px" onkeydown="if(event.key==='Enter')doSavePay()">
+    <div id="pay-ex-wrap" style="background:#fffbeb;border:1.5px solid #fcd34d;border-radius:11px;padding:10px 12px;margin-bottom:16px">
+      <label style="display:flex;align-items:center;gap:9px;cursor:pointer;font-weight:700;font-size:13px;color:#92400e">
+        <input type="checkbox" id="pay-ex" style="width:18px;height:18px;flex-shrink:0" onchange="onPayExChange()">
+        <span>🎫 İstisna: Bu ay tam ödendi say <span style="font-weight:600;font-size:11px">(örn. öğrenci ay ortasında başladı, yarım ay ücreti alındı)</span></span>
+      </label>
+      <div id="pay-ex-box" style="display:none;margin-top:9px">
+        <label class="lbl" style="color:#92400e">İstisna Açıklaması <span style="font-weight:600;text-transform:none;font-size:11px">(zorunlu)</span></label>
+        <input id="pay-ex-note" type="text" placeholder="Örn: Ay ortasında başladı, yarım ay ücreti alındı" style="font-size:14px;margin-bottom:0">
+      </div>
+    </div>
     <div style="display:flex;gap:8px">
       <button class="btn-ghost" style="flex:1;padding:11px;border-radius:9px" onclick="closePayModal()">İptal</button>
       <button class="btn btn-green" style="flex:2;padding:11px;border-radius:9px" onclick="doSavePay()">✅ Kaydet</button>
@@ -2277,7 +2287,7 @@ function renderCal(){
       else if(rng&&d>=rng.a&&d<=rng.b) cls+=' payday';
       if(ds===today&&!att) cls+=' today-r';
     } else {
-      if(paid){ cls+=' paid'; extra='<span class="pay-amt">₺'+paidSum+'</span>'; }
+      if(paid){ cls+=' paid'; extra='<span class="pay-amt">₺'+paidSum+(payData.some(p=>p.date===ds&&p.exception)?' 🎫':'')+'</span>'; }
       if(ds===today&&!paid) cls+=' today-r';
     }
     html+='<div class="'+cls+'" onclick="handleDay(\''+ds+'\','+d+')">'+d+extra+'</div>';
@@ -2348,6 +2358,10 @@ async function handleDay(ds,day){
       document.getElementById('pay-modal-date').textContent='📅 '+day+' '+MONTHS[curM]+' '+curY;
       document.getElementById('pay-amt').value='';
       document.getElementById('pay-desc').value='';
+      document.getElementById('pay-ex-wrap').style.display='block';
+      document.getElementById('pay-ex').checked=false;
+      document.getElementById('pay-ex-note').value='';
+      onPayExChange();
       fillPayTypes('');
       document.getElementById('pay-modal').classList.add('open');
       setTimeout(()=>document.getElementById('pay-amt').focus(),100);
@@ -2356,12 +2370,27 @@ async function handleDay(ds,day){
 }
 
 function closePayModal(){document.getElementById('pay-modal').classList.remove('open');payModalDate=null;}
+function onPayExChange(){
+  const on=document.getElementById('pay-ex').checked&&!((document.getElementById('pay-type')||{}).value);
+  document.getElementById('pay-ex-box').style.display=on?'block':'none';
+}
+// İstisna: ay içinde "istisna" işaretli ödeme varsa, o ayın ders ücreti eksiği (örn. yarım ay) kapanmış sayılır.
+function exMonth(moPays){
+  const ex=moPays.filter(p=>p.exception&&!p.recId);
+  return {on:ex.length>0,notes:ex.map(p=>p.exNote||p.desc||'').filter(Boolean).join('; ')};
+}
 async function doSavePay(){
   const a=document.getElementById('pay-amt').value.trim();
   if(!a||isNaN(a)){showConf('Lütfen geçerli bir tutar girin.','⚠️','Tamam',()=>{});return;}
   let desc=document.getElementById('pay-desc').value.trim();
   const rid=(document.getElementById('pay-type')||{}).value||'';
   const pay={id:String(Date.now()),date:payModalDate,amount:a,desc:desc};
+  const exOn=!!document.getElementById('pay-ex').checked&&!rid;
+  if(exOn){
+    const exNote=document.getElementById('pay-ex-note').value.trim();
+    if(!exNote){showConf('İstisna için lütfen açıklama yazın (örn. ay ortasında başladı, yarım ay ücreti alındı).','⚠️','Tamam',()=>{});return;}
+    pay.exception=true;pay.exNote=exNote;
+  }
   if(rid){
     const it=recData.find(r=>r.id===rid);
     if(it){
@@ -2392,6 +2421,7 @@ function renderPayList(){
       '<div style="min-width:0;flex:1">'+
         '<div style="font-size:14px;font-weight:700">📅 '+d.getDate()+' '+MONTHS[d.getMonth()]+' '+d.getFullYear()+'</div>'+
         (p.recId?'<div style="font-size:11px;color:#b45309;font-weight:600;margin-top:2px">🛍️ Alınan mal / alacak ödemesi</div>':'')+
+        (p.exception?'<div style="font-size:11px;color:#92400e;background:#fef3c7;border-radius:6px;padding:3px 7px;font-weight:700;margin-top:3px;display:inline-block">🎫 İstisna – ay tam ödendi sayıldı'+(p.exNote?': '+p.exNote:'')+'</div>':'')+
         (p.desc?'<div style="font-size:12px;color:var(--muted);margin-top:2px;font-weight:600">💬 '+p.desc+'</div>':'')+
       '</div>'+
       '<div style="display:flex;align-items:center;gap:9px;flex-shrink:0">'+
@@ -2471,7 +2501,10 @@ function renderYearlyTable(){
     const earlyPay=hadEarlyPayment(payData,tableYear,m);
     const lPaid=moPays.reduce((a,p)=>a+parseFloat(p.amount||0),0);
     const desc=moPaysAll.map(p=>p.desc).filter(Boolean).join(', ');
-    const lExp=fee>0?fee+carryover:carryover;
+    const exM=exMonth(moPaysAll);
+    // İstisna: bu ayın ders ücreti eksiği (yarım ay vb.) silinir; önceki aydan devreden borç korunur
+    const exWaive=exM.on?Math.max(0,fee-lPaid):0;
+    const lExp=(fee>0?fee+carryover:carryover)-exWaive;
     const lBal=lExp-lPaid;
     const newCarryover=lBal>0?lBal:0;
     // Alacaklar / alınan mal: ay başı kalan + bu ay eklenen − bu ay ödenen
@@ -2499,12 +2532,13 @@ function renderYearlyTable(){
     let stTxt='',stColor='',rowBg='';
     if(paid===0&&expected===0){stTxt='—';stColor='var(--dim)';rowBg='';}
     else if(paid===0){stTxt='Ödeme Yok';stColor='#991b1b';rowBg='#fff5f5';}
-    else if(balance<=0){stTxt='✅ Tam';stColor='#065f46';rowBg='#f0fdf4';}
+    else if(balance<=0){stTxt=exM.on?'✅ Tam (İstisna)':'✅ Tam';stColor='#065f46';rowBg='#f0fdf4';}
     else{stTxt='⚠ Eksik';stColor='#92400e';rowBg='#fefce8';}
     const parts=[];
     if(lRemShow>0)parts.push('📚 Ders ücreti '+fmtTL(lRemShow)+' ₺');
     remLines.forEach(x=>parts.push(x));
-    const tags=(discApplied?'<div style="font-size:10px;color:#2f3f73;font-weight:600;margin-top:2px">🏷️ %5 indirim uygulandı</div>':'')+
+    const tags=(exM.on?'<div style="font-size:10px;color:#92400e;background:#fef3c7;border-radius:6px;padding:2px 6px;font-weight:700;margin-top:3px;display:inline-block">🎫 İstisna: '+repEsc(exM.notes||'Kısmi ay ücreti')+(exWaive>0?' (tam ücret '+fmtTL(fee)+' ₺, tam ödendi sayıldı)':'')+'</div>':'')+
+      (discApplied?'<div style="font-size:10px;color:#2f3f73;font-weight:600;margin-top:2px">🏷️ %5 indirim uygulandı</div>':'')+
       (earlyPay?'<div style="font-size:10px;color:#059669;font-weight:600;margin-top:2px">⏱ Erken ödendi (sonraki ay %5 indirim kazandırır)</div>':'')+
       addLines.map(t=>'<div style="font-size:10px;color:#b45309;font-weight:600;margin-top:2px">➕ '+t+'</div>').join('')+
       ((iExp>0||iRem>0)&&balance>0?'<div style="font-size:10px;color:#991b1b;font-weight:600;margin-top:2px">Kalan: '+parts.join(' + ')+'</div>':'');
@@ -2670,6 +2704,7 @@ function fillPayTypes(sel){
 }
 function onPayTypeChange(){
   const rid=document.getElementById('pay-type').value;
+  try{document.getElementById('pay-ex-wrap').style.display=rid?'none':'block';onPayExChange();}catch(e){}
   if(!rid)return;
   const r=recData.find(x=>x.id===rid);
   if(r)document.getElementById('pay-amt').value=recRemain(r,payData);
@@ -2920,6 +2955,9 @@ function openReceipt(){
     const itName=(it?it.desc:'Alınan Mal / Alacak');
     autoNote+='🛍️ '+itName+' ödemesi alınmıştır. '+(rem>0?'Bu alacaktan kalan: '+fmtTL(rem)+' ₺.':'Bu alacak kapanmıştır.');
     setRecLessonOption('🛍️ '+itName);
+  } else if(fee>0&&totalPaid>0&&exMonth(moPays).on){
+    const exn=exMonth(moPays).notes;
+    autoNote+='🎫 İstisna: '+(exn||'Kısmi ay ücreti')+'. Bu ay ödemesi tam ödendi sayılmıştır.';
   } else if(fee>0&&totalPaid>0){
     const bal=fee-totalPaid;
     autoNote+=bal<=0?'Tam ödeme alınmıştır.':MONTHS[curM]+' ayından '+bal.toLocaleString('tr-TR')+' ₺ bakiyeniz kalmıştır.';
@@ -3439,8 +3477,8 @@ async function exportAllPayments(){
     const rng=parseRange(s.payDay);
     pays.forEach(p=>{
       const d=new Date(p.date+'T12:00:00').getDate();
-      const status=p.recId?'Alınan mal / alacak':rng?(d>=rng.a&&d<=rng.b?'Zamanında':'Gecikmeli'):'—';
-      rows.push([p.date,s.name+' '+s.surname,s.education,parseFloat(p.amount),p.desc||'',status]);
+      const status=p.recId?'Alınan mal / alacak':p.exception?'İstisna (tam ödendi)':rng?(d>=rng.a&&d<=rng.b?'Zamanında':'Gecikmeli'):'—';
+      rows.push([p.date,s.name+' '+s.surname,s.education,parseFloat(p.amount),[p.desc,p.exception?('İstisna: '+(p.exNote||'')):''].filter(Boolean).join(' | '),status]);
     });
   });
   const ws=XLSX.utils.aoa_to_sheet(rows);
@@ -5182,6 +5220,7 @@ async function makeVeliUrl(id,loadMsg){
         amt:parseFloat(p.amount||0),
         desc:p.desc||'',
         st:(onTime===null||p.recId)?'none':(onTime?'ontime':'late'),
+        ex:p.exception?(p.exNote||'Kısmi ay ücreti'):'',
         early:policyOn&&day>=1&&day<=10&&!p.recId
       };
     });
@@ -5202,7 +5241,9 @@ async function makeVeliUrl(id,loadMsg){
     const got=moPays.reduce((a,p)=>a+parseFloat(p.amount||0),0);
     const discApplied=monthDiscountApplied(pays,policyOn,cy,cm);
     const monthFee=effectiveFee(baseFee,discApplied);
-    const expected=monthFee>0?monthFee+carryover:carryover;
+    const exM2=exMonth(pays.filter(p=>p.date.startsWith(mk)));
+    const exWaive2=exM2.on?Math.max(0,monthFee-got):0;
+    const expected=(monthFee>0?monthFee+carryover:carryover)-exWaive2;
     const balance=expected-got;
     carryover=balance>0?balance:0;
     const earlyPay=hadEarlyPayment(pays,cy,cm);
@@ -5312,6 +5353,7 @@ function renderVeliView(data){
       <div style="min-width:0;flex:1">
         <div style="font-size:14px;font-weight:700">📅 ${p.dl}</div>
         ${p.desc?`<div style="font-size:12px;color:var(--muted);margin-top:2px;font-weight:600">💬 ${p.desc}</div>`:''}
+        ${p.ex?`<div style="font-size:11px;color:#92400e;background:#fef3c7;border-radius:6px;padding:3px 7px;margin-top:4px;font-weight:700;display:inline-block">🎫 İstisna – ay tam ödendi sayıldı: ${repEsc(p.ex)}</div>`:''}
         ${p.early?`<div style="font-size:11px;color:#2f3f73;margin-top:4px;font-weight:700">Ayın 1-10. günleri arasında ödendiği için bir sonraki ay ödemenize %5 indirim yansıtılacaktır.</div>`:''}
       </div>
       <div style="display:flex;align-items:center;gap:9px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end">
