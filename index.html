@@ -325,6 +325,7 @@ body:has(#s-veli-view.active) .screen{padding-bottom:20px}
     <button class="tile" onclick="go('s-week')"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg><span>Haftalık Program</span></button>
     <button class="tile" onclick="go('s-hw')"><svg viewBox="0 0 24 24"><path d="M5 4h11l3 3v13H5z"/><path d="M8 11h8M8 15h8M8 7h4"/></svg><span>Ödev Takibi<small>Haftalık · Aylık · Özet</small></span></button>
     <button class="tile" onclick="go('s-veli-share')"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6M16 5a3 3 0 010 6M18 14c1.8.8 3 2.6 3 5"/></svg><span>Veli Paylaşımı</span></button>
+    <button class="tile" style="border:2px solid #7c3aed;background:#f5f3ff" onclick="go('s-chronic')"><svg viewBox="0 0 24 24" style="stroke:#7c3aed"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span style="color:#5b21b6">Geç Ödeyenler (2 ay)<small id="chronic-cnt" style="color:#7c3aed;font-weight:700"></small></span></button>
     <button class="tile" onclick="openAnalysis()"><svg viewBox="0 0 24 24"><path d="M4 20V4M4 20h16M8 16v-4M12 16V8M16 16v-6"/></svg><span>Gelir &amp; Ödeme Analizi</span></button>
     <button class="tile" onclick="go('s-fiyat')"><svg viewBox="0 0 24 24"><path d="M3 12V4h8l10 10-8 8L3 12z"/><circle cx="7.5" cy="8.5" r="1"/></svg><span>Fiyat Güncelleyici</span></button>
     <button class="tile" onclick="openArchive()"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v11a1 1 0 001 1h12a1 1 0 001-1V8M10 12h4"/></svg><span>Eski Kursiyer Arşivi</span></button>
@@ -697,6 +698,17 @@ body:has(#s-veli-view.active) .screen{padding-bottom:20px}
     <button class="btn btn-purple btn-sm" onclick="saveDiscount()">💾 Kaydet</button>
   </div>
   </div>
+</div>
+
+<!-- GEÇ ÖDEYENLER (2 AY) SCREEN -->
+<div id="s-chronic" class="screen">
+  <button class="btn-ghost mb14" onclick="go('s-list')">← Geri</button>
+  <div class="app-hdr" style="padding:18px 16px 16px;background:linear-gradient(135deg,#4c1d95,#7c3aed)">
+    <div style="font-size:36px">🟣</div>
+    <h1 style="font-size:22px">Geç Ödeyenler</h1>
+    <p>Art arda 2 ay ayın 20'sinden sonra ödeyenler</p>
+  </div>
+  <div id="chronic-body"></div>
 </div>
 
 <!-- ANALYSIS SCREEN -->
@@ -1210,6 +1222,7 @@ function go(id){
   if(id==='s-pros') renderPros();
   if(id==='s-daily') openDaily();
   if(id==='s-hw') openHwScreen();
+  if(id==='s-chronic') renderChronic();
   const bm={'s-list':'home','s-daily':'daily','s-week':'week','s-veli-share':'veli'};
   ['home','daily','week','veli'].forEach(k=>{const b=document.getElementById('bn-'+k);if(b)b.className=(bm[id]===k)?'on':'';});
 }
@@ -1295,14 +1308,15 @@ function stuRow(s,dupSet){
         const c=eduColor(s.education);
   const fn=((s.name||'')+' '+(s.surname||'')).trim().toLocaleUpperCase('tr').replace(/\s+/g,' ');
         const dup=dupSet.has(fn);
+        let chr=false;try{chr=!!chronicInfo(s);}catch(e){}
         return`
-      <div class="s-row" style="border-color:${dup?'#dc2626':c.border};background:${c.bg}" onclick="openDetNewWin('${s.id}')">
+      <div class="s-row" style="border-color:${dup?'#dc2626':(chr?'#7c3aed':c.border)};background:${chr?'#f5f3ff':c.bg};${chr?'border-width:2px;box-shadow:0 0 0 3px rgba(124,58,237,.18);':''}" onclick="openDetNewWin('${s.id}')">
         <div class="avatar" style="width:48px;height:48px;background:${c.border}">${eduIcon(s.education)}</div>
         <div style="flex:1;min-width:0">
           <div style="font-weight:700;font-size:15px">${s.name} ${s.surname}${dup?' <span style="color:#dc2626;font-size:11px;font-weight:700">⚠️ aynı isim</span>':''}</div>
           <div style="font-size:12px;color:var(--muted);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${s.education} · ${s.program}</div>
           <div style="font-size:12px;color:var(--dim);margin-top:1px">${s.phone?'📞 '+s.phone:''}${s.momPhone?' · 👩 '+s.momPhone:''}${dup?' · Kayıt no: '+s.id:''}</div>
-          ${recBadge(s.id)}${rcptBadge(s.id)}
+          ${recBadge(s.id)}${rcptBadge(s.id)}${chr?chronicBadge(s):''}
         </div>
         <button class="btn-del" onclick="event.stopPropagation();delStudent('${s.id}')">Sil</button>
       </div>`;
@@ -1324,6 +1338,7 @@ function renderList(){
   try{umRender();}catch(e){}
   renderRecBanner();
   try{renderLateBanner();}catch(e){}
+  try{updateChronicTile();}catch(e){}
   renderDupNameWarning();
   const q=(document.getElementById('search').value||'').toLowerCase();
   const shown=students.filter(s=>(s.name+' '+s.surname).toLowerCase().includes(q));
@@ -3028,6 +3043,7 @@ function startLateWatch(){
     renderLateBanner();
     const a=document.querySelector('.screen.active');
     if(a&&a.id==='s-list')renderList();
+    if(a&&a.id==='s-chronic')renderChronic();
   };
   try{
     db.ref('payments').on('value',sn=>{lateAllPay=sn.val()||{};refresh();});
@@ -3035,6 +3051,66 @@ function startLateWatch(){
     db.ref('lateRemind').on('value',sn=>{lateLog=sn.val()||{};renderLateBanner();});
   }catch(e){}
   setTimeout(()=>{const c=document.getElementById('late-card');if(c){c.classList.add('pulse');setTimeout(()=>c.classList.remove('pulse'),3500);}},1500);
+}
+
+// ══ 2 AY ÜST ÜSTE 20'SİNDEN SONRA ÖDEYENLER ══════════════════════════
+const CHRONIC_MIN=2;
+function chronicInfo(st){
+  try{
+    if(!st||!(parseFloat(String(st.fee||'').replace(',','.'))>0||parseFloat(String(st.lessonFee||'').replace(',','.'))>0))return null;
+    const now=new Date();
+    const pays=Object.values(lateAllPay[st.id]||{}).filter(x=>x&&x.date&&!x.recId);
+    const reg=st.registeredAt||'';
+    let y=now.getFullYear(),m=now.getMonth();
+    const months=[];
+    for(let i=0;i<12;i++){
+      const mk=mkey(y,m);
+      // kayıttan önceki aylar / kayıt ayında 20'sinden sonra kayıt olanlar değerlendirilmez
+      if(reg&&(reg.slice(0,7)>mk||(reg.slice(0,7)===mk&&parseInt(reg.slice(8,10))>LATE_DAY)))break;
+      const mp=pays.filter(x=>x.date.startsWith(mk)).map(x=>x.date).sort();
+      const first=mp[0]||'';
+      const isCur=(y===now.getFullYear()&&m===now.getMonth());
+      let late;
+      if(first)late=parseInt(first.slice(8,10))>LATE_DAY;
+      else if(isCur&&now.getDate()<=LATE_DAY){late=null;}   // henüz belli değil
+      else late=true;
+      if(late===null){ m--; if(m<0){m=11;y--;} continue; }
+      if(!late)break;
+      months.push({l:MONTHS[m]+' '+y,first:first});
+      m--; if(m<0){m=11;y--;}
+    }
+    if(months.length<CHRONIC_MIN)return null;
+    return {n:months.length,months:months.reverse()};
+  }catch(e){return null;}
+}
+function chronicList(){
+  const out=[];
+  students.forEach(st=>{const c=chronicInfo(st);if(c)out.push({s:st,c:c});});
+  return out.sort((a,b)=>b.c.n-a.c.n);
+}
+function chronicBadge(st){
+  const c=chronicInfo(st);if(!c)return '';
+  return '<div style="display:inline-block;margin-top:5px;background:#7c3aed;color:#fff;border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700">🟣 '+c.n+' aydır ayın 20\'sinden sonra ödüyor</div>';
+}
+function updateChronicTile(){
+  const el=document.getElementById('chronic-cnt');if(!el)return;
+  const n=chronicList().length;
+  el.textContent=n?n+' öğrenci':'Şu an yok';
+}
+function renderChronic(){
+  const box=document.getElementById('chronic-body');if(!box)return;
+  const list=chronicList();
+  if(!list.length){box.innerHTML='<div class="card empty"><div style="font-size:44px;margin-bottom:10px">✅</div><p style="color:var(--muted);font-size:15px;font-weight:700">Ödemesini art arda 2 ay ayın 20\'sinden sonra yapan öğrenci yok.</p></div>';return;}
+  box.innerHTML='<div style="font-size:12px;color:var(--muted);font-weight:700;margin-bottom:10px;line-height:1.5">Art arda en az '+CHRONIC_MIN+' ay boyunca ödemesini ayın '+LATE_DAY+'\'sinden sonra yapan (veya hiç yapmayan) öğrenciler. Toplam: <b>'+list.length+'</b></div>'+
+  list.map(x=>{
+    const st=x.s;
+    return '<div class="s-row" style="border-color:#7c3aed;background:#f5f3ff;flex-direction:column;align-items:stretch;gap:6px" onclick="openDetNewWin(\''+st.id+'\')">'+
+      '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><div style="font-weight:700;font-size:15px;min-width:0">'+repEsc(st.name+' '+st.surname)+'</div>'+
+      '<span style="background:#7c3aed;color:#fff;border-radius:20px;padding:3px 11px;font-size:11px;font-weight:700;white-space:nowrap">'+x.c.n+' ay üst üste</span></div>'+
+      '<div style="font-size:12px;color:var(--muted);font-weight:600">'+repEsc((st.education||'')+' · '+(st.program||''))+'</div>'+
+      '<div style="display:flex;flex-wrap:wrap;gap:5px">'+x.c.months.map(mo=>'<span style="background:#ede9fe;color:#5b21b6;border:1px solid #c4b5fd;border-radius:8px;padding:3px 8px;font-size:11px;font-weight:700">'+mo.l+': '+(mo.first?repDL(mo.first)+' tarihinde ödedi':'ödenmedi')+'</span>').join('')+'</div>'+
+      '<div style="font-size:12px;color:var(--dim);font-weight:600">'+(st.phone?'📞 '+st.phone:'')+(st.momPhone?' · 👩 '+st.momPhone:'')+(st.dadPhone?' · 👨 '+st.dadPhone:'')+'</div></div>';
+  }).join('');
 }
 
 // ══ EXCEL (bireysel) ══════════════════════════════════════════════════
