@@ -426,6 +426,21 @@ body:has(#s-veli-view.active) .screen{padding-bottom:20px}
         <button type="button" class="pr-btn" data-v="0" onclick="selKdv('r','0')">🚫 KDV Hariç</button>
       </div>
       <input type="hidden" id="r-kdv" value="0">
+      <div style="margin-top:14px;background:#fffbeb;border:1.5px solid #fcd34d;border-radius:11px;padding:11px 13px">
+        <label style="display:flex;align-items:center;gap:9px;cursor:pointer;font-weight:700;font-size:13px;color:#92400e">
+          <input type="checkbox" id="r-ex-on" style="width:18px;height:18px;flex-shrink:0" onchange="onExFormChange('r')">
+          <span>🎫 İstisna: Bir ay için farklı (örn. yarım ay) ücret</span>
+        </label>
+        <div id="r-ex-box" style="display:none;margin-top:10px">
+          <label class="lbl" style="color:#92400e">Hangi ay için?</label>
+          <input id="r-ex-ym" type="month" style="margin-bottom:10px;font-size:15px" oninput="onExFormChange('r')">
+          <label class="lbl" style="color:#92400e">O ay alınacak ücret (₺)</label>
+          <input id="r-ex-amt" type="number" placeholder="Örn: 400" style="margin-bottom:10px;font-size:16px;font-weight:700" oninput="onExFormChange('r')">
+          <label class="lbl" style="color:#92400e">Açıklama <span style="font-weight:600;text-transform:none;font-size:11px">(zorunlu)</span></label>
+          <input id="r-ex-note" type="text" placeholder="Örn: Ay ortasında başladı, yarım ay ücreti" style="margin-bottom:10px;font-size:14px">
+          <div id="r-ex-hint" style="font-size:12px;font-weight:700;color:#92400e;background:#fef3c7;border-radius:8px;padding:8px 10px;line-height:1.5"></div>
+        </div>
+      </div>
     </div>
     <div class="section-lbl">💳 Ödeme Taahhüdü</div>
     <div style="background:#fefce8;border:1px solid #fde047;border-radius:11px;padding:12px 13px;margin-bottom:16px">
@@ -520,6 +535,21 @@ body:has(#s-veli-view.active) .screen{padding-bottom:20px}
         <button type="button" class="pr-btn" data-v="0" onclick="selKdv('e','0')">🚫 KDV Hariç</button>
       </div>
       <input type="hidden" id="e-kdv" value="0">
+      <div style="margin-top:14px;background:#fffbeb;border:1.5px solid #fcd34d;border-radius:11px;padding:11px 13px">
+        <label style="display:flex;align-items:center;gap:9px;cursor:pointer;font-weight:700;font-size:13px;color:#92400e">
+          <input type="checkbox" id="e-ex-on" style="width:18px;height:18px;flex-shrink:0" onchange="onExFormChange('e')">
+          <span>🎫 İstisna: Bir ay için farklı (örn. yarım ay) ücret</span>
+        </label>
+        <div id="e-ex-box" style="display:none;margin-top:10px">
+          <label class="lbl" style="color:#92400e">Hangi ay için?</label>
+          <input id="e-ex-ym" type="month" style="margin-bottom:10px;font-size:15px" oninput="onExFormChange('e')">
+          <label class="lbl" style="color:#92400e">O ay alınacak ücret (₺)</label>
+          <input id="e-ex-amt" type="number" placeholder="Örn: 400" style="margin-bottom:10px;font-size:16px;font-weight:700" oninput="onExFormChange('e')">
+          <label class="lbl" style="color:#92400e">Açıklama <span style="font-weight:600;text-transform:none;font-size:11px">(zorunlu)</span></label>
+          <input id="e-ex-note" type="text" placeholder="Örn: Ay ortasında başladı, yarım ay ücreti" style="margin-bottom:10px;font-size:14px">
+          <div id="e-ex-hint" style="font-size:12px;font-weight:700;color:#92400e;background:#fef3c7;border-radius:8px;padding:8px 10px;line-height:1.5"></div>
+        </div>
+      </div>
     </div>
     <div class="section-lbl">💳 Ödeme Taahhüdü</div>
     <div style="background:#fefce8;border:1px solid #fde047;border-radius:11px;padding:12px 13px;margin-bottom:16px">
@@ -1718,6 +1748,7 @@ function resetReg(){
   });
   document.querySelectorAll('#r-pr-btns .pr-btn').forEach(b=>b.classList.remove('sel'));
   selPkg('r','');
+  try{fillExForm('r',null);}catch(e){}
   const rKdv=document.getElementById('r-kdv');if(rKdv)rKdv.value='0';
   document.querySelectorAll('#r-kdv-btns .pr-btn').forEach(b=>b.classList.remove('sel'));
   renderSchedRows('r',[]);
@@ -1817,8 +1848,36 @@ function selKdv(p,v){
   document.querySelectorAll('#'+p+'-kdv-btns .pr-btn').forEach(b=>b.classList.toggle('sel',b.dataset.v===v));
 }
 
+function onExFormChange(p){
+  const on=document.getElementById(p+'-ex-on').checked;
+  document.getElementById(p+'-ex-box').style.display=on?'block':'none';
+  if(!on)return;
+  const ymEl=document.getElementById(p+'-ex-ym');
+  if(!ymEl.value){const n=new Date();ymEl.value=mkey(n.getFullYear(),n.getMonth());}
+  const ym=ymEl.value.split('-');
+  const amt=parseFloat(document.getElementById(p+'-ex-amt').value||0);
+  const fee=parseFloat(document.getElementById(p+'-fee').value||0);
+  document.getElementById(p+'-ex-hint').innerHTML='⚠️ Bu ücret <b>sadece '+MONTHS[+ym[1]-1]+' '+ym[0]+'</b> ayı için geçerlidir'+(amt>0?' (<b>'+amt.toLocaleString('tr-TR')+' ₺</b>)':'')+'. Sonraki aylar normal aylık bedel'+(fee>0?' (<b>'+fee.toLocaleString('tr-TR')+' ₺</b>)':'')+' üzerinden hesaplanır.';
+}
+function exFromForm(p){
+  if(!document.getElementById(p+'-ex-on').checked)return null;
+  return{ym:document.getElementById(p+'-ex-ym').value,amount:parseFloat(document.getElementById(p+'-ex-amt').value||0),note:document.getElementById(p+'-ex-note').value.trim()};
+}
+function fillExForm(p,s){
+  const e=s&&s.exMonth;
+  document.getElementById(p+'-ex-on').checked=!!e;
+  document.getElementById(p+'-ex-ym').value=e?e.ym:'';
+  document.getElementById(p+'-ex-amt').value=e?e.amount:'';
+  document.getElementById(p+'-ex-note').value=e?(e.note||''):'';
+  onExFormChange(p);
+}
+// Öğrenciye özel tek aylık istisna ücreti: yalnızca o ay geçerli, diğer aylar normal bedel
+function stuExFor(s,mk){return(s&&s.exMonth&&s.exMonth.ym===mk&&s.exMonth.amount>=0)?s.exMonth:null;}
+function stuFeeMk(s,mk,discApplied){const ex=stuExFor(s,mk);return ex?parseFloat(ex.amount||0):effectiveFee(s&&s.fee,discApplied);}
+
 function readForm(p){
   return{
+    exMonth:exFromForm(p),
     name:document.getElementById(p+'-name').value.trim(),
     surname:document.getElementById(p+'-surname').value.trim(),
     phone:document.getElementById(p+'-phone').value.trim(),
@@ -1839,6 +1898,7 @@ function readForm(p){
 
 function validate(d,p){
   let ok=true;
+  if(d.exMonth&&(!d.exMonth.ym||!(d.exMonth.amount>=0)||isNaN(d.exMonth.amount)||!d.exMonth.note)){showConf('İstisna için ay, ücret tutarı ve açıklama girin.','⚠️','Tamam',()=>{});return false;}
   const ep=p==='r'?'r-err-':'e-err-';
   const chk=(v,iid,eid,msg)=>{if(!v){document.getElementById(iid).classList.add('err');document.getElementById(eid).textContent='⚠ '+msg;ok=false;}};
   chk(d.name,    p+'-name',    ep+'name',    'Ad zorunludur');
@@ -1884,6 +1944,7 @@ function fillEdit(){
   document.getElementById('e-dad-phone').value=s.dadPhone||'';
   document.querySelectorAll('#e-pr-btns .pr-btn').forEach(b=>b.classList.toggle('sel',b.dataset.v===(s.payDay||'')));
   renderSchedRows('e',s.schedule||[]);
+  fillExForm('e',s);
   ['e-err-name','e-err-surname','e-err-edu','e-err-prog'].forEach(id=>{
     const el=document.getElementById(id);if(el)el.textContent='';
   });
@@ -1976,6 +2037,7 @@ function renderDetail(){
           ${s.lessonFee?'<span class="badge" style="background:#f0fdf4;color:#166534;border:1px solid #86efac">📚 '+parseFloat(s.lessonFee).toLocaleString('tr-TR')+' ₺/ders</span>':''}
           ${s.fee?(s.kdvDahil?'<span class="badge" style="background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe">✅ KDV Dahil</span>':'<span class="badge" style="background:#f3f4f6;color:#4b5563;border:1px solid #d1d5db">🚫 KDV Hariç</span>'):''}
           ${rng?'<span class="badge" style="background:#fef9c3;color:#713f12;border:1px solid #fde047">💳 Her ay '+s.payDay+'. günler</span>':''}
+          ${s.exMonth?'<span class="badge" style="background:#fef3c7;color:#92400e;border:1px solid #fcd34d;white-space:normal">🎫 İstisna: yalnızca '+MONTHS[+s.exMonth.ym.split('-')[1]-1]+' '+s.exMonth.ym.split('-')[0]+' ayı '+parseFloat(s.exMonth.amount).toLocaleString('tr-TR')+' ₺'+(s.fee?' — sonraki aylar '+parseFloat(s.fee).toLocaleString('tr-TR')+' ₺':'')+(s.exMonth.note?' ('+repEsc(s.exMonth.note)+')':'')+'</span>':''}
           ${s.schedule&&s.schedule.length?'<span class="badge" style="background:#ecfdf5;color:#15803d;border:1px solid #86efac">📅 '+s.schedule.map(sl=>SCHED_DAYS[sl.day]+' '+sl.time).join(' · ')+'</span>':''}
         </div>
         <div style="margin-top:10px;display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12px;font-weight:700">
@@ -2497,7 +2559,8 @@ function renderYearlyTable(){
     const moPays=moPaysAll.filter(p=>!p.recId);
     if(isFuture&&moPaysAll.length===0)continue;
     const discApplied=monthDiscountApplied(payData,policyOn,tableYear,m);
-    const fee=effectiveFee(baseFee,discApplied);
+    const stuEx=stuExFor(s,mk);
+    const fee=stuEx?parseFloat(stuEx.amount||0):effectiveFee(baseFee,discApplied);
     const earlyPay=hadEarlyPayment(payData,tableYear,m);
     const lPaid=moPays.reduce((a,p)=>a+parseFloat(p.amount||0),0);
     const desc=moPaysAll.map(p=>p.desc).filter(Boolean).join(', ');
@@ -2537,7 +2600,8 @@ function renderYearlyTable(){
     const parts=[];
     if(lRemShow>0)parts.push('📚 Ders ücreti '+fmtTL(lRemShow)+' ₺');
     remLines.forEach(x=>parts.push(x));
-    const tags=(exM.on?'<div style="font-size:10px;color:#92400e;background:#fef3c7;border-radius:6px;padding:2px 6px;font-weight:700;margin-top:3px;display:inline-block">🎫 İstisna: '+repEsc(exM.notes||'Kısmi ay ücreti')+(exWaive>0?' (tam ücret '+fmtTL(fee)+' ₺, tam ödendi sayıldı)':'')+'</div>':'')+
+    const tags=(stuEx?'<div style="font-size:10px;color:#92400e;background:#fef3c7;border-radius:6px;padding:2px 6px;font-weight:700;margin-top:3px;display:inline-block">🎫 İstisna: sadece bu ay '+fmtTL(stuEx.amount)+' ₺ (normal bedel '+fmtTL(baseFee)+' ₺)'+(stuEx.note?' — '+repEsc(stuEx.note):'')+'</div>':'')+
+      (exM.on?'<div style="font-size:10px;color:#92400e;background:#fef3c7;border-radius:6px;padding:2px 6px;font-weight:700;margin-top:3px;display:inline-block">🎫 İstisna: '+repEsc(exM.notes||'Kısmi ay ücreti')+(exWaive>0?' (tam ücret '+fmtTL(fee)+' ₺, tam ödendi sayıldı)':'')+'</div>':'')+
       (discApplied?'<div style="font-size:10px;color:#2f3f73;font-weight:600;margin-top:2px">🏷️ %5 indirim uygulandı</div>':'')+
       (earlyPay?'<div style="font-size:10px;color:#059669;font-weight:600;margin-top:2px">⏱ Erken ödendi (sonraki ay %5 indirim kazandırır)</div>':'')+
       addLines.map(t=>'<div style="font-size:10px;color:#b45309;font-weight:600;margin-top:2px">➕ '+t+'</div>').join('')+
@@ -2941,7 +3005,7 @@ function openReceipt(){
   const lp=[...moPays].sort((a,b)=>b.date.localeCompare(a.date))[0];
   const totalPaid=moPays.filter(p=>!p.recId).reduce((a,p)=>a+parseFloat(p.amount||0),0);
   const discApplied=monthDiscountApplied(payData,!!discountData.enabled,curY,curM);
-  const fee=effectiveFee(s.fee,discApplied);
+  const fee=stuFeeMk(s,mk,discApplied);
   document.getElementById('rec-amount').value=lp?lp.amount:(fee||'');
   document.getElementById('rec-month').selectedIndex=curM;
   document.getElementById('rec-year').value=curY;
@@ -3265,7 +3329,7 @@ function getMonthsBack(n){
 function calcMonthData(mk){
   let expected=0,received=0,chess=0,music=0,chessExp=0,musicExp=0;
   students.forEach(s=>{
-    const fee=parseFloat(s.fee||0);
+    const fee=stuExFor(s,mk)?parseFloat(stuExFor(s,mk).amount||0):parseFloat(s.fee||0);
     const pays=Object.values(allPayCache[s.id]||{}).filter(p=>p.date.startsWith(mk)&&!p.recId);
     const rec=pays.reduce((a,p)=>a+parseFloat(p.amount||0),0);
     const isChess=s.education&&s.education.includes('Satranç');
@@ -3452,7 +3516,7 @@ function exportAnalysisExcel(){
   const stuRows=[['Ad Soyad','Eğitim','Aylık Ücret (₺)','Bu Ay Alınan (₺)','Bu Ay Eksik (₺)','Durum']];
   const curMk=mkey(new Date().getFullYear(),new Date().getMonth());
   students.forEach(s=>{
-    const fee=parseFloat(s.fee||0);
+    const fee=stuExFor(s,curMk)?parseFloat(stuExFor(s,curMk).amount||0):parseFloat(s.fee||0);
     const pays=Object.values(allPayCache[s.id]||{}).filter(p=>p.date.startsWith(curMk)&&!p.recId);
     const rec=pays.reduce((a,p)=>a+parseFloat(p.amount||0),0);
     const missing=Math.max(0,fee-rec);
@@ -5240,7 +5304,7 @@ async function makeVeliUrl(id,loadMsg){
     const moPays=pays.filter(p=>p.date.startsWith(mk)&&!p.recId);
     const got=moPays.reduce((a,p)=>a+parseFloat(p.amount||0),0);
     const discApplied=monthDiscountApplied(pays,policyOn,cy,cm);
-    const monthFee=effectiveFee(baseFee,discApplied);
+    const monthFee=stuFeeMk(s,mk,discApplied);
     const exM2=exMonth(pays.filter(p=>p.date.startsWith(mk)));
     const exWaive2=exM2.on?Math.max(0,monthFee-got):0;
     const expected=(monthFee>0?monthFee+carryover:carryover)-exWaive2;
