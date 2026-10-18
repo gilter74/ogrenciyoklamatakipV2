@@ -591,6 +591,11 @@ body:has(#s-veli-view.active) .screen{padding-bottom:20px}
   <div id="dt-notes" style="display:none">
   <div class="card mb12">
     <div class="section-lbl">📚 Ödev &amp; Not</div>
+    <div id="hw-restrict-box" style="display:none;background:#fef2f2;border:3px solid #dc2626;border-radius:14px;padding:18px 14px;margin-bottom:14px;text-align:center">
+      <div style="font-size:22px;font-weight:900;color:#b91c1c;line-height:1.3;letter-spacing:.2px">⛔ ÖDEME GECİKMESİ<br>KISITLAMA ALTINDA</div>
+      <div style="font-size:15px;font-weight:800;color:#991b1b;margin-top:8px;line-height:1.5">Ödeme gecikmesinden dolayı ödeme yapana kadar bildirim gönderilmeyecektir.</div>
+      <div style="font-size:12px;font-weight:700;color:#b91c1c;margin-top:6px">Ödeme kaydı girildiğinde kısıtlama otomatik kalkar.</div>
+    </div>
     <div class="mb14"><label class="lbl">Bu Haftanın Ödevi</label><textarea id="n-hw" rows="2" placeholder="Örn: Sayfa 12-14 tekrar, gam çalışması…" style="width:100%;padding:11px 14px;border-radius:10px;border:1px solid var(--border);font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;font-size:14px;font-weight:600;color:var(--text);resize:vertical;outline:none"></textarea></div>
     <div class="mb14"><label class="lbl">Öğretmen Notu</label><textarea id="n-grade" rows="2" placeholder="Örn: Bu ay çok iyi ilerledi…" style="width:100%;padding:11px 14px;border-radius:10px;border:1px solid var(--border);font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;font-size:14px;font-weight:600;color:var(--text);resize:vertical;outline:none"></textarea></div>
     <button class="btn btn-purple btn-sm" onclick="saveNotes()">💾 Kaydet</button>
@@ -621,8 +626,8 @@ body:has(#s-veli-view.active) .screen{padding-bottom:20px}
         <input type="checkbox" id="wa-hw-rep" style="width:auto;flex-shrink:0"> 📊 3 aylık gelişim raporunu da ekle
       </label>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="btn btn-wa btn-sm" style="flex:1;justify-content:center" onclick="sendHwWA()">📲 WhatsApp'tan Gönder</button>
-        <button class="btn-ghost" style="flex:1;justify-content:center" onclick="copyHwMsg()">📋 Mesajı Kopyala</button>
+        <button id="wa-hw-send" class="btn btn-wa btn-sm" style="flex:1;justify-content:center" onclick="sendHwWA()">📲 WhatsApp'tan Gönder</button>
+        <button id="wa-hw-copy" class="btn-ghost" style="flex:1;justify-content:center" onclick="copyHwMsg()">📋 Mesajı Kopyala</button>
       </div>
       <p style="font-size:11px;color:var(--muted);font-weight:600;margin-top:8px;line-height:1.5">Yukarıdaki ödev/not alanındaki güncel metin gönderilir (önce Kaydet'e basmak zorunda değilsin). Alıcı seçilmezse WhatsApp'ta kişiyi kendin seçersin.</p>
     </div>
@@ -2187,6 +2192,7 @@ function buildHwMsg(url){
   return m;
 }
 async function hwMsgReady(){
+  if(payRestriction(students.find(x=>x.id===curId),payData)){restrictBlockMsg();return null;}
   const hw=document.getElementById('n-hw').value.trim();
   const gr=document.getElementById('n-grade').value.trim();
   const repChk=document.getElementById('wa-hw-rep')&&document.getElementById('wa-hw-rep').checked;
@@ -2232,6 +2238,7 @@ function setMark(c){
 }
 
 function renderCal(){
+  try{updateHwRestrictUI();}catch(e){}
   document.getElementById('mon-lbl').textContent=MONTHS[curM]+' '+curY;
   document.getElementById('mark-row').style.display=curTab==='att'?'flex':'none';
   document.getElementById('pay-tip').style.display=curTab==='pay'?'block':'none';
@@ -2793,9 +2800,48 @@ function startRecWatch(){
   setInterval(()=>{checkRecReminders();const a=document.querySelector('.screen.active');if(a&&a.id==='s-list')renderRecBanner();},60000);
 }
 
+// ══ ÖDEME KISITLAMASI (Kasım 2026'dan itibaren) ═══════════════════════
+// Ayın 20'sinden sonra o ayın ödemesi yapılmamışsa (veya önceki ay ödenmemişse) ödeme yapılana kadar
+// ödev/not bildirimi gönderilmez; veli bağlantısında ödev/not gizlenir.
+const RESTRICT_START='2026-11-01';
+const RESTRICT_DAY=20;
+function payRestriction(s,pays){
+  try{
+    if(!s)return false;
+    const now=new Date();
+    if(todays()<RESTRICT_START)return false;
+    if(!(parseFloat(s.fee)>0||parseFloat(s.lessonFee)>0))return false; // ücreti tanımsız öğrenciye uygulanmaz
+    const list=(pays||[]).filter(p=>p&&p.date&&!p.recId);
+    const has=mk=>list.some(p=>p.date.startsWith(mk));
+    const reg=(s.registeredAt||'').slice(0,7);
+    const curK=mkey(now.getFullYear(),now.getMonth());
+    // Bu ay: 20'sinden sonra ödeme yoksa kısıtlı
+    if(now.getDate()>RESTRICT_DAY&&!has(curK)&&(!reg||reg<=curK))return true;
+    // Önceki ay (Kasım 2026 ve sonrası) ödenmemiş ve bu ay da henüz ödeme yoksa kısıtlı kalır
+    let pm=now.getMonth()-1,py=now.getFullYear();if(pm<0){pm=11;py--;}
+    const prevK=mkey(py,pm);
+    if(prevK+'-01'>=RESTRICT_START&&(!reg||reg<=prevK)&&!has(prevK)&&!has(curK))return true;
+    return false;
+  }catch(e){return false;}
+}
+const RESTRICT_TXT='⛔ ÖDEME GECİKMESİ — KISITLAMA ALTINDA';
+const RESTRICT_SUB='Ödeme gecikmesinden dolayı ödeme yapılana kadar bildirim gönderilmeyecektir.';
+function restrictBlockMsg(){showConf('Ödeme gecikmesinden dolayı ödeme yapılana kadar ödev/not bildirimi gönderilemez (kısıtlama altında).','⛔','Tamam',()=>{});}
+function updateHwRestrictUI(){
+  const s=students.find(x=>x.id===curId);
+  const r=payRestriction(s,payData);
+  const box=document.getElementById('hw-restrict-box');
+  if(box)box.style.display=r?'block':'none';
+  ['wa-hw-send','wa-hw-copy'].forEach(id=>{
+    const b=document.getElementById(id);
+    if(b){b.disabled=r;b.style.opacity=r?'.4':'';b.style.cursor=r?'not-allowed':'';}
+  });
+}
+
 // ══ OVERDUE ═══════════════════════════════════════════════════════════
 function checkOverdue(){
   try{updateRcptBox();}catch(e){}
+  try{updateHwRestrictUI();}catch(e){}
   const s=students.find(x=>x.id===curId);
   const box=document.getElementById('overdue-box');
   const rng=parseRange(s&&s.payDay);
@@ -4646,8 +4692,9 @@ function hwSumText(s,y,m){
   t+='\n\nSaygılarımla,\nRockJazz Müzik Aletleri · Silifke Satranç Atölyesi';
   return t;
 }
-function hwSumSend(sid,y,m){
+async function hwSumSend(sid,y,m){
   const s=students.find(x=>x.id===sid);if(!s)return;
+  try{const pv=await fbGet('payments/'+sid);if(payRestriction(s,Object.values(pv||{}))){restrictBlockMsg();return;}}catch(e){}
   const to=s.momPhone||s.dadPhone||s.phone||s.kinPhone||'';
   window.open('https://wa.me/'+waPhone(to)+'?text='+encodeURIComponent(hwSumText(s,y,m)),'_blank');
 }
@@ -5106,11 +5153,13 @@ async function makeVeliUrl(id,loadMsg){
     ml:lvlMonthLabel(k),lv:r.level||0,ln:LVL_NAMES[(r.level||1)-1]||'',pr:r.progress||0,topics:r.topics||'',note:r.note||'',tm:r.time||''
   }));
 
+  const restricted=payRestriction(s,pays);
   const data={
+    rs:restricted?1:0,
     n:s.name+' '+s.surname, e:s.education||'', pr:s.program||'', pk:s.pkg||'',
     f:baseFee||'', pd:s.payDay||'', reg:s.registeredAt||'',
     att:attSummary, ist:istList, last5:last5, pay3:pay3, bal:carryover, nd:nextDiscount,
-    hw:note.homework||'', gr:note.grade||'', hwLog:hwLog, lvl:lvl,
+    hw:restricted?'':(note.homework||''), gr:restricted?'':(note.grade||''), hwLog:restricted?[]:hwLog, lvl:lvl,
     rep:lastRep?{from:lastRep.from,to:lastRep.to,score:lastRep.score,text:lastRep.text,mode:lastRep.mode||'auto'}:null,
     gen:fmt(now.getFullYear(),now.getMonth(),now.getDate())
   };
@@ -5255,6 +5304,7 @@ function renderVeliView(data){
         ${x.g?(x.ts==='came'?'<div style="font-weight:700;color:#166534;font-size:13px">🩷 Telafi dersi yapıldı</div>':x.ts==='absent'?'<div style="font-weight:700;color:#b91c1c;font-size:13px">Telafi dersine katılınmadı</div>':x.td?`<div style="font-weight:800;color:#be185d;font-size:14px">🩷 Telafi dersi: ${x.td}${x.tt?' · '+x.tt:''}</div>`:`<div style="font-weight:700;color:#92400e;font-size:13px">🩷 Telafi hakkı var · son tarih ${x.exp}</div>`):''}
       </div>`).join('')}
     </div>`:''}
+    ${data.rs?`<div class="card mb12" style="border:3px solid #dc2626;background:#fef2f2;text-align:center;padding:20px 14px"><div style="font-size:22px;font-weight:900;color:#b91c1c;line-height:1.3">⛔ ÖDEME GECİKMESİ<br>KISITLAMA ALTINDA</div><div style="font-size:15px;font-weight:800;color:#991b1b;margin-top:8px;line-height:1.5">Ödeme gecikmesinden dolayı ödeme yapılana kadar ödev ve öğretmen notu bildirimi yapılmayacaktır.</div></div>`:''}
     ${(data.hwLog&&data.hwLog.length)?`<div class="card mb12">
       <div class="section-lbl">📚 Ödev &amp; Öğretmen Notu (Son 3 Ay)</div>
       ${data.hwLog.map(l=>`<div class="pay-row">
@@ -5459,6 +5509,7 @@ function repFullMsg(){
     repWAText(r.text)+'\n\nSaygılarımla,\nRockJazz Müzik Aletleri ve Silifke Satranç Atölyesi';
 }
 function repSendWA(){
+  if(payRestriction(students.find(x=>x.id===curId),payData)){restrictBlockMsg();return;}
   const m=repFullMsg();if(!m)return;
   const ph=waPhone(document.getElementById('wa-hw-to').value);
   window.open('https://wa.me/'+ph+'?text='+encodeURIComponent(m),'_blank');
