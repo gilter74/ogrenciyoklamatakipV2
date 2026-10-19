@@ -480,6 +480,7 @@ summary::-webkit-details-marker{display:none}
       <div><label class="lbl">Soyad *</label><input id="e-surname" oninput="ce('e-surname','e-err-surname')"><div class="err-msg" id="e-err-surname"></div></div>
     </div>
     <div class="mb14"><label class="lbl">Öğrenci Telefonu</label><input id="e-phone" type="tel"></div>
+    <div class="mb14"><label class="lbl">📅 Kayıt Tarihi</label><input id="e-reg" type="date"><div style="font-size:11px;color:var(--muted);font-weight:600;margin-top:4px">Yanlış girildiyse buradan düzeltebilirsiniz. Ödeme takvimi ve yoklama bu tarihe göre başlar.</div></div>
     <div class="mb14">
       <label class="lbl">Eğitim Türü *</label>
       <select id="e-edu" onchange="ce('e-edu','e-err-edu')">
@@ -1947,8 +1948,10 @@ function fillEdit(){
   document.getElementById('e-name').value=s.name||'';
   document.getElementById('e-surname').value=s.surname||'';
   document.getElementById('e-phone').value=s.phone||'';
-  document.getElementById('e-edu').value=s.education||'';
-  document.getElementById('e-prog').value=s.program||'';
+  const keepOpt=(id,v)=>{const el=document.getElementById(id);if(v&&![...el.options].some(o=>o.value===v||o.text===v)){const o=document.createElement('option');o.textContent=v;el.appendChild(o);}el.value=v||'';};
+  keepOpt('e-edu',s.education);
+  keepOpt('e-prog',s.program);
+  document.getElementById('e-reg').value=s.registeredAt||'';
   selPkg('e',s.pkg||'');
   document.getElementById('e-fee').value=s.fee||'';
   document.getElementById('e-lesson-fee').value=s.lessonFee||'';
@@ -1972,7 +1975,8 @@ async function saveEdit(){
   if(!validate(d,'e'))return;
   showLoad('Güncelleniyor…');
   const i=students.findIndex(x=>x.id===curId);
-  if(i>=0){students[i]={...students[i],...d};}
+  const regVal=(document.getElementById('e-reg').value||'').trim();
+  if(i>=0){students[i]={...students[i],...d};if(regVal)students[i].registeredAt=regVal;}
   await fbSet('students/'+curId, students[i>=0?i:0]);
   hideLoad();
   go('s-detail');
