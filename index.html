@@ -279,6 +279,7 @@ input:focus,select:focus{box-shadow:0 0 0 3px rgba(47,63,115,.12)}
 body:has(#s-veli-view.active) #bnav,body:has(#s-fiyat.active) #bnav,body:has(#s-yform.active) #bnav{display:none}
 body:has(#s-veli-view.active) .screen{padding-bottom:20px}
 @media print{#bnav{display:none!important}}
+summary::-webkit-details-marker{display:none}
 </style>
 </head>
 <body>
@@ -795,7 +796,7 @@ body:has(#s-veli-view.active) .screen{padding-bottom:20px}
 
   <!-- KDV summary -->
   <div class="card mb14" id="ana-kdv-card">
-    <div style="font-weight:700;font-size:14px;color:var(--text);margin-bottom:14px">🧾 KDV (%20) Durumu</div>
+    <div style="font-weight:700;font-size:14px;color:var(--text);margin-bottom:14px">🧾 Branş Bazlı KDV (%20) — Bugüne Kadar <span style="font-size:11px;color:var(--muted);font-weight:600">· branşa dokun, isimler açılsın</span></div>
     <div id="ana-kdv"></div>
   </div>
 
@@ -3533,41 +3534,54 @@ function renderAnalysis(){
     return{s,periodPays,periodExp,pct2,statusTxt,statusColor,kdvDahil:!!s.kdvDahil,grp:eduGroup(s.education)};
   }).sort((a,b)=>b.periodPays-a.periodPays);
 
-  // KDV: %20 dahil ise KDV tutarı = alınan × 20/120. Kategori bazlı + genel toplam
-  const calcKdv=rows=>{
-    const dahil=rows.filter(r=>r.kdvDahil),haric=rows.filter(r=>!r.kdvDahil);
-    const gross=dahil.reduce((a,r)=>a+r.periodPays,0);
-    const net=Math.round((gross/1.2)*100)/100;
-    const kdv=Math.round((gross-net)*100)/100;
-    const haricTop=haric.reduce((a,r)=>a+r.periodPays,0);
-    return{nD:dahil.length,nH:haric.length,gross,net,kdv,haricTop,all:gross+haricTop};
-  };
-  const kdvBox=(title,k,color,bg,bd)=>`
-    <div style="background:${bg};border:1px solid ${bd};border-radius:11px;padding:12px 13px;margin-bottom:10px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:8px">
-        <span style="font-weight:700;font-size:13px;color:${color}">${title}</span>
-        <span style="font-size:11px;font-weight:700;color:var(--muted)">KDV dahil ${k.nD} · hariç ${k.nH}</span>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center">
-        <div><div style="font-weight:700;font-size:14px;color:${color}">${fmtN(k.gross)} ₺</div><div style="font-size:10px;color:var(--muted);font-weight:700">KDV Dahil Tutar</div></div>
-        <div><div style="font-weight:700;font-size:14px;color:#059669">${fmtN(k.net)} ₺</div><div style="font-size:10px;color:var(--muted);font-weight:700">KDV Hariç Tutar</div></div>
-        <div><div style="font-weight:700;font-size:14px;color:#dc2626">${fmtN(k.kdv)} ₺</div><div style="font-size:10px;color:var(--muted);font-weight:700">%20 KDV</div></div>
-      </div>
-      <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:11px;font-weight:600;color:#4b5563">
-        <span>🚫 KDV hariç öğrencilerden alınan</span><span>${fmtN(k.haricTop)} ₺</span>
-      </div>
-      <div style="display:flex;justify-content:space-between;margin-top:3px;font-size:11px;font-weight:700;color:var(--text)">
-        <span>Toplam alınan</span><span>${fmtN(k.all)} ₺</span>
-      </div>
-    </div>`;
+  // ── Branş bazlı sade KDV özeti (bugüne kadar alınan tüm ödemeler) ──
+  // KDV dahil öğrenci: KDV = alınan × 20/120. KDV hariç öğrenci: KDV = 0.
+  const f2=n=>(Math.round(n*100)/100).toLocaleString('tr-TR',{maximumFractionDigits:2});
+  const allTime=students.map(s=>{
+    const gross=Object.values(allPayCache[s.id]||{}).filter(p=>!p.recId).reduce((a,p)=>a+parseFloat(p.amount||0),0);
+    const kdv=s.kdvDahil?Math.round(gross*20/120*100)/100:0;
+    return{s,gross,kdv,net:gross-kdv,grp:eduGroup(s.education)};
+  }).filter(r=>r.gross>0).sort((a,b)=>b.gross-a.gross);
+  const sumOf=rows=>rows.reduce((t,r)=>({gross:t.gross+r.gross,kdv:t.kdv+r.kdv,net:t.net+r.net}),{gross:0,kdv:0,net:0});
   const kdvCats=[
     {t:'🎵 Müzik',g:'music',color:'#1d4ed8',bg:'#eff6ff',bd:'#bfdbfe'},
     {t:'♟ Satranç',g:'chess',color:'#2f3f73',bg:'#f5f3ff',bd:'#d3d9ea'},
     {t:'🤖 Yapay Zeka',g:'ai',color:'#0e7490',bg:'#ecfeff',bd:'#a5f3fc'}
   ];
+  const trio=t=>`
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;text-align:center">
+      <div><div style="font-weight:800;font-size:14px;color:var(--text)">${f2(t.gross)} ₺</div><div style="font-size:10px;color:var(--muted);font-weight:700">Toplam</div></div>
+      <div><div style="font-weight:800;font-size:14px;color:#dc2626">${f2(t.kdv)} ₺</div><div style="font-size:10px;color:var(--muted);font-weight:700">Sadece KDV</div></div>
+      <div><div style="font-weight:800;font-size:14px;color:#059669">${f2(t.net)} ₺</div><div style="font-size:10px;color:var(--muted);font-weight:700">KDV'siz</div></div>
+    </div>`;
+  const payerRow=r=>`
+    <div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-top:1px solid var(--border)">
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:600;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${eduIcon(r.s.education)} ${r.s.name} ${r.s.surname}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:1px">${r.s.kdvDahil?'KDV dahil':'KDV yok'}</div>
+      </div>
+      <div style="text-align:right;flex-shrink:0">
+        <div style="font-weight:700;font-size:13px">${f2(r.gross)} ₺</div>
+        <div style="font-size:11px;font-weight:700;color:${r.kdv>0?'#dc2626':'#9ca3af'}">KDV ${f2(r.kdv)} ₺</div>
+      </div>
+    </div>`;
   document.getElementById('ana-kdv').innerHTML=
-    kdvCats.map(c=>kdvBox(c.t,calcKdv(stuRows.filter(r=>r.grp===c.g)),c.color,c.bg,c.bd)).join('')+
-    kdvBox('📊 GENEL TOPLAM',calcKdv(stuRows),'#065f46','#f0fdf4','#a7f3d0');
+    kdvCats.map(c=>{
+      const rows=allTime.filter(r=>r.grp===c.g),t=sumOf(rows);
+      return `<details style="background:${c.bg};border:1px solid ${c.bd};border-radius:11px;padding:11px 13px;margin-bottom:10px">
+        <summary style="cursor:pointer;list-style:none;margin-bottom:10px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <span style="font-weight:800;font-size:14px;color:${c.color}">${c.t} <span style="font-size:11px;color:var(--muted);font-weight:700">(${rows.length} kişi) ▾</span></span>
+          </div>
+          ${trio(t)}
+        </summary>
+        ${rows.length?rows.map(payerRow).join(''):'<div style="font-size:12px;color:var(--muted);padding:8px 0">Henüz ödeme yok.</div>'}
+      </details>`;
+    }).join('')+
+    `<div style="background:#f0fdf4;border:1px solid #a7f3d0;border-radius:11px;padding:11px 13px">
+      <div style="font-weight:800;font-size:14px;color:#065f46;margin-bottom:8px">📊 Genel Toplam</div>
+      ${trio(sumOf(allTime))}
+    </div>`;
 
   const stuRowHtml=({s,periodPays,periodExp,pct2,statusTxt,statusColor})=>`
     <div class="stu-pay-row">
