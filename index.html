@@ -377,6 +377,7 @@ body:has(#s-veli-view.active) .screen{padding-bottom:20px}
         <option>🎵 Ukulele</option><option>🎤 Şan</option><option>🎼 Müzik Okullarına Hazırlık</option>
         <option>♟ Satranç – Başlangıç</option><option>♟ Satranç – 1. Seviye</option>
         <option>♟ Satranç – 2. Seviye</option><option>♟ Satranç – 3. ve Üzeri Seviye</option>
+        <option>🤖 Yapay Zeka – YZ-1 (7–9 yaş)</option><option>🤖 Yapay Zeka – YZ-2 (10–13 yaş)</option>
       </select>
       <div class="err-msg" id="r-err-edu"></div>
     </div>
@@ -486,6 +487,7 @@ body:has(#s-veli-view.active) .screen{padding-bottom:20px}
         <option>🎵 Ukulele</option><option>🎤 Şan</option><option>🎼 Müzik Okullarına Hazırlık</option>
         <option>♟ Satranç – Başlangıç</option><option>♟ Satranç – 1. Seviye</option>
         <option>♟ Satranç – 2. Seviye</option><option>♟ Satranç – 3. ve Üzeri Seviye</option>
+        <option>🤖 Yapay Zeka – YZ-1 (7–9 yaş)</option><option>🤖 Yapay Zeka – YZ-2 (10–13 yaş)</option>
       </select>
       <div class="err-msg" id="e-err-edu"></div>
     </div>
@@ -1223,16 +1225,19 @@ const fd=(y,m)=>{const d=new Date(y,m,1).getDay();return d===0?6:d-1;};
 const tmin=t=>{const p=String(t||'').split(':').map(Number);return isNaN(p[0])?99999:(p[0]||0)*60+(p[1]||0);};
 const todays=()=>{const n=new Date();return fmt(n.getFullYear(),n.getMonth(),n.getDate());};
 const parseRange=s=>{if(!s)return null;const p=s.split('-');return p.length===2?{a:+p[0],b:+p[1]}:null;};
+const isAiEdu=e=>!!e&&(e.includes('Yapay Zeka')||/\bYZ-?[12]\b/.test(e));
+const eduGroup=e=>isAiEdu(e)?'ai':(e&&e.includes('Satranç')?'chess':'music');
 const eduIcon=e=>{
   if(!e)return'🎼';
   if(e.includes('Gitar'))return'🎸';if(e.includes('Bağlama'))return'🪕';
   if(e.includes('Piyano')||e.includes('Org'))return'🎹';if(e.includes('Ukulele'))return'🎵';
-  if(e.includes('Şan'))return'🎤';if(e.includes('Satranç'))return'♟';
+  if(e.includes('Şan'))return'🎤';if(e.includes('Satranç'))return'♟';if(isAiEdu(e))return'🤖';
   return'🎼';
 };
 const eduColor=e=>{
   if(!e)return{border:'#e2e8f0',bg:'#ffffff'};
   if(e.includes('Satranç'))return{border:'#f97316',bg:'#fff7ed'};
+  if(isAiEdu(e))return{border:'#0891b2',bg:'#ecfeff'};
   if(e.includes('Piyano'))return{border:'#3b82f6',bg:'#eff6ff'};
   if(e.includes('Org'))return{border:'#dc2626',bg:'#fef2f2'};
   if(e.includes('Gitar'))return{border:'#3a4c8a',bg:'#f5f3ff'};
@@ -1250,9 +1255,10 @@ const eduCategory=e=>{
   if(e.includes('Şan'))return'🎤 Şan';
   if(e.includes('Müzik Okullarına Hazırlık'))return'🎼 Müzik Okullarına Hazırlık';
   if(e.includes('Satranç'))return'♟ Satranç';
+  if(isAiEdu(e))return'🤖 Yapay Zeka';
   return'Diğer';
 };
-const EDU_CAT_ORDER=['🎸 Gitar','🪕 Bağlama','🎹 Piyano','🎹 Org','🎵 Ukulele','🎤 Şan','🎼 Müzik Okullarına Hazırlık','♟ Satranç','Diğer'];
+const EDU_CAT_ORDER=['🎸 Gitar','🪕 Bağlama','🎹 Piyano','🎹 Org','🎵 Ukulele','🎤 Şan','🎼 Müzik Okullarına Hazırlık','♟ Satranç','🤖 Yapay Zeka','Diğer'];
 
 // ══ SCREENS ═══════════════════════════════════════════════════════════
 function go(id){
@@ -3402,31 +3408,40 @@ function getMonthsBack(n){
   return months;
 }
 
+// Bir öğrencinin ay için alacağı: öğrenciye özel istisna tutarı varsa o, yoksa aylık ücret.
+// Ödemede "istisna" işaretliyse ay tam sayılır (alınan tutar = beklenen).
+function stuMonthDue(s,mk){
+  const ex=stuExFor(s,mk);
+  const fee=ex?parseFloat(ex.amount||0):parseFloat(s.fee||0);
+  const all=Object.values(allPayCache[s.id]||{}).filter(p=>p.date.startsWith(mk)&&!p.recId);
+  const rec=all.reduce((a,p)=>a+parseFloat(p.amount||0),0);
+  const exPay=all.some(p=>p.exception);
+  const due=(exPay&&rec>0&&rec<fee)?rec:fee;
+  return{fee,due,rec,exPay,hasEx:!!ex};
+}
+
 function calcMonthData(mk){
-  let expected=0,received=0,chess=0,music=0,chessExp=0,musicExp=0;
+  let expected=0,received=0;
+  const g={music:{rec:0,exp:0},chess:{rec:0,exp:0},ai:{rec:0,exp:0}};
   students.forEach(s=>{
-    const fee=stuExFor(s,mk)?parseFloat(stuExFor(s,mk).amount||0):parseFloat(s.fee||0);
-    const pays=Object.values(allPayCache[s.id]||{}).filter(p=>p.date.startsWith(mk)&&!p.recId);
-    const rec=pays.reduce((a,p)=>a+parseFloat(p.amount||0),0);
-    const isChess=s.education&&s.education.includes('Satranç');
-    expected+=fee;
-    received+=rec;
-    if(isChess){chess+=rec;chessExp+=fee;}
-    else{music+=rec;musicExp+=fee;}
+    const m=stuMonthDue(s,mk);
+    expected+=m.due;received+=m.rec;
+    const k=g[eduGroup(s.education)];k.rec+=m.rec;k.exp+=m.due;
   });
-  return{expected,received,chess,music,chessExp,musicExp};
+  return{expected,received,music:g.music.rec,chess:g.chess.rec,ai:g.ai.rec,musicExp:g.music.exp,chessExp:g.chess.exp,aiExp:g.ai.exp};
 }
 
 function renderAnalysis(){
   const months=getMonthsBack(analysisPeriod);
-  let totalExp=0,totalRec=0,totalChess=0,totalMusic=0,totalChessExp=0,totalMusicExp=0;
+  let totalExp=0,totalRec=0,totalChess=0,totalMusic=0,totalAi=0,totalChessExp=0,totalMusicExp=0,totalAiExp=0;
   const monthData=months.map(mo=>{
     const d=calcMonthData(mo.key);
     totalExp+=d.expected;totalRec+=d.received;
-    totalChess+=d.chess;totalMusic+=d.music;
-    totalChessExp+=d.chessExp;totalMusicExp+=d.musicExp;
+    totalChess+=d.chess;totalMusic+=d.music;totalAi+=d.ai;
+    totalChessExp+=d.chessExp;totalMusicExp+=d.musicExp;totalAiExp+=d.aiExp;
     return{...mo,...d};
   });
+  const fmtN=n=>n.toLocaleString('tr-TR');
 
   const pct=totalExp>0?Math.round(totalRec/totalExp*100):0;
   const missing=Math.max(0,totalExp-totalRec);
@@ -3435,15 +3450,15 @@ function renderAnalysis(){
   document.getElementById('ana-summary').innerHTML=`
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
       <div class="sum-card" style="background:var(--green-l);border-color:#a7f3d0">
-        <div class="sum-n" style="color:var(--green);font-size:16px">${totalRec.toLocaleString('tr-TR')} ₺</div>
+        <div class="sum-n" style="color:var(--green);font-size:16px">${fmtN(totalRec)} ₺</div>
         <div class="sum-l">Alınan</div>
       </div>
       <div class="sum-card" style="background:var(--purple-l);border-color:#d3d9ea">
-        <div class="sum-n" style="color:var(--purple);font-size:16px">${totalExp.toLocaleString('tr-TR')} ₺</div>
+        <div class="sum-n" style="color:var(--purple);font-size:16px">${fmtN(totalExp)} ₺</div>
         <div class="sum-l">Beklenen</div>
       </div>
       <div class="sum-card" style="background:${missing>0?'#fee2e2':'#f0fdf4'};border-color:${missing>0?'#fecaca':'#a7f3d0'}">
-        <div class="sum-n" style="color:${missing>0?'#dc2626':'#059669'};font-size:16px">${missing>0?missing.toLocaleString('tr-TR')+' ₺':'✅ Tam'}</div>
+        <div class="sum-n" style="color:${missing>0?'#dc2626':'#059669'};font-size:16px">${missing>0?fmtN(missing)+' ₺':'✅ Tam'}</div>
         <div class="sum-l">${missing>0?'Eksik':'Tüm Ödemeler'}</div>
       </div>
       <div class="sum-card" style="background:${pct>=100?'#f0fdf4':pct>=70?'#fefce8':'#fee2e2'};border-color:${pct>=100?'#a7f3d0':pct>=70?'#fde047':'#fecaca'}">
@@ -3471,94 +3486,101 @@ function renderAnalysis(){
   document.getElementById('ana-chart-title').textContent=`Aylık Gelir — Son ${analysisPeriod} Ay`;
   document.getElementById('ana-chart').innerHTML=chartHtml;
 
-  // Music vs Chess
-  const mPct=totalMusicExp>0?Math.round(totalMusic/totalMusicExp*100):0;
-  const cPct=totalChessExp>0?Math.round(totalChess/totalChessExp*100):0;
-  document.getElementById('ana-compare').innerHTML=`
+  // Müzik / Satranç / Yapay Zeka karşılaştırması
+  const cats=[
+    {k:'music',ico:'🎵',name:'Müzik',rec:totalMusic,exp:totalMusicExp,color:'#1d4ed8',bg:'var(--blue-l)',fg:'var(--blue)'},
+    {k:'chess',ico:'♟',name:'Satranç',rec:totalChess,exp:totalChessExp,color:'#2f3f73',bg:'var(--purple-l)',fg:'var(--purple)'},
+    {k:'ai',ico:'🤖',name:'Yapay Zeka',rec:totalAi,exp:totalAiExp,color:'#0891b2',bg:'#ecfeff',fg:'#0e7490'}
+  ];
+  cats.forEach(c=>{c.cnt=students.filter(s=>eduGroup(s.education)===c.k).length;c.pct=c.exp>0?Math.round(c.rec/c.exp*100):0;});
+  document.getElementById('ana-compare-card').firstElementChild.textContent='🎵 Müzik · ♟ Satranç · 🤖 Yapay Zeka Karşılaştırması';
+  document.getElementById('ana-compare').innerHTML=cats.map(c=>`
     <div style="margin-bottom:14px">
-      <div style="display:flex;justify-content:space-between;margin-bottom:6px">
-        <span style="font-weight:600;font-size:13px">🎵 Müzik</span>
-        <span style="font-weight:700;font-size:13px;color:#059669">${totalMusic.toLocaleString('tr-TR')} ₺ / ${totalMusicExp.toLocaleString('tr-TR')} ₺ <span style="color:var(--muted)">(${mPct}%)</span></span>
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px;gap:8px">
+        <span style="font-weight:600;font-size:13px">${c.ico} ${c.name}</span>
+        <span style="font-weight:700;font-size:13px;color:#059669;text-align:right">${fmtN(c.rec)} ₺ / ${fmtN(c.exp)} ₺ <span style="color:var(--muted)">(${c.pct}%)</span></span>
       </div>
-      <div class="prog-bar"><div class="prog-fill" style="width:${mPct}%;background:#1d4ed8"></div></div>
-    </div>
-    <div>
-      <div style="display:flex;justify-content:space-between;margin-bottom:6px">
-        <span style="font-weight:600;font-size:13px">♟ Satranç</span>
-        <span style="font-weight:700;font-size:13px;color:#059669">${totalChess.toLocaleString('tr-TR')} ₺ / ${totalChessExp.toLocaleString('tr-TR')} ₺ <span style="color:var(--muted)">(${cPct}%)</span></span>
-      </div>
-      <div class="prog-bar"><div class="prog-fill" style="width:${cPct}%;background:#2f3f73"></div></div>
-    </div>
-    <div style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px">
-      <div style="background:var(--blue-l);border-radius:9px;padding:8px;text-align:center">
-        <div style="font-weight:700;color:var(--blue)">${students.filter(s=>!s.education?.includes('Satranç')).length}</div>
-        <div style="color:var(--text2);font-weight:700">Müzik Öğrencisi</div>
-      </div>
-      <div style="background:var(--purple-l);border-radius:9px;padding:8px;text-align:center">
-        <div style="font-weight:700;color:var(--purple)">${students.filter(s=>s.education?.includes('Satranç')).length}</div>
-        <div style="color:var(--text2);font-weight:700">Satranç Öğrencisi</div>
-      </div>
+      <div class="prog-bar"><div class="prog-fill" style="width:${Math.min(100,c.pct)}%;background:${c.color}"></div></div>
+    </div>`).join('')+`
+    <div style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;font-size:12px">
+      ${cats.map(c=>`<div style="background:${c.bg};border-radius:9px;padding:8px;text-align:center">
+        <div style="font-weight:700;color:${c.fg}">${c.cnt}</div>
+        <div style="color:var(--text2);font-weight:700">${c.name} Öğrencisi</div>
+      </div>`).join('')}
     </div>`;
 
-  // Per-student table
-  const curMk=mkey(new Date().getFullYear(),new Date().getMonth());
+  // Öğrenci bazlı tablo
+  const now=new Date();
+  const curMk=mkey(now.getFullYear(),now.getMonth());
   const stuRows=students.map(s=>{
     const fee=parseFloat(s.fee||0);
     const allPays=Object.values(allPayCache[s.id]||{}).filter(p=>!p.recId);
-    const periodPays=months.reduce((a,mo)=>{
-      return a+allPays.filter(p=>p.date.startsWith(mo.key)).reduce((x,p)=>x+parseFloat(p.amount||0),0);
-    },0);
-    const periodExp=fee*analysisPeriod;
-    const thisMoPays=allPays.filter(p=>p.date.startsWith(curMk)).reduce((a,p)=>a+parseFloat(p.amount||0),0);
-    const bal=fee>0?(fee-thisMoPays):0;
+    let periodPays=0,periodExp=0;
+    months.forEach(mo=>{
+      const m=stuMonthDue(s,mo.key);
+      periodPays+=m.rec;periodExp+=m.due;
+    });
+    const cm=stuMonthDue(s,curMk);
+    const diff=Math.round((cm.rec-cm.due)*100)/100; // + fazla, - eksik
     const pct2=periodExp>0?Math.min(100,Math.round(periodPays/periodExp*100)):null;
-    const statusColor=thisMoPays>=fee&&fee>0?'#059669':bal>0?'#dc2626':'#7a8399';
-    const statusTxt=fee===0?'—':thisMoPays>=fee?'✅ Tam':thisMoPays>0?'⚠ Eksik':'❌ Yok';
-    return{s,periodPays,periodExp,pct2,statusTxt,statusColor,kdvDahil:!!s.kdvDahil};
+    let statusTxt,statusColor;
+    if(cm.fee===0){statusTxt='—';statusColor='#7a8399';}
+    else if(cm.rec===0){statusTxt='❌ Yok';statusColor='#dc2626';}
+    else if(cm.exPay){statusTxt='✅ Tam';statusColor='#059669';}   // istisna: eksik yazma, tam say
+    else if(diff===0){statusTxt='✅ Tam';statusColor='#059669';}
+    else if(diff<0){statusTxt='⚠ Eksik '+fmtN(-diff)+' ₺';statusColor='#dc2626';}
+    else{statusTxt='➕ Fazla '+fmtN(diff)+' ₺';statusColor='#2563eb';}
+    return{s,periodPays,periodExp,pct2,statusTxt,statusColor,kdvDahil:!!s.kdvDahil,grp:eduGroup(s.education)};
   }).sort((a,b)=>b.periodPays-a.periodPays);
 
-  // KDV split (%20 dahil ise: KDV tutarı = alınan tutar × 20/120)
-  const kdvRows=stuRows.filter(r=>r.kdvDahil);
-  const nonKdvRows=stuRows.filter(r=>!r.kdvDahil);
-  const kdvGross=kdvRows.reduce((a,r)=>a+r.periodPays,0);
-  const kdvNet=Math.round((kdvGross/1.2)*100)/100;
-  const kdvAmount=Math.round((kdvGross-kdvNet)*100)/100;
-  const nonKdvTotal=nonKdvRows.reduce((a,r)=>a+r.periodPays,0);
-
-  document.getElementById('ana-kdv').innerHTML=`
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
-      <div class="sum-card" style="background:var(--blue-l);border-color:#bfdbfe">
-        <div class="sum-n" style="color:var(--blue);font-size:15px">${kdvRows.length}</div>
-        <div class="sum-l">✅ KDV Dahil Öğrenci</div>
+  // KDV: %20 dahil ise KDV tutarı = alınan × 20/120. Kategori bazlı + genel toplam
+  const calcKdv=rows=>{
+    const dahil=rows.filter(r=>r.kdvDahil),haric=rows.filter(r=>!r.kdvDahil);
+    const gross=dahil.reduce((a,r)=>a+r.periodPays,0);
+    const net=Math.round((gross/1.2)*100)/100;
+    const kdv=Math.round((gross-net)*100)/100;
+    const haricTop=haric.reduce((a,r)=>a+r.periodPays,0);
+    return{nD:dahil.length,nH:haric.length,gross,net,kdv,haricTop,all:gross+haricTop};
+  };
+  const kdvBox=(title,k,color,bg,bd)=>`
+    <div style="background:${bg};border:1px solid ${bd};border-radius:11px;padding:12px 13px;margin-bottom:10px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:8px">
+        <span style="font-weight:700;font-size:13px;color:${color}">${title}</span>
+        <span style="font-size:11px;font-weight:700;color:var(--muted)">KDV dahil ${k.nD} · hariç ${k.nH}</span>
       </div>
-      <div class="sum-card" style="background:#f3f4f6;border-color:#d1d5db">
-        <div class="sum-n" style="color:#4b5563;font-size:15px">${nonKdvRows.length}</div>
-        <div class="sum-l">🚫 KDV Hariç Öğrenci</div>
-      </div>
-    </div>
-    <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:11px;padding:12px 13px;margin-bottom:8px">
-      <div style="font-weight:600;font-size:12px;color:#1d4ed8;margin-bottom:8px">✅ KDV Dahil Öğrencilerden Alınan Tutar (Seçili Dönem)</div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center">
-        <div><div style="font-weight:700;font-size:14px;color:#1d4ed8">${kdvGross.toLocaleString('tr-TR')} ₺</div><div style="font-size:10px;color:var(--muted);font-weight:700">Toplam (KDV Dahil)</div></div>
-        <div><div style="font-weight:700;font-size:14px;color:#059669">${kdvNet.toLocaleString('tr-TR')} ₺</div><div style="font-size:10px;color:var(--muted);font-weight:700">KDV Hariç Tutar</div></div>
-        <div><div style="font-weight:700;font-size:14px;color:#dc2626">${kdvAmount.toLocaleString('tr-TR')} ₺</div><div style="font-size:10px;color:var(--muted);font-weight:700">Hesaplanan %20 KDV</div></div>
+        <div><div style="font-weight:700;font-size:14px;color:${color}">${fmtN(k.gross)} ₺</div><div style="font-size:10px;color:var(--muted);font-weight:700">KDV Dahil Tutar</div></div>
+        <div><div style="font-weight:700;font-size:14px;color:#059669">${fmtN(k.net)} ₺</div><div style="font-size:10px;color:var(--muted);font-weight:700">KDV Hariç Tutar</div></div>
+        <div><div style="font-weight:700;font-size:14px;color:#dc2626">${fmtN(k.kdv)} ₺</div><div style="font-size:10px;color:var(--muted);font-weight:700">%20 KDV</div></div>
       </div>
-    </div>
-    <div style="background:#f3f4f6;border:1px solid #d1d5db;border-radius:11px;padding:10px 13px;font-size:12px;font-weight:600;color:#4b5563;display:flex;justify-content:space-between">
-      <span>🚫 KDV Hariç Öğrencilerden Alınan Tutar</span><span>${nonKdvTotal.toLocaleString('tr-TR')} ₺</span>
+      <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:11px;font-weight:600;color:#4b5563">
+        <span>🚫 KDV hariç öğrencilerden alınan</span><span>${fmtN(k.haricTop)} ₺</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-top:3px;font-size:11px;font-weight:700;color:var(--text)">
+        <span>Toplam alınan</span><span>${fmtN(k.all)} ₺</span>
+      </div>
     </div>`;
+  const kdvCats=[
+    {t:'🎵 Müzik',g:'music',color:'#1d4ed8',bg:'#eff6ff',bd:'#bfdbfe'},
+    {t:'♟ Satranç',g:'chess',color:'#2f3f73',bg:'#f5f3ff',bd:'#d3d9ea'},
+    {t:'🤖 Yapay Zeka',g:'ai',color:'#0e7490',bg:'#ecfeff',bd:'#a5f3fc'}
+  ];
+  document.getElementById('ana-kdv').innerHTML=
+    kdvCats.map(c=>kdvBox(c.t,calcKdv(stuRows.filter(r=>r.grp===c.g)),c.color,c.bg,c.bd)).join('')+
+    kdvBox('📊 GENEL TOPLAM',calcKdv(stuRows),'#065f46','#f0fdf4','#a7f3d0');
 
   const stuRowHtml=({s,periodPays,periodExp,pct2,statusTxt,statusColor})=>`
     <div class="stu-pay-row">
       <div style="font-size:18px;flex-shrink:0">${eduIcon(s.education)}</div>
       <div style="flex:1;min-width:0">
         <div style="font-weight:600;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${s.name} ${s.surname}</div>
-        <div style="font-size:11px;color:var(--muted);margin-top:2px">${periodPays.toLocaleString('tr-TR')} ₺ / ${periodExp.toLocaleString('tr-TR')} ₺</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px">${fmtN(periodPays)} ₺ / ${fmtN(periodExp)} ₺</div>
         ${pct2!==null?`<div class="prog-bar" style="margin-top:4px"><div class="prog-fill" style="width:${pct2}%;background:${pct2>=100?'#059669':pct2>=50?'#d97706':'#dc2626'}"></div></div>`:''}
       </div>
       <div style="font-weight:700;font-size:12px;color:${statusColor};flex-shrink:0;text-align:right">${statusTxt}</div>
     </div>`;
 
+  const kdvRows=stuRows.filter(r=>r.kdvDahil),nonKdvRows=stuRows.filter(r=>!r.kdvDahil);
   document.getElementById('ana-students').innerHTML=`
     <div style="font-weight:700;font-size:12px;color:#1d4ed8;margin:6px 0 8px">✅ KDV Dahil Öğrenciler (${kdvRows.length})</div>
     ${kdvRows.length?kdvRows.map(stuRowHtml).join(''):'<div style="font-size:12px;color:var(--muted);padding:6px 0">KDV dahil öğrenci yok.</div>'}
@@ -3574,30 +3596,29 @@ function exportAnalysisExcel(){
     ['RockJazz Müzik Aletleri ve Silifke Satranç Atölyesi'],
     ['Yıllık Gelir Raporu — '+new Date().toLocaleDateString('tr-TR')],
     [],
-    ['Ay','Beklenen (₺)','Alınan (₺)','Eksik (₺)','Tahsilat %','Müzik (₺)','Satranç (₺)']
+    ['Ay','Beklenen (₺)','Alınan (₺)','Eksik (₺)','Tahsilat %','Müzik (₺)','Satranç (₺)','Yapay Zeka (₺)']
   ];
   let grandExp=0,grandRec=0;
   months.forEach(mo=>{
     const d=calcMonthData(mo.key);
     const missing=Math.max(0,d.expected-d.received);
     const pct=d.expected>0?Math.round(d.received/d.expected*100):0;
-    sumRows.push([MONTHS[mo.m]+' '+mo.y,d.expected,d.received,missing,pct+'%',d.music,d.chess]);
+    sumRows.push([MONTHS[mo.m]+' '+mo.y,d.expected,d.received,missing,pct+'%',d.music,d.chess,d.ai]);
     grandExp+=d.expected;grandRec+=d.received;
   });
   sumRows.push([],['TOPLAM',grandExp,grandRec,Math.max(0,grandExp-grandRec),(grandExp>0?Math.round(grandRec/grandExp*100):0)+'%']);
   const ws1=XLSX.utils.aoa_to_sheet(sumRows);
-  ws1['!cols']=[{wch:14},{wch:14},{wch:14},{wch:12},{wch:12},{wch:12},{wch:12}];
+  ws1['!cols']=[{wch:14},{wch:14},{wch:14},{wch:12},{wch:12},{wch:12},{wch:12},{wch:14}];
   XLSX.utils.book_append_sheet(wb,ws1,'Aylık Gelir');
 
   const stuRows=[['Ad Soyad','Eğitim','Aylık Ücret (₺)','Bu Ay Alınan (₺)','Bu Ay Eksik (₺)','Durum']];
   const curMk=mkey(new Date().getFullYear(),new Date().getMonth());
   students.forEach(s=>{
-    const fee=stuExFor(s,curMk)?parseFloat(stuExFor(s,curMk).amount||0):parseFloat(s.fee||0);
-    const pays=Object.values(allPayCache[s.id]||{}).filter(p=>p.date.startsWith(curMk)&&!p.recId);
-    const rec=pays.reduce((a,p)=>a+parseFloat(p.amount||0),0);
-    const missing=Math.max(0,fee-rec);
-    const status=fee===0?'Ücret Yok':rec>=fee?'Tam':rec>0?'Eksik':'Ödeme Yok';
-    stuRows.push([s.name+' '+s.surname,s.education,fee,rec,missing,status]);
+    const m=stuMonthDue(s,curMk);
+    const diff=Math.round((m.rec-m.due)*100)/100;
+    const missing=m.exPay?0:Math.max(0,-diff);
+    const status=m.fee===0?'Ücret Yok':m.rec===0?'Ödeme Yok':(m.exPay||diff===0)?'Tam':diff<0?'Eksik '+(-diff)+' ₺':'Fazla '+diff+' ₺';
+    stuRows.push([s.name+' '+s.surname,s.education,m.fee,m.rec,missing,status]);
   });
   const ws2=XLSX.utils.aoa_to_sheet(stuRows);
   ws2['!cols']=[{wch:22},{wch:24},{wch:14},{wch:14},{wch:14},{wch:12}];
