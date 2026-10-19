@@ -992,7 +992,8 @@ summary::-webkit-details-marker{display:none}
     </div>
     <div style="text-align:center;font-size:11px;color:var(--dim);font-weight:700;margin-top:8px">Excel'deki formunla birebir aynı: her hücreye saat + isim + istediğin gibi not yazabilirsin. Otomatik kaydedilir, tüm cihazlarda senkron. Bir ismi kalınlaştırmak/renklendirmek için hücrede seç, sonra yukarıdaki araç çubuğunu kullan.</div>
   </div>
-  <div class="week-wrap">
+  <div id="yf-topscroll" style="overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;height:18px;margin-bottom:4px"><div id="yf-topscroll-in" style="height:1px;width:calc(7 * var(--yf-col,172px))"></div></div>
+  <div class="week-wrap" id="yf-wrap">
     <table id="yf-table" style="border-collapse:collapse;table-layout:fixed;width:calc(7 * var(--yf-col,172px));background:#fff;border-radius:12px;overflow:hidden;box-shadow:var(--shadow)"></table>
   </div>
   </div>
@@ -1064,6 +1065,10 @@ summary::-webkit-details-marker{display:none}
       <button class="btn-ghost" onclick="closeReceipt()">← Geri</button>
       <button class="btn btn-purple" onclick="printReceipt()">🖨️ Yazdır / PDF</button>
       <button class="btn btn-wa" onclick="sendWA()">📲 WhatsApp</button>
+    </div>
+    <div class="rec-acts" style="margin-top:-6px;flex-wrap:wrap">
+      <label style="font-size:12px;font-weight:700;color:var(--text2)">📞 Gönderilecek numara:</label>
+      <select id="rec-wa-to" style="flex:1;min-width:200px;padding:9px 8px;font-size:13px;border-radius:9px;border:1px solid var(--border);font-weight:600" onchange="recWaToChange()"></select>
     </div>
     <div id="rec-card">
       <div class="rec-hdr">
@@ -1573,6 +1578,7 @@ function yfWLoad(k){try{return localStorage.getItem(k);}catch(e){return null;}}
 function yfApplyWidth(){
   const t=document.getElementById('yf-table');if(!t)return;
   t.style.setProperty('--yf-col',yfColW+'px');
+  const tsi=document.getElementById('yf-topscroll-in');if(tsi)tsi.style.setProperty('--yf-col',yfColW+'px');
   document.getElementById('yf-w-range').value=yfColW;
   document.getElementById('yf-w-val').textContent=yfColW+' px';
   document.getElementById('yf-width').classList.toggle('locked',yfWLocked);
@@ -1588,7 +1594,15 @@ function yfStepWidth(d){yfSetWidth(yfColW+d);}
 function yfToggleWidthLock(){
   yfWLocked=!yfWLocked;yfWStore('yfWLocked',yfWLocked?'1':'0');yfApplyWidth();
 }
+function yfInitTopScroll(){
+  const top=document.getElementById('yf-topscroll'),wrap=document.getElementById('yf-wrap');
+  if(!top||!wrap||top._yfBound)return;top._yfBound=true;
+  let lock=false;
+  top.addEventListener('scroll',()=>{if(lock){lock=false;return;}lock=true;wrap.scrollLeft=top.scrollLeft;});
+  wrap.addEventListener('scroll',()=>{if(lock){lock=false;return;}lock=true;top.scrollLeft=wrap.scrollLeft;});
+}
 function yfInitWidth(){
+  yfInitTopScroll();
   const w=parseInt(yfWLoad('yfColW'),10);if(w>=100&&w<=400)yfColW=w;
   yfWLocked=yfWLoad('yfWLocked')==='1';
   yfApplyWidth();
@@ -3158,8 +3172,34 @@ function openReceipt(){
   document.getElementById('rec-note').value=autoNote;
   document.getElementById('rec-no').textContent='No: MKB-'+String(Date.now()).slice(-6);
   document.getElementById('rec-date').textContent='📅 '+now.getDate()+' '+MONTHS[now.getMonth()]+' '+now.getFullYear();
+  fillRecWaRecipients();
   document.getElementById('rec-modal').classList.add('open');
   window.scrollTo(0,0);
+}
+// Makbuzun WhatsApp numarasını seç: anne / baba / öğrenci / elle yazılan / numarasız
+function fillRecWaRecipients(){
+  const sel=document.getElementById('rec-wa-to');
+  const s=students.find(x=>x.id===curId);
+  if(!sel||!s)return;
+  const opts=[];
+  if(s.momPhone)opts.push({v:s.momPhone,l:'👩 '+(s.momName||'Anne')+' — '+s.momPhone});
+  if(s.dadPhone)opts.push({v:s.dadPhone,l:'👨 '+(s.dadName||'Baba')+' — '+s.dadPhone});
+  if(s.phone)opts.push({v:s.phone,l:'🎓 Öğrenci — '+s.phone});
+  opts.push({v:'__other',l:'✏️ Başka numara yaz…'});
+  opts.push({v:'',l:'📇 Numara seçmeden aç (WhatsApp\'ta kişiyi seç)'});
+  sel.innerHTML=opts.map(o=>'<option value="'+o.v+'">'+o.l+'</option>').join('');
+  sel.selectedIndex=0;
+  sel.dataset.prev='0';
+}
+function recWaToChange(){
+  const sel=document.getElementById('rec-wa-to');
+  if(sel.value!=='__other'){sel.dataset.prev=String(sel.selectedIndex);return;}
+  const n=prompt('WhatsApp numarası (örn. 0532 000 00 00):','');
+  const d=String(n||'').replace(/\D/g,'');
+  if(d.length<10){sel.selectedIndex=+(sel.dataset.prev||0);return;}
+  const o=document.createElement('option');o.value=d;o.textContent='✏️ '+n.trim();
+  sel.insertBefore(o,sel.querySelector('option[value="__other"]'));
+  sel.value=d;sel.dataset.prev=String(sel.selectedIndex);
 }
 function closeReceipt(){document.getElementById('rec-modal').classList.remove('open');}
 function sendWA(){
@@ -3172,8 +3212,9 @@ function sendWA(){
   const note=document.getElementById('rec-note').value;
   const now=new Date();
   const msg='🎵♟ *RockJazz Müzik Aletleri ve Silifke Satranç Atölyesi*\n━━━━━━━━━━━━━━━━━━━━\n✅ *ÖDEME MAKBUZU*\n━━━━━━━━━━━━━━━━━━━━\n👤 *Öğrenci:* '+student+'\n👨‍👩‍👦 *Veli:* '+parent+'\n📚 *Ders:* '+lesson+'\n📅 *Dönem:* '+mon+' '+yr+'\n💰 *Ücret:* '+parseFloat(amt).toLocaleString('tr-TR')+' ₺\n'+(note?'📝 *Not:* '+note+'\n':'')+'━━━━━━━━━━━━━━━━━━━━\n🗓 Tarih: '+now.getDate()+'.'+String(now.getMonth()+1).padStart(2,'0')+'.'+now.getFullYear()+'\n✍️ RockJazz Müzik Aletleri ve Silifke Satranç Atölyesi';
-  const _st=students.find(x=>x.id===curId);
-  const _ph=_st?waPhone(_st.momPhone||_st.dadPhone||_st.phone):'';
+  const _sel=document.getElementById('rec-wa-to');
+  const _pick=_sel?_sel.value:'';
+  const _ph=(_pick&&_pick!=='__other')?waPhone(_pick):'';
   window.open('https://wa.me/'+_ph+'?text='+encodeURIComponent(msg),'_blank');
   markReceiptSent('WhatsApp');
 }
