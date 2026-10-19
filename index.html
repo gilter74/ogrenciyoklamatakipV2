@@ -70,7 +70,7 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
 .week-cell{background:#fff;border:1px dashed var(--border);border-radius:9px;padding:4px;min-height:44px;display:flex;flex-direction:column;gap:3px}
 .week-chip{border-radius:7px;padding:4px 6px;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:transform .1s}
 .week-chip:active{transform:scale(.95)}
-#yf-table th{background:#b45309;color:#fff;font-size:13px;font-weight:700;padding:9px 4px;text-align:center;border:1px solid #92400e;min-width:172px}
+#yf-table th{background:#b45309;color:#fff;font-size:13px;font-weight:700;padding:9px 4px;text-align:center;border:1px solid #92400e;min-width:var(--yf-col,172px)}
 #yf-table td{border:1px solid var(--border);padding:0;vertical-align:top}
 #yf-table td.yf-unpaid{background:#fecaca;border:1px solid #dc2626}
 #yf-table td.yf-unpaid .yf-tally{background:#fca5a5}
@@ -280,6 +280,9 @@ body:has(#s-veli-view.active) #bnav,body:has(#s-fiyat.active) #bnav,body:has(#s-
 body:has(#s-veli-view.active) .screen{padding-bottom:20px}
 @media print{#bnav{display:none!important}}
 summary::-webkit-details-marker{display:none}
+.yf-width{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:8px 10px;margin-top:10px}
+.yf-width input[type=range]{width:170px;accent-color:var(--purple)}
+.yf-width.locked input[type=range],.yf-width.locked .yf-w-step{opacity:.45;pointer-events:none}
 </style>
 </head>
 <body>
@@ -972,6 +975,15 @@ summary::-webkit-details-marker{display:none}
       <button class="btn-ghost" style="padding:8px 12px;font-size:13px" onclick="yfRemoveRow()">➖ Satır Sil</button>
       <button class="btn btn-green" style="padding:8px 12px;font-size:13px" onclick="yfExportExcel()">⬇️ Excel İndir</button>
     </div>
+    <div class="yf-width" id="yf-width">
+      <span class="yf-tb-lbl">Sütun genişliği:</span>
+      <button type="button" class="yf-tb-btn yf-w-step" onclick="yfStepWidth(-10)">−</button>
+      <input type="range" id="yf-w-range" min="100" max="400" step="2" value="172" oninput="yfSetWidth(this.value)">
+      <button type="button" class="yf-tb-btn yf-w-step" onclick="yfStepWidth(10)">+</button>
+      <b id="yf-w-val" style="font-size:13px;min-width:48px;text-align:center">172 px</b>
+      <button type="button" class="yf-tb-btn yf-w-step" onclick="yfSetWidth(172)">↺ Varsayılan</button>
+      <button type="button" class="yf-tb-btn" id="yf-w-lock" onclick="yfToggleWidthLock()">🔓 Kilitle</button>
+    </div>
     <div class="yf-toolbar" id="yf-toolbar">
       <span class="yf-tb-lbl">Biçim:</span>
       <button type="button" class="yf-tb-btn" id="yf-tb-bold" onmousedown="event.preventDefault()" onclick="yfFormatBold()"><b>K</b> Kalın</button>
@@ -981,7 +993,7 @@ summary::-webkit-details-marker{display:none}
     <div style="text-align:center;font-size:11px;color:var(--dim);font-weight:700;margin-top:8px">Excel'deki formunla birebir aynı: her hücreye saat + isim + istediğin gibi not yazabilirsin. Otomatik kaydedilir, tüm cihazlarda senkron. Bir ismi kalınlaştırmak/renklendirmek için hücrede seç, sonra yukarıdaki araç çubuğunu kullan.</div>
   </div>
   <div class="week-wrap">
-    <table id="yf-table" style="border-collapse:collapse;width:100%;min-width:1200px;background:#fff;border-radius:12px;overflow:hidden;box-shadow:var(--shadow)"></table>
+    <table id="yf-table" style="border-collapse:collapse;table-layout:fixed;width:calc(7 * var(--yf-col,172px));background:#fff;border-radius:12px;overflow:hidden;box-shadow:var(--shadow)"></table>
   </div>
   </div>
 </div>
@@ -1554,7 +1566,35 @@ function yfKey(){
   const y=parseInt(document.getElementById('yf-year').value,10);
   return y+'-'+String(m+1).padStart(2,'0');
 }
+// Sütun genişliği: elle ayarla, kilitle / kilidi aç (tarayıcıda hatırlanır)
+let yfColW=172, yfWLocked=false;
+function yfWStore(k,v){try{localStorage.setItem(k,v);}catch(e){}}
+function yfWLoad(k){try{return localStorage.getItem(k);}catch(e){return null;}}
+function yfApplyWidth(){
+  const t=document.getElementById('yf-table');if(!t)return;
+  t.style.setProperty('--yf-col',yfColW+'px');
+  document.getElementById('yf-w-range').value=yfColW;
+  document.getElementById('yf-w-val').textContent=yfColW+' px';
+  document.getElementById('yf-width').classList.toggle('locked',yfWLocked);
+  document.getElementById('yf-w-range').disabled=yfWLocked;
+  document.getElementById('yf-w-lock').textContent=yfWLocked?'🔒 Kilitli (aç)':'🔓 Kilitle';
+}
+function yfSetWidth(v){
+  if(yfWLocked)return;
+  yfColW=Math.max(100,Math.min(400,Math.round(+v)||172));
+  yfWStore('yfColW',yfColW);yfApplyWidth();
+}
+function yfStepWidth(d){yfSetWidth(yfColW+d);}
+function yfToggleWidthLock(){
+  yfWLocked=!yfWLocked;yfWStore('yfWLocked',yfWLocked?'1':'0');yfApplyWidth();
+}
+function yfInitWidth(){
+  const w=parseInt(yfWLoad('yfColW'),10);if(w>=100&&w<=400)yfColW=w;
+  yfWLocked=yfWLoad('yfWLocked')==='1';
+  yfApplyWidth();
+}
 function openYForm(){
+  yfInitWidth();
   if(!document.getElementById('yf-year').value){
     const now=new Date();
     document.getElementById('yf-month').value=now.getMonth();
