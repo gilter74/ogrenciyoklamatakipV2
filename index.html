@@ -318,6 +318,7 @@ summary::-webkit-details-marker{display:none}
   <div id="dup-name-warn" style="display:none"></div>
   <div id="late-banner"></div>
   <div id="rec-banner"></div>
+  <div id="frozen-banner"></div>
   <div id="lvl-banner"></div>
   <div id="um-banner"></div>
   <div class="card mb14" id="today-sched-card">
@@ -698,6 +699,7 @@ summary::-webkit-details-marker{display:none}
       <button class="btn btn-orange btn-sm" onclick="openReceipt()">🧾 Makbuz</button>
       <button class="btn btn-green btn-sm" onclick="exportExcel()">⬇️ Excel</button>
       <button class="btn btn-blue btn-sm" onclick="openDrive()">☁️ Drive</button>
+      <button class="btn btn-sm" id="freeze-btn" style="background:#0ea5e9;color:#fff" onclick="freezeToggle()">❄️ Kaydı Dondur</button>
     </div>
   </div>
   <div class="card mb12" id="rec-card">
@@ -1309,6 +1311,108 @@ function dtShow(t){
   });
 }
 
+
+// ══ KAYIT DONDURMA ════════════════════════════════════════════════════
+// Dondurulan öğrencinin ders saatleri programdan (yoklama, günlük/haftalık program) çıkar → saat boşalır.
+// Öğrenci ana ekranda "❄️ Dondurulanlar" bölümünde kalır; 7 gün dolunca arşive alma uyarısı çıkar.
+const FREEZE_DAYS=7;
+function isFrozen(s){return !!(s&&s.frozen&&s.frozen.date);}
+function frozenDaysPassed(s){
+  if(!isFrozen(s))return 0;
+  const a=new Date(s.frozen.date+'T00:00:00'),b=new Date(todays()+'T00:00:00');
+  return Math.max(0,Math.round((b-a)/86400000));
+}
+function frozenDue(s){return isFrozen(s)&&frozenDaysPassed(s)>=FREEZE_DAYS;}
+function updateFreezeBtn(){
+  const b=document.getElementById('freeze-btn');if(!b)return;
+  const s=students.find(x=>x.id===curId);
+  if(s&&isFrozen(s)){b.textContent='▶️ Dondurmayı Kaldır';b.style.background='#16a34a';}
+  else{b.textContent='❄️ Kaydı Dondur';b.style.background='#0ea5e9';}
+}
+function freezeToggle(){
+  const s=students.find(x=>x.id===curId);if(!s)return;
+  if(isFrozen(s))unfreezeStudent(s.id);else freezeStudent(s.id);
+}
+function freezeStudent(id){
+  const s=students.find(x=>x.id===id);if(!s||isFrozen(s))return;
+  const n=(s.schedule||[]).filter(x=>x&&x.time).length;
+  showConf(s.name+' '+s.surname+' için kayıt DONDURULACAK. Ders saatleri ('+n+' saat) yoklama ve programdan düşülür, saat boşalır; ana ekranda "Donduruldu" olarak '+FREEZE_DAYS+' gün kalır, sonra arşive alma uyarısı verilir.','❄️','Evet, Dondur',async()=>{
+    showLoad('Donduruluyor…');
+    try{
+      s.frozen={date:todays(),schedule:(s.schedule||[]).map(x=>({day:x.day,time:x.time}))};
+      s.schedule=[];
+      await fbSet('students/'+id,s);
+    }catch(e){console.warn('freeze',e);}
+    hideLoad();
+    updateFreezeBtn();
+    try{renderDetail();}catch(e){}
+    try{renderList();}catch(e){}
+    snack('❄️ '+s.name+' '+s.surname+' donduruldu. Ders saatleri boşaldı.',[]);
+  });
+}
+function unfreezeStudent(id){
+  const s=students.find(x=>x.id===id);if(!s||!isFrozen(s))return;
+  const old=s.frozen.schedule||[];
+  // aynı gün+saate başka öğrenci alındıysa uyar
+  const clash=[];
+  old.forEach(sl=>{
+    students.forEach(o=>{
+      if(o.id!==id&&(o.schedule||[]).some(x=>x&&x.day===sl.day&&x.time===sl.time))clash.push(SCHED_DAYS[sl.day]+' '+sl.time+' ('+o.name+' '+o.surname+')');
+    });
+  });
+  const msg=s.name+' '+s.surname+' için dondurma kaldırılacak, eski ders saatleri geri yüklenecek.'+(clash.length?' ⚠️ Şu saatlerde başka öğrenci var: '+clash.join(', ')+'.':'');
+  showConf(msg,'▶️','Evet, Kaldır',async()=>{
+    showLoad('Güncelleniyor…');
+    try{
+      s.schedule=old.map(x=>({day:x.day,time:x.time}));
+      delete s.frozen;
+      await fbSet('students/'+id,s);
+    }catch(e){console.warn('unfreeze',e);}
+    hideLoad();
+    updateFreezeBtn();
+    try{renderDetail();}catch(e){}
+    try{renderList();}catch(e){}
+  });
+}
+function freezeArchive(id){delStudent(id);}
+function frozenNotifyDue(list){
+  let seen={};try{seen=JSON.parse(localStorage.getItem('frzNotified')||'{}');}catch(e){}
+  const fresh=list.filter(s=>seen[s.id]!==s.frozen.date);
+  if(!fresh.length)return;
+  const body=fresh.map(s=>s.name+' '+s.surname).join(', ')+' — dondurma süresi doldu, arşive alınsın mı?';
+  if('Notification' in window&&Notification.permission==='granted'){
+    try{new Notification('❄️ Dondurma süresi doldu ('+fresh.length+')',{body});}catch(e){}
+  }
+  try{snack('❄️ '+body,[]);}catch(e){}
+  fresh.forEach(s=>{seen[s.id]=s.frozen.date;});
+  try{localStorage.setItem('frzNotified',JSON.stringify(seen));}catch(e){}
+}
+function renderFrozenBanner(){
+  const box=document.getElementById('frozen-banner');if(!box)return;
+  const list=students.filter(isFrozen).sort((a,b)=>a.frozen.date.localeCompare(b.frozen.date));
+  if(!list.length){box.innerHTML='';return;}
+  const due=list.filter(frozenDue);
+  const rows=list.map(s=>{
+    const d=frozenDaysPassed(s),isDue=d>=FREEZE_DAYS,left=Math.max(0,FREEZE_DAYS-d);
+    const slots=(s.frozen.schedule||[]).filter(x=>x&&x.time).map(x=>SCHED_DAYS[x.day]+' '+x.time).join(', ');
+    return '<div style="background:'+(isDue?'#fef2f2':'#fff')+';border:1px solid '+(isDue?'#fca5a5':'#bae6fd')+';border-radius:12px;padding:10px 12px;margin-top:8px">'+
+      '<div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start">'+
+        '<div style="min-width:0"><div style="font-weight:700;font-size:14px;cursor:pointer;color:#0c4a6e" onclick="openDetNewWin(\''+s.id+'\')">'+repEsc(s.name+' '+s.surname)+'</div>'+
+        '<div style="font-size:11px;color:var(--muted);margin-top:2px">'+repEsc(s.education||'')+(slots?' · boşalan saat: '+repEsc(slots):'')+'</div></div>'+
+        '<div style="flex-shrink:0;font-size:12px;font-weight:700;color:'+(isDue?'#dc2626':'#0369a1')+';text-align:right">'+(isDue?'⏰ Süre doldu':'❄️ '+left+' gün kaldı')+'<div style="font-weight:600;font-size:10px;color:var(--muted)">'+d+'. gün</div></div>'+
+      '</div>'+
+      '<div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">'+
+        '<button class="btn btn-sm" style="background:'+(isDue?'#dc2626':'#64748b')+';color:#fff" onclick="freezeArchive(\''+s.id+'\')">🗂️ Arşive Al</button>'+
+        '<button class="btn btn-sm" style="background:#16a34a;color:#fff" onclick="unfreezeStudent(\''+s.id+'\')">▶️ Dondurmayı Kaldır</button>'+
+      '</div></div>';
+  }).join('');
+  box.innerHTML='<div style="background:'+(due.length?'#fff1f2':'#f0f9ff')+';border:2px solid '+(due.length?'#f87171':'#7dd3fc')+';border-radius:16px;padding:12px 14px;margin-bottom:12px">'+
+    '<div style="font-weight:700;font-size:15px;color:'+(due.length?'#991b1b':'#0c4a6e')+'">❄️ Dondurulanlar ('+list.length+')'+(due.length?' · '+due.length+' kişinin süresi doldu':'')+'</div>'+
+    '<div style="font-size:11px;color:var(--muted);margin-top:2px">'+FREEZE_DAYS+' gün sonunda arşive almanız için uyarı verilir.</div>'+rows+'</div>';
+  if(due.length)frozenNotifyDue(due);
+}
+setInterval(()=>{const a=document.querySelector('.screen.active');if(a&&a.id==='s-list'){try{renderFrozenBanner();}catch(e){}}},3600000);
+
 // ══ LIST ══════════════════════════════════════════════════════════════
 function renderTodaySched(){
   const titleEl=document.getElementById('today-sched-title');
@@ -1391,7 +1495,7 @@ function stuRow(s,dupSet){
           <div style="font-weight:700;font-size:15px">${s.name} ${s.surname}${dup?' <span style="color:#dc2626;font-size:11px;font-weight:700">⚠️ aynı isim</span>':''}</div>
           <div style="font-size:12px;color:var(--muted);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${s.education} · ${s.program}</div>
           <div style="font-size:12px;color:var(--dim);margin-top:1px">${s.phone?'📞 '+s.phone:''}${s.momPhone?' · 👩 '+s.momPhone:''}${dup?' · Kayıt no: '+s.id:''}</div>
-          ${recBadge(s.id)}${rcptBadge(s.id)}${chr?chronicBadge(s):''}
+          ${isFrozen(s)?'<span style="display:inline-block;background:#e0f2fe;color:#0369a1;border:1px solid #7dd3fc;border-radius:8px;padding:1px 8px;font-size:11px;font-weight:700;margin-top:3px">❄️ Donduruldu · '+frozenDaysPassed(s)+'. gün</span>':''}${recBadge(s.id)}${rcptBadge(s.id)}${chr?chronicBadge(s):''}
         </div>
         <button class="btn-del" onclick="event.stopPropagation();delStudent('${s.id}')">Sil</button>
       </div>`;
@@ -1404,7 +1508,7 @@ function renderList(){
       const ti=(new Date().getDay()+6)%7;
       const n=students.reduce((a,x)=>a+(x.schedule||[]).filter(sl=>sl.day===ti&&sl.time).length,0);
       const dn=new Date();
-      hs.innerHTML='<div class="kpi"><div class="v">'+students.length+'</div><div class="k">Aktif öğrenci</div></div>'+
+      hs.innerHTML='<div class="kpi"><div class="v">'+students.filter(x=>!isFrozen(x)).length+'</div><div class="k">Aktif öğrenci</div></div>'+
         '<div class="kpi"><div class="v">'+n+'</div><div class="k">Bugünkü ders</div></div>'+
         '<div class="kpi"><div class="v">'+dn.getDate()+' '+MONTHS[dn.getMonth()].slice(0,3)+'</div><div class="k">'+['Pazar','Pazartesi','Salı','Çarşamba','Perşembe','Cuma','Cumartesi'][dn.getDay()]+'</div></div>';
     }
@@ -1412,6 +1516,7 @@ function renderList(){
   renderTodaySched();
   try{umRender();}catch(e){}
   renderRecBanner();
+  try{renderFrozenBanner();}catch(e){}
   try{renderLateBanner();}catch(e){}
   try{updateChronicTile();}catch(e){}
   renderDupNameWarning();
@@ -1881,6 +1986,7 @@ async function autoFillSchedules(){
   const nameCounts=firstNameCounts();
   for(const s of students){
     if(s.schedule&&s.schedule.length)continue;
+    if(isFrozen(s))continue;
     const key=normName(s.name);
     // Aynı adı taşıyan birden fazla öğrenci varsa hangisine ait olduğu belli olmaz —
     // yanlış öğrenciye yanlış ders programı atamamak için bu durumda otomatik doldurma atlanır.
@@ -2092,6 +2198,7 @@ async function openDetCal(id){
 
 function renderDetail(){
   const s=students.find(x=>x.id===curId);if(!s)return;
+  try{updateFreezeBtn();}catch(e){}
   const rng=parseRange(s.payDay);
   let regBadge='';
   if(s.registeredAt){
@@ -3269,6 +3376,7 @@ function lateList(){
   const y=now.getFullYear(),m=now.getMonth(),mk=mkey(y,m);
   const out=[];
   students.forEach(st=>{
+    if(isFrozen(st))return;
     const pays=Object.values(lateAllPay[st.id]||{}).filter(x=>x.date&&x.date.startsWith(mk)&&!x.recId);
     const paid=pays.reduce((a,x)=>a+parseFloat(x.amount||0),0);
     const fee=parseFloat(String(st.fee||'').replace(',','.'))||0;
