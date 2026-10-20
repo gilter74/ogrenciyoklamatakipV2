@@ -318,7 +318,6 @@ summary::-webkit-details-marker{display:none}
   <div id="dup-name-warn" style="display:none"></div>
   <div id="late-banner"></div>
   <div id="rec-banner"></div>
-  <div id="frozen-banner"></div>
   <div id="lvl-banner"></div>
   <div id="um-banner"></div>
   <div class="card mb14" id="today-sched-card">
@@ -361,6 +360,7 @@ summary::-webkit-details-marker{display:none}
     <div id="list-el"></div>
     <div class="tot" id="tot-el"></div>
   </div>
+  <div id="frozen-banner"></div>
 </div>
 
 <!-- REGISTER -->
@@ -699,6 +699,7 @@ summary::-webkit-details-marker{display:none}
       <button class="btn btn-orange btn-sm" onclick="openReceipt()">🧾 Makbuz</button>
       <button class="btn btn-green btn-sm" onclick="exportExcel()">⬇️ Excel</button>
       <button class="btn btn-blue btn-sm" onclick="openDrive()">☁️ Drive</button>
+      <button class="btn btn-sm" id="freeze-arc-btn" style="display:none;background:#64748b;color:#fff" onclick="freezeArchive(curId)">🗂️ Arşive Al</button>
       <button class="btn btn-sm" id="freeze-btn" style="background:#0ea5e9;color:#fff" onclick="freezeToggle()">❄️ Kaydı Dondur</button>
     </div>
   </div>
@@ -1326,8 +1327,9 @@ function frozenDue(s){return isFrozen(s)&&frozenDaysPassed(s)>=FREEZE_DAYS;}
 function updateFreezeBtn(){
   const b=document.getElementById('freeze-btn');if(!b)return;
   const s=students.find(x=>x.id===curId);
-  if(s&&isFrozen(s)){b.textContent='▶️ Dondurmayı Kaldır';b.style.background='#16a34a';}
-  else{b.textContent='❄️ Kaydı Dondur';b.style.background='#0ea5e9';}
+  const a=document.getElementById('freeze-arc-btn');
+  if(s&&isFrozen(s)){b.textContent='▶️ Dondurmayı Kaldır';b.style.background='#16a34a';if(a){a.style.display='';a.style.background=frozenDue(s)?'#dc2626':'#64748b';}}
+  else{b.textContent='❄️ Kaydı Dondur';b.style.background='#0ea5e9';if(a)a.style.display='none';}
 }
 function freezeToggle(){
   const s=students.find(x=>x.id===curId);if(!s)return;
@@ -1387,29 +1389,24 @@ function frozenNotifyDue(list){
   fresh.forEach(s=>{seen[s.id]=s.frozen.date;});
   try{localStorage.setItem('frzNotified',JSON.stringify(seen));}catch(e){}
 }
+let frzOpen=false;
+function frzToggle(){frzOpen=!frzOpen;renderFrozenBanner();}
 function renderFrozenBanner(){
   const box=document.getElementById('frozen-banner');if(!box)return;
   const list=students.filter(isFrozen).sort((a,b)=>a.frozen.date.localeCompare(b.frozen.date));
   if(!list.length){box.innerHTML='';return;}
   const due=list.filter(frozenDue);
-  const rows=list.map(s=>{
+  const hot=due.length>0;
+  const rows=frzOpen?list.map(s=>{
     const d=frozenDaysPassed(s),isDue=d>=FREEZE_DAYS,left=Math.max(0,FREEZE_DAYS-d);
-    const slots=(s.frozen.schedule||[]).filter(x=>x&&x.time).map(x=>SCHED_DAYS[x.day]+' '+x.time).join(', ');
-    return '<div style="background:'+(isDue?'#fef2f2':'#fff')+';border:1px solid '+(isDue?'#fca5a5':'#bae6fd')+';border-radius:12px;padding:10px 12px;margin-top:8px">'+
-      '<div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start">'+
-        '<div style="min-width:0"><div style="font-weight:700;font-size:14px;cursor:pointer;color:#0c4a6e" onclick="openDetNewWin(\''+s.id+'\')">'+repEsc(s.name+' '+s.surname)+'</div>'+
-        '<div style="font-size:11px;color:var(--muted);margin-top:2px">'+repEsc(s.education||'')+(slots?' · boşalan saat: '+repEsc(slots):'')+'</div></div>'+
-        '<div style="flex-shrink:0;font-size:12px;font-weight:700;color:'+(isDue?'#dc2626':'#0369a1')+';text-align:right">'+(isDue?'⏰ Süre doldu':'❄️ '+left+' gün kaldı')+'<div style="font-weight:600;font-size:10px;color:var(--muted)">'+d+'. gün</div></div>'+
-      '</div>'+
-      '<div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">'+
-        '<button class="btn btn-sm" style="background:'+(isDue?'#dc2626':'#64748b')+';color:#fff" onclick="freezeArchive(\''+s.id+'\')">🗂️ Arşive Al</button>'+
-        '<button class="btn btn-sm" style="background:#16a34a;color:#fff" onclick="unfreezeStudent(\''+s.id+'\')">▶️ Dondurmayı Kaldır</button>'+
-      '</div></div>';
-  }).join('');
-  box.innerHTML='<div style="background:'+(due.length?'#fff1f2':'#f0f9ff')+';border:2px solid '+(due.length?'#f87171':'#7dd3fc')+';border-radius:16px;padding:12px 14px;margin-bottom:12px">'+
-    '<div style="font-weight:700;font-size:15px;color:'+(due.length?'#991b1b':'#0c4a6e')+'">❄️ Dondurulanlar ('+list.length+')'+(due.length?' · '+due.length+' kişinin süresi doldu':'')+'</div>'+
-    '<div style="font-size:11px;color:var(--muted);margin-top:2px">'+FREEZE_DAYS+' gün sonunda arşive almanız için uyarı verilir.</div>'+rows+'</div>';
-  if(due.length)frozenNotifyDue(due);
+    return '<div onclick="openDetNewWin(\''+s.id+'\')" style="display:flex;justify-content:space-between;gap:8px;align-items:center;cursor:pointer;padding:6px 2px;border-top:1px dashed '+(isDue?'#fca5a5':'#bae6fd')+';font-size:12px">'+
+      '<span style="font-weight:700;color:'+(isDue?'#991b1b':'#0c4a6e')+';min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+repEsc(s.name+' '+s.surname)+'</span>'+
+      '<span style="flex-shrink:0;font-weight:700;color:'+(isDue?'#dc2626':'#0369a1')+'">'+(isDue?'⏰ süre doldu':left+' gün kaldı')+'</span></div>';
+  }).join(''):'';
+  box.innerHTML='<div style="margin-top:14px;background:'+(hot?'#fff1f2':'#f0f9ff')+';border:1px dashed '+(hot?'#f87171':'#7dd3fc')+';border-radius:12px;padding:6px 12px">'+
+    '<div onclick="frzToggle()" style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;font-size:12px;font-weight:700;color:'+(hot?'#991b1b':'#0c4a6e')+'">'+
+    '<span>❄️ Dondurulanlar ('+list.length+')'+(hot?' · '+due.length+' süre doldu':'')+'</span><span>'+(frzOpen?'▴':'▾')+'</span></div>'+rows+'</div>';
+  if(hot)frozenNotifyDue(due);
 }
 setInterval(()=>{const a=document.querySelector('.screen.active');if(a&&a.id==='s-list'){try{renderFrozenBanner();}catch(e){}}},3600000);
 
@@ -1489,8 +1486,8 @@ function stuRow(s,dupSet){
         const dup=dupSet.has(fn);
         let chr=false;try{chr=!!chronicInfo(s);}catch(e){}
         return`
-      <div class="s-row" style="border-color:${dup?'#dc2626':(chr?'#7c3aed':c.border)};background:${chr?'#f5f3ff':c.bg};${chr?'border-width:2px;box-shadow:0 0 0 3px rgba(124,58,237,.18);':''}" onclick="openDetNewWin('${s.id}')">
-        <div class="avatar" style="width:48px;height:48px;background:${c.border}">${eduIcon(s.education)}</div>
+      <div class="s-row" style="border-color:${dup?'#dc2626':(chr?'#7c3aed':c.border)};background:${chr?'#f5f3ff':c.bg};${isFrozen(s)?'border:2px dashed #38bdf8;background:#e0f2fe;opacity:.9;':''}${chr?'border-width:2px;box-shadow:0 0 0 3px rgba(124,58,237,.18);':''}" onclick="openDetNewWin('${s.id}')">
+        <div class="avatar" style="width:48px;height:48px;background:${isFrozen(s)?'#0ea5e9':c.border}">${isFrozen(s)?'❄️':eduIcon(s.education)}</div>
         <div style="flex:1;min-width:0">
           <div style="font-weight:700;font-size:15px">${s.name} ${s.surname}${dup?' <span style="color:#dc2626;font-size:11px;font-weight:700">⚠️ aynı isim</span>':''}</div>
           <div style="font-size:12px;color:var(--muted);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${s.education} · ${s.program}</div>
