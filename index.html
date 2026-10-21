@@ -3376,7 +3376,7 @@ function printReceipt(){
 }
 
 // ══ MAKBUZ GÖNDERİLDİ KAYDI ═══════════════════════════════════════════
-let rcptSent={}, lateAllPay={}, lateLog={};
+let rcptSent={}, lateAllPay={}, lateLog={}, latePaid={};
 function rcptInfo(sid,mk){return ((rcptSent[sid]||{})[mk])||null;}
 function markReceiptSent(via){
   const sid=curId;if(!sid)return;
@@ -3422,9 +3422,14 @@ function lateList(){
   const out=[];
   students.forEach(st=>{
     if(isFrozen(st))return;
-    const pays=Object.values(lateAllPay[st.id]||{}).filter(x=>x.date&&x.date.startsWith(mk)&&!x.recId);
+    if(st.registeredAt&&st.registeredAt.slice(0,7)>mk)return;
+    if((latePaid[st.id]||{})[mk])return; // elle "ödedi" işaretlendi
+    const pays=Object.values(lateAllPay[st.id]||{}).filter(x=>x&&x.date&&String(x.date).startsWith(mk)&&!x.recId);
     const paid=pays.reduce((a,x)=>a+parseFloat(x.amount||0),0);
-    const fee=parseFloat(String(st.fee||'').replace(',','.'))||0;
+    const exM=stuExFor(st,mk); // öğrenciye özel tek aylık istisna ücreti
+    const fee=exM?(parseFloat(exM.amount)||0):(parseFloat(String(st.fee||'').replace(',','.'))||0);
+    if(exM&&fee<=0)return;                       // istisna: o ay ücret yok
+    if(pays.some(x=>x.exception))return;         // istisna işaretli ödeme: ay tam sayılır
     if(pays.length&&(fee<=0||paid>=fee*0.94))return;
     const rem=fee>0?Math.max(0,fee-paid):0;
     out.push({s:st,fee,paid,rem,daysLate:now.getDate()-LATE_DAY,mk});
@@ -3442,14 +3447,23 @@ function renderLateBanner(){
     const sent=((lateLog[x.s.id]||{})[x.mk])||null;
     return '<div class="late-row"><div style="display:flex;justify-content:space-between;gap:10px;align-items:center">'+
       '<div style="min-width:0"><div style="font-size:14px"><b style="cursor:pointer" onclick="openDetNewWin(\''+x.s.id+'\')">'+repEsc(x.s.name+' '+x.s.surname)+'</b></div>'+
-      '<div style="font-size:11px;opacity:.9;margin-top:2px">'+x.daysLate+' gün gecikti'+(sent?' · 📲 son hatırlatma: '+repDL(sent):'')+'</div></div>'+
+      '<div style="font-size:11px;opacity:.9;margin-top:2px">'+(x.paid>0?'Kısmi ödeme: '+fmtTL(x.paid)+' ₺ · ':'')+x.daysLate+' gün gecikti'+(sent?' · 📲 son hatırlatma: '+repDL(sent):'')+'</div></div>'+
       '<div style="text-align:right;flex-shrink:0">'+(x.rem>0?'<div style="font-weight:700;font-size:15px">'+fmtTL(x.rem)+' ₺</div>':'')+
-      '<button class="late-btn wa" style="margin-top:4px" onclick="lateOpen(\''+x.s.id+'\')">📲 WhatsApp</button></div></div></div>';
+      '<div style="display:flex;gap:6px;justify-content:flex-end;margin-top:4px"><button class="late-btn" style="background:#16a34a;color:#fff;border:none;border-radius:8px;padding:6px 10px;font-weight:700;cursor:pointer" onclick="lateMarkPaid(\''+x.s.id+'\')">✓ Ödedi</button><button class="late-btn wa" onclick="lateOpen(\''+x.s.id+'\')">📲 WhatsApp</button></div></div></div></div>';
   }).join('');
   box.innerHTML='<div class="late-card" id="late-card"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">'+
     '<div style="font-weight:700;font-size:15px">🚨 '+mon+' ödemesi gelmeyenler ('+list.length+')</div>'+
     (total>0?'<div style="font-weight:700;font-size:14px">Toplam '+fmtTL(total)+' ₺</div>':'')+'</div>'+
     '<div style="font-size:11px;opacity:.9;margin:3px 0 4px">Ayın '+LATE_DAY+"'sinden sonra ödeme yapmayan öğrenciler"+'</div>'+rows+'</div>';
+}
+function lateMarkPaid(sid){
+  const st=students.find(x=>x.id===sid);if(!st)return;
+  const now=new Date();const mk=mkey(now.getFullYear(),now.getMonth());
+  if(!confirm(st.name+' '+st.surname+' için '+MONTHS[now.getMonth()]+' ödemesi alındı olarak işaretlensin mi?\n(Bu yalnızca listeden çıkarır; ödeme tutarı kaydı oluşturmaz.)'))return;
+  latePaid[sid]=latePaid[sid]||{};latePaid[sid][mk]=todays();
+  try{fbSet('latePaid/'+sid+'/'+mk,todays());}catch(e){}
+  renderLateBanner();
+  const a=document.querySelector('.screen.active');if(a&&a.id==='s-list')renderList();
 }
 function lateOpen(sid){
   const st=students.find(x=>x.id===sid);if(!st)return;
@@ -3472,6 +3486,7 @@ function startLateWatch(){
     db.ref('payments').on('value',sn=>{lateAllPay=sn.val()||{};refresh();});
     db.ref('receiptSent').on('value',sn=>{rcptSent=sn.val()||{};refresh();try{updateRcptBox();}catch(e){}});
     db.ref('lateRemind').on('value',sn=>{lateLog=sn.val()||{};renderLateBanner();});
+    db.ref('latePaid').on('value',sn=>{latePaid=sn.val()||{};refresh();});
   }catch(e){}
   setTimeout(()=>{const c=document.getElementById('late-card');if(c){c.classList.add('pulse');setTimeout(()=>c.classList.remove('pulse'),3500);}},1500);
 }
