@@ -1857,7 +1857,15 @@ function yfCellInnerHTML(r,c){
   const ov=yfGetOverride(r,c);
   const ovLabel=ov==='red'?'🔴 Elle kırmızı (kaldır)':(ov==='clear'?'⚪ Elle temiz (kaldır)':'🖱 Kırmızı yap');
   const paidBar=`<button type="button" class="yf-paidbtn" onclick="yfToggleOverride(${r},${c})">${ovLabel}</button>`;
-  return `<div class="yf-cell" contenteditable="true" onfocus="yfCellFocus(this)" oninput="yfCellInput(this,${r},${c})" onblur="yfCellBlur(this,${r},${c})">${yfCellDisplayHTML(raw)}</div>${controls}${paidBar}`;
+  // Hücre altında her zaman görünen "ödedi" butonları (ödememiş / elle işaretlenmiş öğrenciler için)
+  const seen={};let payBtns='';
+  Object.keys(nmInfo).forEach(k=>{
+    const inf=nmInfo[k];if(!inf.st||seen[inf.st.id])return;seen[inf.st.id]=1;
+    if(inf.status==='unpaid'&&inf.past)payBtns+=`<button type="button" class="yf-paidbtn" style="background:#16a34a;color:#fff;font-size:11px;padding:5px 4px" onclick="yfManualPaid('${inf.st.id}',true)">✓ ${k} ödedi</button>`;
+    else if(inf.status==='manual')payBtns+=`<button type="button" class="yf-paidbtn" style="background:#d1fae5;color:#065f46;font-size:10px" onclick="yfManualPaid('${inf.st.id}',false)">✅ ${k} elle ödendi · ↩ geri al</button>`;
+    else if(inf.status==='ex')payBtns+=`<div style="font-size:10px;font-weight:700;color:#b45309;text-align:center;padding:2px;background:#fffbeb">🎫 ${k} istisna (tam sayıldı)</div>`;
+  });
+  return `<div class="yf-cell" contenteditable="true" onfocus="yfCellFocus(this)" oninput="yfCellInput(this,${r},${c})" onblur="yfCellBlur(this,${r},${c})">${yfCellDisplayHTML(raw)}</div>${controls}${payBtns}${paidBar}`;
 }
 function yfRender(){
   const table=document.getElementById('yf-table');
