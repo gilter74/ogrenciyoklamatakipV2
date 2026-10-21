@@ -98,6 +98,12 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
 .yf-tally button{border:none;border-radius:5px;width:18px;height:18px;font-size:12px;font-weight:700;cursor:pointer;line-height:1;padding:0}
 .yf-tally button.yf-plus{background:#dcfce7;color:#166534}
 .yf-tally button.yf-minus{background:#fee2e2;color:#991b1b}
+.yf-tally button.yf-pdbtn{width:auto;height:auto;padding:2px 6px;font-size:10px;background:#dc2626;color:#fff;border-radius:6px;white-space:nowrap}
+.yf-tally button.yf-pdundo{width:auto;height:auto;padding:2px 6px;font-size:10px;background:#e5e7eb;color:#374151;border-radius:6px;white-space:nowrap}
+.yf-tag.yf-t-unpaid{color:#b91c1c}
+.yf-tag.yf-t-ok{color:#047857}
+.yf-tag.yf-t-ex{color:#b45309}
+.yf-tally .yf-ps{display:flex;align-items:center;gap:3px;flex-wrap:wrap;width:100%}
 .tab-bar{display:grid;grid-template-columns:1fr 1fr;background:#fff;border:1px solid var(--border);border-radius:13px;padding:4px;gap:4px;margin-bottom:12px;box-shadow:var(--shadow)}
 .tab-btn{border:none;border-radius:9px;padding:10px 8px;background:transparent;color:var(--dim);font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;font-weight:600;font-size:14px;cursor:pointer;transition:all .18s}
 .tab-att{background:var(--blue-l);color:var(--blue)}
@@ -1776,24 +1782,37 @@ function yfMatchStudent(name){
   if(matches.length!==1)return null;
   return matches[0];
 }
-function yfCellUnpaid(text){
+// Bir öğrencinin seçili ay için ödeme durumu:
+//  'paid' = ödeme var · 'ex' = istisna (ödeme istisna işaretli / o ay istisna ücreti 0) · 'manual' = elle ödendi işaretlendi
+//  'exempt' = bu ay ödeme beklenmez (donduruldu / henüz kayıtlı değildi) · 'unpaid' = ödenmemiş
+function yfStudentStatus(st,yy,my){
+  const mk=yy+'-'+String(my+1).padStart(2,'0');
+  if(isFrozen(st))return'exempt';
+  if(st.registeredAt&&st.registeredAt.slice(0,7)>mk)return'exempt';
+  const pays=Object.values(yfPayments[st.id]||{}).filter(p=>p&&p.date&&!p.recId&&String(p.date).slice(0,7)===mk);
+  if(pays.length)return pays.some(p=>p.exception)?'ex':'paid';
+  const ex=stuExFor(st,mk);
+  if(ex&&parseFloat(ex.amount||0)===0)return'ex';
+  if(yfData&&yfData.manualPaid&&yfData.manualPaid[st.id])return'manual';
+  return'unpaid';
+}
+function yfCellNames(text){
   const my=parseInt(document.getElementById('yf-month').value,10);
   const yy=parseInt(document.getElementById('yf-year').value,10);
-  if(!yfIsPastDue(yy,my))return false;
-  const names=yfDetectNames(text);
-  for(const n of names){
+  const past=yfIsPastDue(yy,my);
+  return yfDetectNames(text).map(n=>{
     const st=yfMatchStudent(n);
-    if(!st)continue;
-    const pays=Object.values(yfPayments[st.id]||{});
-    const paid=pays.some(p=>{
-      if(!p||!p.date||p.recId)return false;
-      const parts=p.date.split('-');
-      const py=parseInt(parts[0],10),pm=parseInt(parts[1],10);
-      return py===yy&&pm===(my+1);
-    });
-    if(!paid)return true;
-  }
-  return false;
+    return{n,st,status:st?yfStudentStatus(st,yy,my):null,past};
+  });
+}
+function yfCellUnpaid(text){
+  return yfCellNames(text).some(x=>x.past&&x.status==='unpaid');
+}
+function yfManualPaid(stId,on){
+  yfData.manualPaid=yfData.manualPaid||{};
+  if(on)yfData.manualPaid[stId]=true; else delete yfData.manualPaid[stId];
+  yfSave();
+  yfRender(); // aynı öğrenci başka hücrelerde de geçebilir
 }
 function yfOverrideKey(r,c){ return r+'_'+c; }
 function yfGetOverride(r,c){ return (yfData.overrides||{})[yfOverrideKey(r,c)]; }
@@ -1816,9 +1835,24 @@ function yfCellInnerHTML(r,c){
   const raw=yfData.rows[r][c]||'';
   const plain=yfPlainText(raw);
   const names=yfDetectNames(plain);
+  const nmInfo={};yfCellNames(plain).forEach(x=>{nmInfo[x.n]=x;});
   const controls=names.length?('<div class="yf-tally">'+names.map(n=>{
     const esc=n.replace(/'/g,"\\'");
-    return `<span class="yf-tag">${n}</span><button type="button" class="yf-plus" onclick="yfAddMark(${r},${c},'${esc}','+')">+</button><button type="button" class="yf-minus" onclick="yfAddMark(${r},${c},'${esc}','-')">−</button>`;
+    const inf=nmInfo[n]||{};
+    let tcls='',pd='';
+    if(inf.st){
+      if(inf.status==='unpaid'&&inf.past){
+        tcls=' yf-t-unpaid';
+        pd=`<span class="yf-ps"><button type="button" class="yf-pdbtn" title="Ödeme yaptıysa elle ödendi olarak işaretle" onclick="yfManualPaid('${inf.st.id}',true)">✓ Ödedi</button></span>`;
+      } else if(inf.status==='manual'){
+        tcls=' yf-t-ok';
+        pd=`<span class="yf-ps"><span class="yf-tag yf-t-ok">✅ elle ödendi</span><button type="button" class="yf-pdundo" onclick="yfManualPaid('${inf.st.id}',false)">↩ geri al</button></span>`;
+      } else if(inf.status==='ex'){
+        tcls=' yf-t-ex';
+        pd=`<span class="yf-ps"><span class="yf-tag yf-t-ex">🎫 istisna (tam sayıldı)</span></span>`;
+      }
+    }
+    return `<span class="yf-tag${tcls}">${n}</span><button type="button" class="yf-plus" onclick="yfAddMark(${r},${c},'${esc}','+')">+</button><button type="button" class="yf-minus" onclick="yfAddMark(${r},${c},'${esc}','-')">−</button>${pd}`;
   }).join('')+'</div>'):'';
   const ov=yfGetOverride(r,c);
   const ovLabel=ov==='red'?'🔴 Elle kırmızı (kaldır)':(ov==='clear'?'⚪ Elle temiz (kaldır)':'🖱 Kırmızı yap');
