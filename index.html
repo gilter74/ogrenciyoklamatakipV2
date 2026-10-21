@@ -78,7 +78,7 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
 #yf-table td.yf-forced-clear{background:#f0fdf4}
 .yf-paidbtn{display:block;width:100%;border:none;border-top:1px dashed var(--border);background:#f3f4f6;color:var(--muted);font-size:9px;font-weight:600;padding:3px 4px;cursor:pointer;text-align:center}
 .yf-paidbtn:hover{background:#e5e7eb}
-#yf-table td.yf-unpaid .yf-paidbtn{background:#fca5a5;color:#7f1d1d;border-top-color:#dc2626}
+#yf-table td.yf-unpaid .yf-paidbtn{background:#1f2937;color:#fff;border-top-color:#dc2626}
 #yf-table td.yf-forced-clear .yf-paidbtn{background:#bbf7d0;color:#14532d}
 #yf-table .yf-cell{width:100%;min-height:72px;padding:7px;font-size:15px;line-height:1.35;font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;font-weight:600;color:var(--text);white-space:pre-wrap;word-break:break-word;outline:none;cursor:text}
 #yf-table .yf-cell:focus{background:#fff;box-shadow:inset 0 0 0 2px var(--purple)}
@@ -1814,6 +1814,11 @@ function yfManualPaid(stId,on){
   yfSave();
   yfRender(); // aynı öğrenci başka hücrelerde de geçebilir
 }
+function yfSetOverride(r,c,v){
+  yfData.overrides=yfData.overrides||{};
+  if(v)yfData.overrides[yfOverrideKey(r,c)]=v; else delete yfData.overrides[yfOverrideKey(r,c)];
+  yfSave();yfRenderCell(r,c);
+}
 function yfOverrideKey(r,c){ return r+'_'+c; }
 function yfGetOverride(r,c){ return (yfData.overrides||{})[yfOverrideKey(r,c)]; }
 function yfToggleOverride(r,c){
@@ -1855,7 +1860,7 @@ function yfCellInnerHTML(r,c){
     return `<span class="yf-tag${tcls}">${n}</span><button type="button" class="yf-plus" onclick="yfAddMark(${r},${c},'${esc}','+')">+</button><button type="button" class="yf-minus" onclick="yfAddMark(${r},${c},'${esc}','-')">−</button>${pd}`;
   }).join('')+'</div>'):'';
   const ov=yfGetOverride(r,c);
-  const ovLabel=ov==='red'?'🔴 Elle kırmızı (kaldır)':(ov==='clear'?'⚪ Elle temiz (kaldır)':'🖱 Kırmızı yap');
+  const ovLabel=ov==='red'?'↩ Elle konan kırmızıyı kaldır':(ov==='clear'?'↩ Elle temiz işaretini kaldır':'🖱 Kırmızı yap');
   const paidBar=`<button type="button" class="yf-paidbtn" onclick="yfToggleOverride(${r},${c})">${ovLabel}</button>`;
   // Hücre altında her zaman görünen "ödedi" butonları (ödememiş / elle işaretlenmiş öğrenciler için)
   const seen={};let payBtns='';
@@ -1865,6 +1870,7 @@ function yfCellInnerHTML(r,c){
     else if(inf.status==='manual')payBtns+=`<button type="button" class="yf-paidbtn" style="background:#d1fae5;color:#065f46;font-size:10px" onclick="yfManualPaid('${inf.st.id}',false)">✅ ${k} elle ödendi · ↩ geri al</button>`;
     else if(inf.status==='ex')payBtns+=`<div style="font-size:10px;font-weight:700;color:#b45309;text-align:center;padding:2px;background:#fffbeb">🎫 ${k} istisna (tam sayıldı)</div>`;
   });
+  if(ov==='red')payBtns=`<button type="button" class="yf-paidbtn" style="background:#16a34a;color:#fff;font-size:11px;padding:6px 4px" onclick="yfSetOverride(${r},${c},'clear')">✓ Ödedi — bu hücreyi kırmızıdan çıkar</button>`+payBtns;
   return `<div class="yf-cell" contenteditable="true" onfocus="yfCellFocus(this)" oninput="yfCellInput(this,${r},${c})" onblur="yfCellBlur(this,${r},${c})">${yfCellDisplayHTML(raw)}</div>${controls}${payBtns}${paidBar}`;
 }
 function yfRender(){
