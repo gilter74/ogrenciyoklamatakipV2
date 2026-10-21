@@ -322,7 +322,6 @@ summary::-webkit-details-marker{display:none}
     <div id="pros-line" style="grid-column:1/-1;display:none;margin-top:-4px"></div>
   </div>
   <div id="dup-name-warn" style="display:none"></div>
-  <div id="late-banner"></div>
   <div id="rec-banner"></div>
   <div id="lvl-banner"></div>
   <div id="um-banner"></div>
@@ -330,6 +329,7 @@ summary::-webkit-details-marker{display:none}
     <div style="font-weight:700;font-size:14px;color:var(--text);margin-bottom:10px" id="today-sched-title">📅 Bugün Dersi Olanlar</div>
     <div id="today-sched-list"></div>
   </div>
+  <div id="late-banner"></div>
   <div class="tile-grid">
     <button class="tile orange" onclick="go('s-yform')"><svg viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4h6v3H9zM9 12h6M9 16h6"/></svg><span>Yoklama Formu</span></button>
     <button class="tile" onclick="go('s-week')"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg><span>Haftalık Program</span></button>
@@ -762,7 +762,7 @@ summary::-webkit-details-marker{display:none}
   <div class="app-hdr" style="padding:18px 16px 16px;background:linear-gradient(135deg,#4c1d95,#7c3aed)">
     <div style="font-size:36px">🟣</div>
     <h1 style="font-size:22px">Geç Ödeyenler</h1>
-    <p>Art arda 2 ay ayın 20'sinden sonra ödeyenler</p>
+    <p>Bu ay · 1-2 ay geciken · art arda geç ödeyenler</p>
   </div>
   <div id="chronic-body"></div>
 </div>
@@ -1830,48 +1830,16 @@ function yfToggleOverride(r,c){
   yfSave();
   yfRenderCell(r,c);
 }
-function yfCellClass(r,c){
-  const ov=yfGetOverride(r,c);
-  if(ov==='red')return'yf-unpaid yf-forced';
-  if(ov==='clear')return'yf-forced-clear';
-  return yfCellUnpaid(yfPlainText(yfData.rows[r][c]||''))?'yf-unpaid':'';
-}
+function yfCellClass(r,c){ return ''; }
 function yfCellInnerHTML(r,c){
   const raw=yfData.rows[r][c]||'';
   const plain=yfPlainText(raw);
   const names=yfDetectNames(plain);
-  const nmInfo={};yfCellNames(plain).forEach(x=>{nmInfo[x.n]=x;});
   const controls=names.length?('<div class="yf-tally">'+names.map(n=>{
     const esc=n.replace(/'/g,"\\'");
-    const inf=nmInfo[n]||{};
-    let tcls='',pd='';
-    if(inf.st){
-      if(inf.status==='unpaid'&&inf.past){
-        tcls=' yf-t-unpaid';
-        pd=`<span class="yf-ps"><button type="button" class="yf-pdbtn" title="Ödeme yaptıysa elle ödendi olarak işaretle" onclick="yfManualPaid('${inf.st.id}',true)">✓ Ödedi</button></span>`;
-      } else if(inf.status==='manual'){
-        tcls=' yf-t-ok';
-        pd=`<span class="yf-ps"><span class="yf-tag yf-t-ok">✅ elle ödendi</span><button type="button" class="yf-pdundo" onclick="yfManualPaid('${inf.st.id}',false)">↩ geri al</button></span>`;
-      } else if(inf.status==='ex'){
-        tcls=' yf-t-ex';
-        pd=`<span class="yf-ps"><span class="yf-tag yf-t-ex">🎫 istisna (tam sayıldı)</span></span>`;
-      }
-    }
-    return `<span class="yf-tag${tcls}">${n}</span><button type="button" class="yf-plus" onclick="yfAddMark(${r},${c},'${esc}','+')">+</button><button type="button" class="yf-minus" onclick="yfAddMark(${r},${c},'${esc}','-')">−</button>${pd}`;
+    return `<span class="yf-tag">${n}</span><button type="button" class="yf-plus" onclick="yfAddMark(${r},${c},'${esc}','+')">+</button><button type="button" class="yf-minus" onclick="yfAddMark(${r},${c},'${esc}','-')">−</button>`;
   }).join('')+'</div>'):'';
-  const ov=yfGetOverride(r,c);
-  const ovLabel=ov==='red'?'↩ Elle konan kırmızıyı kaldır':(ov==='clear'?'↩ Elle temiz işaretini kaldır':'🖱 Kırmızı yap');
-  const paidBar=`<button type="button" class="yf-paidbtn" onclick="yfToggleOverride(${r},${c})">${ovLabel}</button>`;
-  // Hücre altında her zaman görünen "ödedi" butonları (ödememiş / elle işaretlenmiş öğrenciler için)
-  const seen={};let payBtns='';
-  Object.keys(nmInfo).forEach(k=>{
-    const inf=nmInfo[k];if(!inf.st||seen[inf.st.id])return;seen[inf.st.id]=1;
-    if(inf.status==='unpaid'&&inf.past)payBtns+=`<button type="button" class="yf-paidbtn" style="background:#16a34a;color:#fff;font-size:11px;padding:5px 4px" onclick="yfManualPaid('${inf.st.id}',true)">✓ ${k} ödedi</button>`;
-    else if(inf.status==='manual')payBtns+=`<button type="button" class="yf-paidbtn" style="background:#d1fae5;color:#065f46;font-size:10px" onclick="yfManualPaid('${inf.st.id}',false)">✅ ${k} elle ödendi · ↩ geri al</button>`;
-    else if(inf.status==='ex')payBtns+=`<div style="font-size:10px;font-weight:700;color:#b45309;text-align:center;padding:2px;background:#fffbeb">🎫 ${k} istisna (tam sayıldı)</div>`;
-  });
-  if(ov==='red')payBtns=`<button type="button" class="yf-paidbtn" style="background:#16a34a;color:#fff;font-size:11px;padding:6px 4px" onclick="yfSetOverride(${r},${c},'clear')">✓ Ödedi — bu hücreyi kırmızıdan çıkar</button>`+payBtns;
-  return `<div class="yf-cell" contenteditable="true" onfocus="yfCellFocus(this)" oninput="yfCellInput(this,${r},${c})" onblur="yfCellBlur(this,${r},${c})">${yfCellDisplayHTML(raw)}</div>${controls}${payBtns}${paidBar}`;
+  return `<div class="yf-cell" contenteditable="true" onfocus="yfCellFocus(this)" oninput="yfCellInput(this,${r},${c})" onblur="yfCellBlur(this,${r},${c})">${yfCellDisplayHTML(raw)}</div>${controls}`;
 }
 function yfRender(){
   const table=document.getElementById('yf-table');
@@ -3415,51 +3383,87 @@ function rcptBadge(sid){
 
 // ══ 20'SİNDEN SONRA ÖDEMEYENLER ═══════════════════════════════════════
 const LATE_DAY=20;
+function lateCheck(st,y,m,keepNoFee){
+  const mk=mkey(y,m);
+  if(isFrozen(st))return null;
+  if(st.registeredAt&&st.registeredAt.slice(0,7)>mk)return null;
+  if((latePaid[st.id]||{})[mk])return null;        // elle "ödedi" işaretlendi
+  const pays=Object.values(lateAllPay[st.id]||{}).filter(x=>x&&x.date&&String(x.date).startsWith(mk)&&!x.recId);
+  const paid=pays.reduce((a,x)=>a+parseFloat(x.amount||0),0);
+  const exM=stuExFor(st,mk);                        // öğrenciye özel tek aylık istisna ücreti
+  const fee=exM?(parseFloat(exM.amount)||0):(parseFloat(String(st.fee||'').replace(',','.'))||0);
+  if(exM&&fee<=0)return null;                       // istisna: o ay ücret yok
+  if(pays.some(x=>x.exception))return null;         // istisna işaretli ödeme: ay tam sayılır
+  if(pays.length&&(fee<=0||paid>=fee*0.94))return null;
+  if(!keepNoFee&&fee<=0&&!pays.length)return null;
+  return{fee,paid,rem:fee>0?Math.max(0,fee-paid):0,mk};
+}
+// Bu ay (ayın 20'sinden sonra)
 function lateList(){
   const now=new Date();
   if(now.getDate()<=LATE_DAY)return [];
-  const y=now.getFullYear(),m=now.getMonth(),mk=mkey(y,m);
   const out=[];
   students.forEach(st=>{
-    if(isFrozen(st))return;
-    if(st.registeredAt&&st.registeredAt.slice(0,7)>mk)return;
-    if((latePaid[st.id]||{})[mk])return; // elle "ödedi" işaretlendi
-    const pays=Object.values(lateAllPay[st.id]||{}).filter(x=>x&&x.date&&String(x.date).startsWith(mk)&&!x.recId);
-    const paid=pays.reduce((a,x)=>a+parseFloat(x.amount||0),0);
-    const exM=stuExFor(st,mk); // öğrenciye özel tek aylık istisna ücreti
-    const fee=exM?(parseFloat(exM.amount)||0):(parseFloat(String(st.fee||'').replace(',','.'))||0);
-    if(exM&&fee<=0)return;                       // istisna: o ay ücret yok
-    if(pays.some(x=>x.exception))return;         // istisna işaretli ödeme: ay tam sayılır
-    if(pays.length&&(fee<=0||paid>=fee*0.94))return;
-    const rem=fee>0?Math.max(0,fee-paid):0;
-    out.push({s:st,fee,paid,rem,daysLate:now.getDate()-LATE_DAY,mk});
+    const r=lateCheck(st,now.getFullYear(),now.getMonth(),true);
+    if(r)out.push({s:st,fee:r.fee,paid:r.paid,rem:r.rem,daysLate:now.getDate()-LATE_DAY,mk:r.mk});
   });
   return out.sort((a,b)=>b.rem-a.rem);
 }
+// 1 ve 2 ay önceki ödenmemiş aylar
+function lateOlder(){
+  const now=new Date(),out=[];
+  students.forEach(st=>{
+    const months=[];
+    for(let k=2;k>=1;k--){
+      const d=new Date(now.getFullYear(),now.getMonth()-k,1);
+      const r=lateCheck(st,d.getFullYear(),d.getMonth(),false);
+      if(r)months.push({mk:r.mk,label:MONTHS[d.getMonth()],paid:r.paid,rem:r.rem});
+    }
+    if(months.length)out.push({s:st,months});
+  });
+  return out.sort((a,b)=>b.months.length-a.months.length);
+}
 function lateWaUrl(st){return 'https://wa.me/'+waPhone(st.momPhone||st.dadPhone||st.phone);}
+// Ana ekranda ince çubuk → Geç Ödeyenler sekmesine gider
 function renderLateBanner(){
   const box=document.getElementById('late-banner');if(!box)return;
-  const list=lateList();
-  if(!list.length){box.innerHTML='';return;}
-  const now=new Date();const mon=MONTHS[now.getMonth()];
-  const total=list.reduce((a,x)=>a+x.rem,0);
-  const rows=list.map(x=>{
-    const sent=((lateLog[x.s.id]||{})[x.mk])||null;
-    return '<div class="late-row"><div style="display:flex;justify-content:space-between;gap:10px;align-items:center">'+
-      '<div style="min-width:0"><div style="font-size:14px"><b style="cursor:pointer" onclick="openDetNewWin(\''+x.s.id+'\')">'+repEsc(x.s.name+' '+x.s.surname)+'</b></div>'+
-      '<div style="font-size:11px;opacity:.9;margin-top:2px">'+(x.paid>0?'Kısmi ödeme: '+fmtTL(x.paid)+' ₺ · ':'')+x.daysLate+' gün gecikti'+(sent?' · 📲 son hatırlatma: '+repDL(sent):'')+'</div></div>'+
-      '<div style="text-align:right;flex-shrink:0">'+(x.rem>0?'<div style="font-weight:700;font-size:15px">'+fmtTL(x.rem)+' ₺</div>':'')+
-      '<div style="display:flex;gap:6px;justify-content:flex-end;margin-top:4px"><button class="late-btn" style="background:#16a34a;color:#fff;border:none;border-radius:8px;padding:6px 10px;font-weight:700;cursor:pointer" onclick="lateMarkPaid(\''+x.s.id+'\')">✓ Ödedi</button><button class="late-btn wa" onclick="lateOpen(\''+x.s.id+'\')">📲 WhatsApp</button></div></div></div></div>';
-  }).join('');
-  box.innerHTML='<div class="late-card" id="late-card"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">'+
-    '<div style="font-weight:700;font-size:15px">🚨 '+mon+' ödemesi gelmeyenler ('+list.length+')</div>'+
-    (total>0?'<div style="font-weight:700;font-size:14px">Toplam '+fmtTL(total)+' ₺</div>':'')+'</div>'+
-    '<div style="font-size:11px;opacity:.9;margin:3px 0 4px">Ayın '+LATE_DAY+"'sinden sonra ödeme yapmayan öğrenciler"+'</div>'+rows+'</div>';
+  const cur=lateList(),old=lateOlder();
+  if(!cur.length&&!old.length){box.innerHTML='';}
+  else{
+    const mon=MONTHS[new Date().getMonth()];
+    const txt=cur.length?'🚨 '+mon+' ödemesi gelmeyenler ('+cur.length+')':'🚨 Geciken ödemeler';
+    const ext=old.length?' · '+old.length+' kişi 1-2 ay geride':'';
+    box.innerHTML='<div onclick="go(\'s-chronic\')" style="margin:-4px 0 14px;background:#fff1f2;border:1px dashed #f87171;border-radius:12px;padding:6px 12px;display:flex;justify-content:space-between;align-items:center;gap:8px;cursor:pointer;font-size:12px;font-weight:700;color:#991b1b">'+
+      '<span style="min-width:0">'+txt+ext+'</span><span style="flex-shrink:0">Geç Ödeyenler ›</span></div>';
+  }
+  const a=document.querySelector('.screen.active');
+  if(a&&a.id==='s-chronic')renderChronic();
 }
-function lateMarkPaid(sid){
+function lateBtn(label,bg,fn){return '<button onclick="event.stopPropagation();'+fn+'" style="background:'+bg+';color:#fff;border:none;border-radius:8px;padding:5px 9px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap">'+label+'</button>';}
+function lateSectionsHtml(){
+  const cur=lateList(),old=lateOlder(),mon=MONTHS[new Date().getMonth()];
+  let h='';
+  const row=(st,sub,btns)=>'<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;border-top:1px solid #fecaca">'+
+    '<div style="min-width:0"><div style="font-weight:700;font-size:13px;cursor:pointer" onclick="openDetNewWin(\''+st.id+'\')">'+repEsc(st.name+' '+st.surname)+'</div><div style="font-size:11px;color:#b91c1c;font-weight:600;margin-top:1px">'+sub+'</div></div>'+
+    '<div style="display:flex;gap:5px;flex-shrink:0">'+btns+'</div></div>';
+  const card=(title,rows)=>'<div style="background:#fff1f2;border:1px solid #fecaca;border-radius:12px;padding:8px 12px;margin-bottom:12px"><div style="font-weight:800;font-size:13px;color:#991b1b;padding-bottom:4px">'+title+'</div>'+rows+'</div>';
+  if(cur.length){
+    const total=cur.reduce((a,x)=>a+x.rem,0);
+    h+=card('🚨 '+mon+' ödemesi gelmeyenler ('+cur.length+')'+(total>0?' · '+fmtTL(total)+' ₺':''),cur.map(x=>row(x.s,(x.paid>0?'Kısmi ödeme '+fmtTL(x.paid)+' ₺ · ':'')+x.daysLate+' gün gecikti'+(x.rem>0?' · '+fmtTL(x.rem)+' ₺':''),
+      lateBtn('✓ Ödedi','#16a34a',"lateMarkPaid('"+x.s.id+"','"+x.mk+"')")+lateBtn('📲','#25d366',"lateOpen('"+x.s.id+"')"))).join(''));
+  }
+  if(old.length){
+    h+=card('⏳ 1-2 ay geride olanlar ('+old.length+')',old.map(x=>row(x.s,x.months.map(m=>m.label+(m.paid>0?' (kısmi)':'')).join(' · ')+' ödenmedi',
+      x.months.map(m=>lateBtn('✓ '+m.label,'#16a34a',"lateMarkPaid('"+x.s.id+"','"+m.mk+"')")).join('')+lateBtn('📲','#25d366',"lateOpen('"+x.s.id+"')"))).join(''));
+  }
+  if(!h)h='<div class="card empty" style="margin-bottom:12px"><p style="color:var(--muted);font-size:14px;font-weight:700">✅ Bu ay ve geçen 2 ayda ödemesi gelmeyen yok.</p></div>';
+  return h;
+}
+function lateMarkPaid(sid,mk){
   const st=students.find(x=>x.id===sid);if(!st)return;
-  const now=new Date();const mk=mkey(now.getFullYear(),now.getMonth());
-  if(!confirm(st.name+' '+st.surname+' için '+MONTHS[now.getMonth()]+' ödemesi alındı olarak işaretlensin mi?\n(Bu yalnızca listeden çıkarır; ödeme tutarı kaydı oluşturmaz.)'))return;
+  mk=mk||mkey(new Date().getFullYear(),new Date().getMonth());
+  const lbl=MONTHS[parseInt(mk.split('-')[1],10)-1];
+  if(!confirm(st.name+' '+st.surname+' için '+lbl+' ödemesi alındı olarak işaretlensin mi?\n(Bu yalnızca listeden çıkarır; ödeme tutarı kaydı oluşturmaz.)'))return;
   latePaid[sid]=latePaid[sid]||{};latePaid[sid][mk]=todays();
   try{fbSet('latePaid/'+sid+'/'+mk,todays());}catch(e){}
   renderLateBanner();
@@ -3538,8 +3542,9 @@ function updateChronicTile(){
 function renderChronic(){
   const box=document.getElementById('chronic-body');if(!box)return;
   const list=chronicList();
-  if(!list.length){box.innerHTML='<div class="card empty"><div style="font-size:44px;margin-bottom:10px">✅</div><p style="color:var(--muted);font-size:15px;font-weight:700">Ödemesini art arda 2 ay ayın 20\'sinden sonra yapan öğrenci yok.</p></div>';return;}
-  box.innerHTML='<div style="font-size:12px;color:var(--muted);font-weight:700;margin-bottom:10px;line-height:1.5">Art arda en az '+CHRONIC_MIN+' ay boyunca ödemesini ayın '+LATE_DAY+'\'sinden sonra yapan (veya hiç yapmayan) öğrenciler. Toplam: <b>'+list.length+'</b></div>'+
+  const lateH=lateSectionsHtml();
+  if(!list.length){box.innerHTML=lateH+'<div class="card empty"><div style="font-size:44px;margin-bottom:10px">✅</div><p style="color:var(--muted);font-size:15px;font-weight:700">Ödemesini art arda 2 ay ayın 20\'sinden sonra yapan öğrenci yok.</p></div>';return;}
+  box.innerHTML=lateH+'<div style="font-size:12px;color:var(--muted);font-weight:700;margin-bottom:10px;line-height:1.5">Art arda en az '+CHRONIC_MIN+' ay boyunca ödemesini ayın '+LATE_DAY+'\'sinden sonra yapan (veya hiç yapmayan) öğrenciler. Toplam: <b>'+list.length+'</b></div>'+
   list.map(x=>{
     const st=x.s;
     return '<div class="s-row" style="border-color:#7c3aed;background:#f5f3ff;flex-direction:column;align-items:stretch;gap:6px" onclick="openDetNewWin(\''+st.id+'\')">'+
@@ -4435,11 +4440,11 @@ function telWaNotify(id,ds,rem){const s=students.find(x=>x.id===id);const m=telM
 function istModal(html){
   let o=document.getElementById('ist-modal');
   if(!o){o=document.createElement('div');o.id='ist-modal';o.style.cssText='position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:9999;display:flex;align-items:flex-end;justify-content:center;padding:0';document.body.appendChild(o);}
-  o.innerHTML='<div style="background:#fff;border-radius:20px 20px 0 0;width:100%;max-width:520px;max-height:92vh;overflow:auto;padding:18px 16px 22px">'+html+'</div>';
+  o.innerHTML='<div style="background:#fff;border-radius:20px 20px 0 0;width:100%;max-width:520px;max-height:92vh;max-height:92dvh;overflow:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:18px 16px 22px">'+html+'</div>';
   o.style.display='flex';
 }
 function istClose(){const o=document.getElementById('ist-modal');if(o)o.style.display='none';}
-const IST_INP='width:100%;padding:11px;border:1px solid #d1d5db;border-radius:10px;font-size:15px;font-family:inherit;box-sizing:border-box';
+const IST_INP='width:100%;padding:11px;border:1px solid #d1d5db;border-radius:10px;font-size:16px;font-family:inherit;box-sizing:border-box';
 const IST_BTN='padding:12px;border-radius:12px;border:none;font-weight:700;font-size:14px;cursor:pointer;font-family:inherit;';
 let istCtx=null;
 // ── İstisna kaydı
