@@ -767,12 +767,12 @@ summary::-webkit-details-marker{display:none}
     <details id="rec-closed-wrap" style="display:none;margin-top:12px"><summary style="cursor:pointer;font-weight:600;font-size:13px;color:#166534" id="rec-closed-sum"></summary><div id="rec-closed-list" style="margin-top:8px"></div></details>
   </div>
   <div class="card mb12" id="discount-card">
-    <div class="section-lbl">🏷️ Erken Ödeme İndirimi (%10 / %5)</div>
+    <div class="section-lbl">🏷️ Erken Ödeme İndirimi</div>
     <label style="display:flex;align-items:center;gap:10px;cursor:pointer;margin-bottom:8px">
       <input type="checkbox" id="disc-enabled" onchange="toggleDiscPreview()" style="width:20px;height:20px;accent-color:#2f3f73;cursor:pointer;flex-shrink:0">
       <span style="font-weight:600;font-size:14px;color:var(--text)">Bu öğrenci için erken ödeme indirim politikasını uygula</span>
     </label>
-    <div style="background:#f5f3ff;border:1px solid #d3d9ea;border-radius:10px;padding:10px 13px;margin-bottom:12px;font-size:12px;font-weight:700;color:#26335e;line-height:1.5">📌 Kural: Devam edeceği ayın ücretini ödeme tarihine göre indirim kazanır: ayın <b>5'ine kadar → %10</b>, <b>6–10'u arası → %5</b> indirim (bir sonraki ayki ders ücretine otomatik uygulanır). <b>10'undan sonra 20'sine kadar</b> indirim yoktur, normal fiyat. <b>Ayın 21'inden itibaren</b> ödeme yapılmamışsa, ödeme yapılana kadar ödev/not <b>WhatsApp'tan gönderilemez</b> ve ekstra destekler kısıtlanır (ödev ve not yazılabilir).</div>
+    <div style="background:#f5f3ff;border:1px solid #d3d9ea;border-radius:10px;padding:10px 13px;margin-bottom:12px;font-size:12px;font-weight:700;color:#26335e;line-height:1.5">📌 Kural (<b>1 Şubat 2027'den itibaren</b>): ödeme ayın <b>5'ine kadar → %10</b>, <b>6–10'u arası → %5</b> indirim kazandırır (bir sonraki ayki ders ücretine otomatik uygulanır). <b>10'undan sonra 20'sine kadar</b> indirim yoktur, normal fiyat. <i>Şubat 2027 öncesi ödemelerde eski kural geçerlidir: ayın 1–10'u arası → %7.</i> <b>Ayın 21'inden itibaren</b> ödeme yapılmamışsa, ödeme yapılana kadar ödev/not <b>WhatsApp'tan gönderilemez</b> ve ekstra destekler kısıtlanır (ödev ve not yazılabilir).</div>
     <div id="disc-reward-box" style="display:none;background:#f0fdf4;border:1px solid #a7f3d0;border-radius:10px;padding:10px 13px;margin-bottom:12px;font-weight:600;font-size:13px;color:#065f46;line-height:1.5"></div>
     <div id="disc-preview" style="display:none;background:#f0fdf4;border:1px solid #a7f3d0;border-radius:10px;padding:10px 13px;margin-bottom:12px;font-weight:600;font-size:13px;color:#065f46"></div>
     <label class="lbl">İndirim Notu (hatırlatma) <span style="font-weight:600;text-transform:none;font-size:11px;color:var(--dim)" id="disc-count">0/250</span></label>
@@ -2299,7 +2299,14 @@ function renderDetail(){
 const EARLY_PCT=10;     // erken ödeme indirimi — ayın 1-5. günleri (%)
 const EARLY_PCT_LO=5;   // erken ödeme indirimi — ayın 6-10. günleri (%)
 const EARLY_DAY_HI=5, EARLY_DAY_LO=10;
-function earlyPctForDay(d){return d<=EARLY_DAY_HI?EARLY_PCT:(d<=EARLY_DAY_LO?EARLY_PCT_LO:0);}
+const EARLY_NEW_START='2027-02-01'; // kademeli (%10/%5) kural bu tarihten itibaren; öncesinde eski kural: 1-10. gün %7
+const EARLY_OLD_PCT=7;
+function earlyPctForDate(ds){
+  ds=String(ds||'');const d=parseInt(ds.slice(8,10),10);
+  if(!(d>=1))return 0;
+  if(ds<EARLY_NEW_START)return d<=10?EARLY_OLD_PCT:0;
+  return d<=EARLY_DAY_HI?EARLY_PCT:(d<=EARLY_DAY_LO?EARLY_PCT_LO:0);
+}
 const REF_PCT=5;     // öğrenci kazandırma: her öğrenci için indirim hakkı (%)
 // discApplied: true → erken ödeme indirimi; sayı → doğrudan toplam yüzde
 function effectiveFee(feeVal,discApplied){
@@ -2324,8 +2331,7 @@ function earlyPctFor(pays,y,m){
   const mk=mkey(y,m);let best=0;
   (pays||[]).forEach(p=>{
     if(!p||p.recId||!p.date||!String(p.date).startsWith(mk))return;
-    const d=parseInt(String(p.date).slice(8,10),10);
-    const pct=earlyPctForDay(d);if(pct>best)best=pct;
+    const pct=earlyPctForDate(p.date);if(pct>best)best=pct;
   });
   return best;
 }
@@ -2345,7 +2351,7 @@ function toggleDiscPreview(){
   if(on&&fee>0){
     const e1=effectiveFee(fee,EARLY_PCT),e2=effectiveFee(fee,EARLY_PCT_LO);
     box.style.display='block';
-    box.innerHTML='💡 Örnek: Aylık ücret '+fee.toLocaleString('tr-TR')+' ₺ — ayın 5\'ine kadar ödenirse bir sonraki ay <b>'+e1.toLocaleString('tr-TR')+' ₺</b> (%10), 6–10\'u arası ödenirse <b>'+e2.toLocaleString('tr-TR')+' ₺</b> (%5); 10\'undan sonra indirim yok.';
+    box.innerHTML='💡 Örnek (1 Şubat 2027\'den itibaren): Aylık ücret '+fee.toLocaleString('tr-TR')+' ₺ — ayın 5\'ine kadar ödenirse bir sonraki ay <b>'+e1.toLocaleString('tr-TR')+' ₺</b> (%10), 6–10\'u arası ödenirse <b>'+e2.toLocaleString('tr-TR')+' ₺</b> (%5); 10\'undan sonra indirim yok.';
   } else {
     box.style.display='none';
   }
@@ -5692,7 +5698,7 @@ async function makeVeliUrl(id,loadMsg){
         desc:p.desc||'',
         st:(onTime===null||p.recId)?'none':(onTime?'ontime':'late'),
         ex:p.exception?(p.exNote||'Kısmi ay ücreti'):'',
-        early:(policyOn&&!p.recId)?earlyPctForDay(day):0
+        early:(policyOn&&!p.recId)?earlyPctForDate(p.date):0
       };
     });
 
