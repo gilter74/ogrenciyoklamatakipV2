@@ -263,10 +263,10 @@ input:focus,select:focus{box-shadow:0 0 0 3px rgba(47,63,115,.12)}
 .tile.primary svg{stroke:#fff;width:28px;height:28px}
 .tile small{display:block;font-weight:400;font-size:12px;color:var(--muted);margin-top:2px}
 .tile.primary small{color:rgba(255,255,255,.75)}
-.tile.orange{background:#f97316;color:#fff;border-color:#ea580c}
+.tile.orange{background:#f97316;color:#fff;border-color:#ea580c;grid-column:1/-1;flex-direction:row;align-items:center;gap:14px}
 .tile.orange:hover{background:#ea580c}
 .tile.orange svg{stroke:#fff}
-.tile.teal{background:#0d9488;color:#fff;border-color:#0f766e;grid-column:1/-1;flex-direction:row;align-items:center;gap:14px}
+.tile.teal{background:#0d9488;color:#fff;border-color:#0f766e}
 .tile.teal:hover{background:#0f766e}
 .tile.teal svg{stroke:#fff}
 .tile.teal small{color:rgba(255,255,255,.8)}
@@ -354,7 +354,7 @@ summary::-webkit-details-marker{display:none}
   <div id="search-res" style="display:none;margin-top:10px"></div>
   <div class="tile-grid" style="margin-top:10px">
     <button class="tile primary" onclick="go('s-daily')"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg><span>Günlük Yoklama<small>Bugünün derslerini tek dokunuşla işaretle</small></span></button>
-    <button class="tile teal" onclick="go('s-pros')"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M9 15l2 2 4-4"/></svg><span>Ön Görüşme<small>Randevu · Hatırlatma · Deneme dersi</small></span></button>
+    <button class="tile orange" onclick="go('s-yform')"><svg viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4h6v3H9zM9 12h6M9 16h6"/></svg><span>Yoklama Formu</span></button>
     <div id="pros-line" style="grid-column:1/-1;display:none;margin-top:-4px"></div>
   </div>
   <div id="dup-name-warn" style="display:none"></div>
@@ -367,7 +367,7 @@ summary::-webkit-details-marker{display:none}
   </div>
   <div id="late-banner"></div>
   <div class="tile-grid">
-    <button class="tile orange" onclick="go('s-yform')"><svg viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4h6v3H9zM9 12h6M9 16h6"/></svg><span>Yoklama Formu</span></button>
+    <button class="tile teal" onclick="go('s-pros')"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M9 15l2 2 4-4"/></svg><span>Ön Görüşme<small>Randevu · Hatırlatma · Deneme dersi</small></span></button>
     <button class="tile" onclick="go('s-week')"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg><span>Haftalık Program</span></button>
     <button class="tile" onclick="go('s-hw')"><svg viewBox="0 0 24 24"><path d="M5 4h11l3 3v13H5z"/><path d="M8 11h8M8 15h8M8 7h4"/></svg><span>Ödev Takibi<small>Haftalık · Aylık · Özet</small></span></button>
     <button class="tile" onclick="go('s-veli-share')"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6M16 5a3 3 0 010 6M18 14c1.8.8 3 2.6 3 5"/></svg><span>Veli Paylaşımı</span></button>
