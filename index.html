@@ -6308,9 +6308,15 @@ if(location.hash.indexOf('#vid=')===0){
     const g=document.querySelectorAll('#s-list>.tile-grid');
     if(g.length<2)return;
     const a=g[0],b=g[1],kids=Array.from(b.children);
+    const prim=a.querySelector('.tile.primary'),today=document.getElementById('today-sched-card');
     const apply=()=>{
-      if(mq.matches){kids.forEach(k=>a.appendChild(k));b.style.display='none';}
-      else{kids.forEach(k=>b.appendChild(k));b.style.display='';}
+      if(mq.matches){
+        kids.forEach(k=>a.appendChild(k));b.style.display='none';
+        if(prim&&today){today.parentNode.insertBefore(prim,today);prim.style.marginBottom='14px';} // Günlük Yoklama → Bugün Dersi Olanlar'ın üstü
+      }else{
+        kids.forEach(k=>b.appendChild(k));b.style.display='';
+        if(prim){a.insertBefore(prim,a.firstChild);prim.style.marginBottom='';}
+      }
     };
     (mq.addEventListener?mq.addEventListener('change',apply):mq.addListener(apply));
     apply();
