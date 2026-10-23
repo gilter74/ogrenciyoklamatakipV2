@@ -72,6 +72,12 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
 .week-chip:active{transform:scale(.95)}
 #yf-table th{background:#b45309;color:#fff;font-size:13px;font-weight:700;padding:9px 4px;text-align:center;border:1px solid #92400e;min-width:var(--yf-col,172px)}
 #yf-table td{border:1px solid var(--border);padding:0;vertical-align:top}
+#yf-month{width:auto}
+#yf-year{width:80px}
+#yf-table.yf-fit{width:100%!important}
+#yf-table.yf-fit th{min-width:0}
+#s-yform.yf-fitmode>div:first-child{max-width:none!important}
+#yf-topscroll.yf-hid{display:none}
 #yf-table td.yf-unpaid{background:#fecaca;border:1px solid #dc2626}
 #yf-table td.yf-unpaid .yf-tally{background:#fca5a5}
 #yf-table td.yf-unpaid.yf-forced{border-style:dashed}
@@ -80,7 +86,7 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
 .yf-paidbtn:hover{background:#e5e7eb}
 #yf-table td.yf-unpaid .yf-paidbtn{background:#1f2937;color:#fff;border-top-color:#dc2626}
 #yf-table td.yf-forced-clear .yf-paidbtn{background:#bbf7d0;color:#14532d}
-#yf-table .yf-cell{width:100%;min-height:72px;padding:7px;font-size:15px;line-height:1.35;font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;font-weight:600;color:var(--text);white-space:pre-wrap;word-break:break-word;outline:none;cursor:text}
+#yf-table .yf-cell{width:100%;min-height:var(--yf-rowh,72px);padding:7px;font-size:15px;line-height:1.35;font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;font-weight:600;color:var(--text);white-space:pre-wrap;word-break:break-word;outline:none;cursor:text}
 #yf-table .yf-cell:focus{background:#fff;box-shadow:inset 0 0 0 2px var(--purple)}
 .yf-satranc{color:#ea580c;font-weight:700}
 .yf-toolbar{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:8px 10px;margin-top:10px;position:sticky;top:0;z-index:20}
@@ -1026,7 +1032,13 @@ summary::-webkit-details-marker{display:none}
       <input type="range" id="yf-w-range" min="100" max="400" step="2" value="172" oninput="yfSetWidth(this.value)">
       <button type="button" class="yf-tb-btn yf-w-step" onclick="yfStepWidth(10)">+</button>
       <b id="yf-w-val" style="font-size:13px;min-width:48px;text-align:center">172 px</b>
+      <button type="button" class="yf-tb-btn yf-w-step" id="yf-w-fit" onclick="yfFit()">↔ Sayfaya Sığdır</button>
       <button type="button" class="yf-tb-btn yf-w-step" onclick="yfSetWidth(172)">↺ Varsayılan</button>
+      <span class="yf-tb-lbl" style="margin-left:8px">Satır yüksekliği:</span>
+      <button type="button" class="yf-tb-btn yf-w-step" onclick="yfSetRowH(yfRowH-10)">−</button>
+      <input type="range" id="yf-h-range" min="30" max="300" step="2" value="72" oninput="yfSetRowH(this.value)">
+      <button type="button" class="yf-tb-btn yf-w-step" onclick="yfSetRowH(yfRowH+10)">+</button>
+      <b id="yf-h-val" style="font-size:13px;min-width:48px;text-align:center">72 px</b>
       <button type="button" class="yf-tb-btn" id="yf-w-lock" onclick="yfToggleWidthLock()">🔓 Kilitle</button>
     </div>
     <div class="yf-toolbar" id="yf-toolbar">
@@ -1716,15 +1728,21 @@ function yfKey(){
   return y+'-'+String(m+1).padStart(2,'0');
 }
 // Sütun genişliği: elle ayarla, kilitle / kilidi aç (tarayıcıda hatırlanır)
-let yfColW=172, yfWLocked=false;
+let yfColW=172, yfWLocked=false, yfFitMode=true, yfRowH=72;
 function yfWStore(k,v){try{localStorage.setItem(k,v);}catch(e){}}
 function yfWLoad(k){try{return localStorage.getItem(k);}catch(e){return null;}}
 function yfApplyWidth(){
   const t=document.getElementById('yf-table');if(!t)return;
+  t.classList.toggle('yf-fit',yfFitMode);
+  const sc=document.getElementById('s-yform');if(sc)sc.classList.toggle('yf-fitmode',yfFitMode);
+  const tsc=document.getElementById('yf-topscroll');if(tsc)tsc.classList.toggle('yf-hid',yfFitMode);
+  t.style.setProperty('--yf-rowh',yfRowH+'px');
+  const rr=document.getElementById('yf-h-range');if(rr){rr.value=yfRowH;document.getElementById('yf-h-val').textContent=yfRowH+' px';}
+  const fb=document.getElementById('yf-w-fit');if(fb)fb.classList.toggle('active',yfFitMode);
   t.style.setProperty('--yf-col',yfColW+'px');
   const tsi=document.getElementById('yf-topscroll-in');if(tsi)tsi.style.setProperty('--yf-col',yfColW+'px');
   document.getElementById('yf-w-range').value=yfColW;
-  document.getElementById('yf-w-val').textContent=yfColW+' px';
+  document.getElementById('yf-w-val').textContent=yfFitMode?'Sığdır':yfColW+' px';
   document.getElementById('yf-width').classList.toggle('locked',yfWLocked);
   document.getElementById('yf-w-range').disabled=yfWLocked;
   document.getElementById('yf-w-lock').textContent=yfWLocked?'🔒 Kilitli (aç)':'🔓 Kilitle';
@@ -1732,7 +1750,16 @@ function yfApplyWidth(){
 function yfSetWidth(v){
   if(yfWLocked)return;
   yfColW=Math.max(100,Math.min(400,Math.round(+v)||172));
+  yfFitMode=false;
   yfWStore('yfColW',yfColW);yfApplyWidth();
+}
+function yfFit(){
+  if(yfWLocked)return;
+  yfFitMode=true;yfWStore('yfColW','fit');yfApplyWidth();
+}
+function yfSetRowH(v){
+  yfRowH=Math.max(30,Math.min(400,Math.round(+v)||72));
+  yfWStore('yfRowH',yfRowH);yfApplyWidth();
 }
 function yfStepWidth(d){yfSetWidth(yfColW+d);}
 function yfToggleWidthLock(){
@@ -1747,7 +1774,11 @@ function yfInitTopScroll(){
 }
 function yfInitWidth(){
   yfInitTopScroll();
-  const w=parseInt(yfWLoad('yfColW'),10);if(w>=100&&w<=400)yfColW=w;
+  const stW=yfWLoad('yfColW'),w=parseInt(stW,10);
+  if(w>=100&&w<=400){yfColW=w;yfFitMode=false;}
+  else if(stW==='fit')yfFitMode=true;
+  else yfFitMode=window.innerWidth>=900; // kayıtlı ayar yoksa: geniş ekranda sayfaya sığdır
+  const rh=parseInt(yfWLoad('yfRowH'),10);if(rh>=30&&rh<=400)yfRowH=rh;
   yfWLocked=yfWLoad('yfWLocked')==='1';
   yfApplyWidth();
 }
@@ -1760,19 +1791,71 @@ function openYForm(){
   }
   yfLoad();
 }
+// ── Bir önceki aydan otomatik aktarım: yalnızca isimler ve saatler kalır (sayaç +/−, tutar, not temizlenir)
+function yfEsc(t){return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function yfRowsEmpty(rows){return !Array.isArray(rows)||!rows.length||!rows.some(r=>(r||[]).some(c=>yfPlainText(c||'').trim()));}
+function yfCarryClean(raw){
+  let t=yfPlainText(raw||'');
+  try{
+    students.filter(isFrozen).forEach(st=>{               // dondurulmuş öğrenci aktarılmaz
+      const n=normName(st.name);if(!n)return;
+      if(students.filter(x=>normName(x.name)===n).length===1)t=t.replace(new RegExp(yfEscRe(n)+'[+\\-−–]*','g'),'');
+    });
+  }catch(e){}
+  t=t.replace(/(?<![:\d])\d{3,6}(?![:\d])/g,'');                                   // tutarlar (3950, 5600…)
+  t=t.replace(/(?<=[A-Za-zÇĞİÖŞÜçğıöşü])[+\-−–]+/g,'');                           // +/− sayaçları
+  t=t.replace(/(?<![A-Za-zÇĞİÖŞÜçğıöşü])[a-zçğıöşü]{2,}(?![A-Za-zÇĞİÖŞÜçğıöşü])/g,''); // "ekim" gibi küçük harfli notlar
+  t=t.split('\n').map(l=>l.replace(/[ \t]+$/,'')).join('\n').replace(/\n{3,}/g,'\n\n').trim();
+  return yfEsc(t);
+}
+function yfPrevKey(key,k){
+  const p=key.split('-').map(Number);const d=new Date(p[0],p[1]-1-k,1);
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+}
+async function yfBuildCarry(key){
+  const p=key.split('-').map(Number),now=new Date();
+  if(p[0]*12+p[1]>now.getFullYear()*12+now.getMonth()+1)return null; // gelecek aylar kendiliğinden doldurulmaz
+  for(let k=1;k<=3;k++){
+    const pk=yfPrevKey(key,k);
+    let prev=null;try{prev=await fbGet('yoklamaForm/'+pk);}catch(e){}
+    if((!prev||yfRowsEmpty(prev.rows))&&YF_SEED[pk])prev=YF_SEED[pk];
+    if(prev&&!yfRowsEmpty(prev.rows))return{rows:prev.rows.map(r=>(r||[]).map(c=>yfCarryClean(c))),carriedFrom:pk};
+  }
+  return null;
+}
+// Ay başında (uygulama açıkken) bu ayın formu boşsa kendiliğinden hazırla
+async function yfAutoRollCurrent(){
+  try{
+    if(typeof fbGet!=='function'||!students||!students.length)return;
+    const n=new Date(),key=n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0');
+    const cur=await fbGet('yoklamaForm/'+key);
+    if(cur&&!yfRowsEmpty(cur.rows))return;
+    if(!cur&&YF_SEED[key])return;
+    const c=await yfBuildCarry(key);
+    if(c){await fbSet('yoklamaForm/'+key,c);}
+  }catch(e){}
+}
+setTimeout(yfAutoRollCurrent,6000);
+setInterval(yfAutoRollCurrent,3600000);
 async function yfLoad(){
   showLoad('Yoklama formu yükleniyor…');
   const key=yfKey();
   const [saved,payVal]=await Promise.all([fbGet('yoklamaForm/'+key),fbGet('payments')]);
   yfPayments=payVal||{};
-  if(saved&&Array.isArray(saved.rows)&&saved.rows.length){
+  if(saved&&Array.isArray(saved.rows)&&saved.rows.length&&!yfRowsEmpty(saved.rows)){
     yfData=saved;
-  } else if(YF_SEED[key]){
+  } else if(YF_SEED[key]&&!saved){
     // Excel'den aktarılan geçmiş veri — ilk açılışta otomatik dolduruluyor ve kaydediliyor
     yfData={rows:YF_SEED[key].rows.map(r=>r.slice())};
     fbSet('yoklamaForm/'+key, yfData);
   } else {
-    yfData={rows:Array.from({length:10},()=>['','','','','','',''])};
+    const carried=await yfBuildCarry(key);
+    if(carried){
+      yfData=carried;fbSet('yoklamaForm/'+key,yfData);
+      try{const mn=k=>MONTHS[parseInt(k.split('-')[1],10)-1]+' '+k.split('-')[0];snack('📋 '+mn(key)+' formu '+mn(carried.carriedFrom)+' formundan aktarıldı — yalnızca isimler ve saatler.',[]);}catch(e){}
+    } else {
+      yfData={rows:Array.from({length:10},()=>['','','','','','',''])};
+    }
   }
   hideLoad();
   yfRender();
@@ -4786,6 +4869,7 @@ function prosWaOpen(p,msg){window.open('https://wa.me/'+waPhone(p.phone)+'?text=
 function prosSave1(p){const o=Object.assign({},p);delete o.id;prosAll[p.id]=o;return fbSet('prospects/'+p.id,o);}
 
 // ── WhatsApp mesajları
+const PROS_CANCEL='\n\nEğer görüşmeye gelemeyecekseniz lütfen 6 saat önceden bilgi vermenizi rica ederiz.';
 function prosMsg(p,kind){
   const hi=p.parent?'Sayın '+p.parent+',':'Sayın Velimiz,';
   const adr=prosAddr?'\n📍 '+prosAddr:'';
@@ -4793,13 +4877,13 @@ function prosMsg(p,kind){
   const trial=p.trial?'\n🌱 Deneme dersimiz: *'+telDLong(p.tDate||p.date)+(p.tTime?' · 🕒 '+p.tTime:'')+'*':'';
   const who=p.name?'*'+p.name+'*':'çocuğunuz';
   let m=hi+'\n\n';
-  if(kind==='confirm')m+=who+' için '+(p.interest?p.interest+' ':'')+'ön görüşme randevunuz oluşturuldu:\n\n'+when+trial+adr+'\n\nUygun olmazsa lütfen önceden haber veriniz.';
-  else if(kind==='tomorrow')m+='Hatırlatma: '+who+' için *yarın* ön görüşme randevumuz var.\n\n'+when+trial+adr+'\n\nGörüşmek üzere.';
-  else if(kind==='tomorrow2')m+='Yarınki randevumuzu bir kez daha hatırlatmak istedik: '+who+' için ön görüşme.\n\n'+when+trial+adr+'\n\nUygun olmazsa lütfen haber veriniz; görüşmek üzere.';
-  else if(kind==='today')m+='Hatırlatma: '+who+' için *bugün* ön görüşme randevumuz yaklaşık *2 saat sonra*.\n\n'+when+trial+adr+'\n\nGörüşmek üzere.';
+  if(kind==='confirm')m+=who+' için '+(p.interest?p.interest+' ':'')+'ön görüşme randevunuz oluşturuldu:\n\n'+when+trial+adr+PROS_CANCEL;
+  else if(kind==='tomorrow')m+='Hatırlatma: '+who+' için *yarın* ön görüşme randevumuz var.\n\n'+when+trial+adr+PROS_CANCEL+'\n\nGörüşmek üzere.';
+  else if(kind==='tomorrow2')m+='Yarınki randevumuzu bir kez daha hatırlatmak istedik: '+who+' için ön görüşme.\n\n'+when+trial+adr+PROS_CANCEL+'\n\nGörüşmek üzere.';
+  else if(kind==='today')m+='Hatırlatma: '+who+' için *bugün* ön görüşme randevumuz yaklaşık *2 saat sonra*.\n\n'+when+trial+adr+PROS_CANCEL+'\n\nGörüşmek üzere.';
   else if(kind==='noshow')m+=who+' için '+telDLong(p.date)+(p.time?' '+p.time:'')+' tarihli ön görüşme randevusuna katılım olmadı. Uygun olduğunuzda yeni bir gün ve saat ayarlayabiliriz; size uygun zamanı yazmanız yeterli.';
   else if(kind==='follow')m+=who+' için yaptığımız ön görüşmenin ardından ne düşündüğünüzü merak ettik. Aklınıza takılan bir şey varsa memnuniyetle yanıtlayalım; kayıt için de yardımcı olabiliriz.';
-  else if(kind==='trial')m+='Hatırlatma: '+who+' için *deneme dersimiz* var.\n\n🌱 *'+telDLong(p.tDate||p.date)+(p.tTime?' · 🕒 '+p.tTime:'')+'*'+adr+'\n\nGörüşmek üzere.';
+  else if(kind==='trial')m+='Hatırlatma: '+who+' için *deneme dersimiz* var.\n\n🌱 *'+telDLong(p.tDate||p.date)+(p.tTime?' · 🕒 '+p.tTime:'')+'*'+adr+PROS_CANCEL.replace('görüşmeye','derse')+'\n\nGörüşmek üzere.';
   return m+WA_SIGN+'\nBilgi: 0532 702 6040';
 }
 async function prosSend(id,kind,slotKey){
