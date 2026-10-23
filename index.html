@@ -4880,7 +4880,7 @@ function prosMsg(p,kind){
   if(kind==='confirm')m+=who+' için '+(p.interest?p.interest+' ':'')+'ön görüşme randevunuz oluşturuldu:\n\n'+when+trial+adr+PROS_CANCEL;
   else if(kind==='tomorrow')m+='Hatırlatma: '+who+' için *yarın* ön görüşme randevumuz var.\n\n'+when+trial+adr+PROS_CANCEL+'\n\nGörüşmek üzere.';
   else if(kind==='tomorrow2')m+='Yarınki randevumuzu bir kez daha hatırlatmak istedik: '+who+' için ön görüşme.\n\n'+when+trial+adr+PROS_CANCEL+'\n\nGörüşmek üzere.';
-  else if(kind==='today')m+='Hatırlatma: '+who+' için *bugün* ön görüşme randevumuz yaklaşık *2 saat sonra*.\n\n'+when+trial+adr+PROS_CANCEL+'\n\nGörüşmek üzere.';
+  else if(kind==='today')m+='Hatırlatma: '+who+' için *bugün* ön görüşme randevumuz yaklaşık *2 saat sonra*.\n\n'+when+trial+adr+'\n\nGörüşmek üzere.';
   else if(kind==='noshow')m+=who+' için '+telDLong(p.date)+(p.time?' '+p.time:'')+' tarihli ön görüşme randevusuna katılım olmadı. Uygun olduğunuzda yeni bir gün ve saat ayarlayabiliriz; size uygun zamanı yazmanız yeterli.';
   else if(kind==='follow')m+=who+' için yaptığımız ön görüşmenin ardından ne düşündüğünüzü merak ettik. Aklınıza takılan bir şey varsa memnuniyetle yanıtlayalım; kayıt için de yardımcı olabiliriz.';
   else if(kind==='trial')m+='Hatırlatma: '+who+' için *deneme dersimiz* var.\n\n🌱 *'+telDLong(p.tDate||p.date)+(p.tTime?' · 🕒 '+p.tTime:'')+'*'+adr+PROS_CANCEL.replace('görüşmeye','derse')+'\n\nGörüşmek üzere.';
