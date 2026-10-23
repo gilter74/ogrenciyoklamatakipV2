@@ -1068,16 +1068,21 @@ summary::-webkit-details-marker{display:none}
 <div class="modal-bg" id="rep-modal">
   <div class="modal-box" style="max-width:480px;max-height:92vh;overflow-y:auto">
     <div style="font-weight:700;font-size:17px;color:var(--purple);margin-bottom:2px">📊 3 Aylık Gelişim Raporu</div>
-    <div id="rep-m-sub" style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:12px"></div>
+    <div id="rep-m-sub" style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:10px"></div>
+    <label class="lbl">Rapor Dönemi (3 ay dolmadan da hazırlanabilir)</label>
+    <div style="display:flex;gap:8px;margin-bottom:12px"><input type="date" id="rep-m-from" onchange="repDatesChanged()" style="flex:1;padding:9px;font-size:13px"><input type="date" id="rep-m-to" onchange="repDatesChanged()" style="flex:1;padding:9px;font-size:13px"></div>
     <label class="lbl">Gelişim Puanı (1-5)</label>
     <div id="rep-m-stars" style="display:flex;gap:6px;margin-bottom:4px"></div>
     <div id="rep-m-auto" style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:12px"></div>
     <label class="lbl">Rapor Metni (düzenleyebilirsin)</label>
     <textarea id="rep-m-text" rows="13" style="width:100%;padding:11px 14px;border-radius:10px;border:1px solid var(--border);font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;font-size:13px;font-weight:600;color:var(--text);resize:vertical;outline:none;margin-bottom:12px;line-height:1.55"></textarea>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
-      <button class="btn-ghost" style="flex:1;justify-content:center;padding:10px" onclick="repRegen()">🔄 Yeniden Oluştur</button>
+      <button class="btn-ghost" style="flex:1;justify-content:center;padding:10px" onclick="repRegen()">🔄 Seçili Yıldıza Göre Yeniden Oluştur</button>
       <button class="btn btn-purple" style="flex:1;justify-content:center;padding:10px" onclick="repSaveModal()">💾 Kaydet</button>
     </div>
+    <label class="lbl" style="margin-top:12px">WhatsApp'ta gönderilecek numara</label>
+    <select id="rep-m-wa" style="margin-bottom:8px;font-size:13px"></select>
+    <button class="btn btn-wa" style="width:100%;justify-content:center;padding:11px" onclick="repSaveModal(true)">💾📲 Kaydet ve WhatsApp'tan Gönder</button>
     <button class="btn-ghost" style="width:100%;justify-content:center;padding:10px;margin-top:8px" onclick="repClose()">Kapat</button>
   </div>
 </div>
@@ -6107,6 +6112,33 @@ function repScore(st){
   return Math.max(1,Math.min(5,Math.ceil(sum/w-0.5))); // .5'te aşağı yuvarla (temkinli)
 }
 function repTrim(t,n){t=String(t||'').replace(/\s+/g,' ').trim();return t.length>n?t.slice(0,n-1)+'…':t;}
+function repRecFor(nm,score){
+  return {
+    5:nm+' bu dönemde çok başarılı bir gelişim gösterdi. Aynı istek ve düzenle devam etmesini bekliyoruz.',
+    4:nm+' bu dönemde iyi bir gelişim gösterdi. Düzenli tekrarlarla daha da ilerleyecektir.',
+    3:nm+' gelişim gösteriyor; ev çalışmalarının ve derse düzenli katılımın artması ilerlemesini hızlandıracaktır.',
+    2:nm+'\'nin gelişimi için düzenli ders katılımı ve ev tekrarları önem taşıyor. Birlikte destek olabiliriz.',
+    1:nm+'\'nin gelişimi için düzenli katılım ve ev tekrarı şart görünüyor. Sizinle görüşmek isteriz.'
+  }[score]||'';
+}
+function repScoreSection(nm,score){
+  return '⭐ Gelişim Puanı: '+score+'/5 — '+repLabel(score)+'\n'+repStars(score)+'\n'+repRecFor(nm,score);
+}
+// Yıldız değişince metindeki "Gelişim Puanı" bölümünü (puan, yıldızlar, değerlendirme cümlesi) yeni puana göre güncelle; senin eklediğin diğer yazılara dokunma
+function repApplyScoreToText(txt,nm,newScore){
+  let t=String(txt||'');
+  const hdrRe=/⭐ Gelişim Puanı: \d\/5 — [^\n]*\n[★☆]{5}/;
+  if(hdrRe.test(t)){
+    const head=repScoreSection(nm,newScore).split('\n').slice(0,2).join('\n');
+    t=t.replace(hdrRe,()=>head);
+    for(let n=1;n<=5;n++){
+      const old=repRecFor(nm,n);
+      if(old&&t.includes(old)){const nw=repRecFor(nm,newScore);t=t.split(old).join(nw);break;}
+    }
+    return t;
+  }
+  return (t?t.trimEnd()+'\n\n':'')+repScoreSection(nm,newScore);
+}
 function repText(s,d,st,score){
   const nm=s.name||'Öğrencimiz';
   const parts=[];
@@ -6126,14 +6158,7 @@ function repText(s,d,st,score){
     const grs=d.logs.filter(l=>l.gr).slice(-3).map(l=>'• '+repDL(l.date)+': '+repTrim(l.gr,160));
     parts.push('📝 Öğretmen Gözlemleri\n'+grs.join('\n'));
   }
-  const rec={
-    5:nm+' bu dönemde çok başarılı bir gelişim gösterdi. Aynı istek ve düzenle devam etmesini bekliyoruz.',
-    4:nm+' bu dönemde iyi bir gelişim gösterdi. Düzenli tekrarlarla daha da ilerleyecektir.',
-    3:nm+' gelişim gösteriyor; ev çalışmalarının ve derse düzenli katılımın artması ilerlemesini hızlandıracaktır.',
-    2:nm+'\'nin gelişimi için düzenli ders katılımı ve ev tekrarları önem taşıyor. Birlikte destek olabiliriz.',
-    1:nm+'\'nin gelişimi için düzenli katılım ve ev tekrarı şart görünüyor. Sizinle görüşmek isteriz.'
-  }[score];
-  parts.push('⭐ Gelişim Puanı: '+score+'/5 — '+repLabel(score)+'\n'+repStars(score)+'\n'+rec);
+  parts.push(repScoreSection(nm,score));
   return parts.join('\n\n');
 }
 async function repGenerate(s,from,to,mode,save){
@@ -6207,15 +6232,18 @@ function renderRepCard(){
     </div>
   </div>`;
 }
+function repMsgFor(s,r,toStudent){
+  return (toStudent?'Merhaba '+s.name+',\n\n':'Sayın Velimiz,\n\n')+
+    '*'+s.name+' '+s.surname+'* için '+repDL(r.from)+' – '+repDL(r.to)+' dönemine ait 3 aylık genel değerlendirme raporu:\n'+
+    (pkgLabel(s.pkg)?'\n📦 *KATILDIĞI PROGRAM: '+pkgLabel(s.pkg).toUpperCase('tr')+'*\n':'')+'\n'+
+    repWAText(r.text)+'\n\nSaygılarımla,\nRockJazz Müzik Aletleri ve Silifke Satranç Atölyesi';
+}
 function repFullMsg(){
   const s=students.find(x=>x.id===curId);const r=repLatest(repCache[curId]);
   if(!s||!r)return '';
   const sel=document.getElementById('wa-hw-to');
   const toStudent=sel&&sel.selectedOptions[0]&&sel.selectedOptions[0].textContent.startsWith('🎓');
-  return (toStudent?'Merhaba '+s.name+',\n\n':'Sayın Velimiz,\n\n')+
-    '*'+s.name+' '+s.surname+'* için '+repDL(r.from)+' – '+repDL(r.to)+' dönemine ait 3 aylık genel değerlendirme raporu:\n'+
-    (pkgLabel(s.pkg)?'\n📦 *KATILDIĞI PROGRAM: '+pkgLabel(s.pkg).toUpperCase('tr')+'*\n':'')+'\n'+
-    repWAText(r.text)+'\n\nSaygılarımla,\nRockJazz Müzik Aletleri ve Silifke Satranç Atölyesi';
+  return repMsgFor(s,r,toStudent);
 }
 function repSendWA(){
   if(payRestriction(students.find(x=>x.id===curId),payData)){restrictBlockMsg();return;}
@@ -6259,52 +6287,95 @@ function repEditLatest(){
   const r=repLatest(repCache[curId]);if(!r)return;
   repOpenModal(curId,JSON.parse(JSON.stringify(r)));
 }
+function repAutoNote(rep){
+  return 'Otomatik önerilen puan: '+rep.autoScore+'/5 (devam oranı ve öğretmen notlarına göre). Yıldızı değiştirirsen metindeki gelişim puanı bölümü otomatik güncellenir; metne istediğin eklemeyi yapabilirsin.';
+}
 function repOpenModal(id,rep){
   _repDraft={id,rep};
   const s=students.find(x=>x.id===id);
-  document.getElementById('rep-m-sub').textContent=(s?s.name+' '+s.surname+' · ':'')+repDL(rep.from)+' – '+repDL(rep.to);
+  document.getElementById('rep-m-sub').textContent=(s?s.name+' '+s.surname:'');
+  document.getElementById('rep-m-from').value=rep.from;
+  document.getElementById('rep-m-to').value=rep.to;
   document.getElementById('rep-m-text').value=rep.text;
-  document.getElementById('rep-m-auto').textContent='Otomatik önerilen puan: '+rep.autoScore+'/5 (devam oranı ve öğretmen notlarına göre). İstersen değiştirebilirsin.';
+  document.getElementById('rep-m-auto').textContent=repAutoNote(rep);
+  // alıcı numaraları
+  const sel=document.getElementById('rep-m-to');
+  const opts=[];
+  if(s){
+    if(s.momPhone)opts.push({v:s.momPhone,l:'👩 '+(s.momName||'Anne')+' — '+s.momPhone});
+    if(s.dadPhone)opts.push({v:s.dadPhone,l:'👨 '+(s.dadName||'Baba')+' — '+s.dadPhone});
+    if(s.phone)opts.push({v:s.phone,l:'🎓 Öğrenci — '+s.phone});
+  }
+  opts.push({v:'',l:'📇 Numara seçmeden aç (WhatsApp\'ta kişiyi seç)'});
+  document.getElementById('rep-m-wa').innerHTML=opts.map(o=>'<option value="'+o.v+'">'+o.l+'</option>').join('');
   repDrawStars();
   document.getElementById('rep-modal').classList.add('open');
+}
+function repDatesChanged(){
+  if(!_repDraft)return;
+  const f=document.getElementById('rep-m-from').value,t=document.getElementById('rep-m-to').value;
+  if(f)_repDraft.rep.from=f;if(t)_repDraft.rep.to=t;
 }
 function repDrawStars(){
   const sc=_repDraft.rep.score;
   document.getElementById('rep-m-stars').innerHTML=[1,2,3,4,5].map(n=>
     '<button onclick="repSetScore('+n+')" style="flex:1;padding:9px 0;border-radius:10px;border:1px solid '+(n===sc?'#f59e0b':'var(--border)')+';background:'+(n===sc?'#fef3c7':'#fff')+';font-family:\'Inter\',system-ui,sans-serif;font-weight:700;font-size:15px;color:'+(n<=sc?'#d97706':'var(--dim)')+';cursor:pointer">'+n+' ★</button>').join('');
 }
-function repSetScore(n){_repDraft.rep.score=n;repDrawStars();}
+function repSetScore(n){
+  if(!_repDraft)return;
+  const s=students.find(x=>x.id===_repDraft.id);
+  const ta=document.getElementById('rep-m-text');
+  ta.value=repApplyScoreToText(ta.value,(s&&s.name)||'Öğrencimiz',n);
+  _repDraft.rep.score=n;
+  repDrawStars();
+}
 async function repRegen(){
   if(!_repDraft)return;
   const s=students.find(x=>x.id===_repDraft.id);if(!s)return;
+  repDatesChanged();
   const {from,to}=_repDraft.rep;
+  const chosen=_repDraft.rep.score; // seçili yıldız korunur
   showLoad('Yeniden oluşturuluyor…');
   try{
     const d=await repCollect(s.id,from,to);
     const st=repStats(d);
-    const sc=repScore(st)||_repDraft.rep.score;
-    _repDraft.rep.score=sc;_repDraft.rep.autoScore=sc;_repDraft.rep.stats=st;
-    _repDraft.rep.text=repText(s,d,st,sc);
+    const auto=repScore(st);
+    _repDraft.rep.autoScore=auto||chosen;_repDraft.rep.stats=st;
+    _repDraft.rep.text=repText(s,d,st,chosen);
     document.getElementById('rep-m-text').value=_repDraft.rep.text;
-    document.getElementById('rep-m-auto').textContent='Otomatik önerilen puan: '+sc+'/5 (devam oranı ve öğretmen notlarına göre). İstersen değiştirebilirsin.';
+    document.getElementById('rep-m-auto').textContent=repAutoNote(_repDraft.rep);
     repDrawStars();
   }catch(err){showConf('Yeniden oluşturulamadı: '+err.message,'⚠️','Tamam',()=>{});}
   hideLoad();
 }
-async function repSaveModal(){
+async function repSaveModal(sendAfter){
   if(!_repDraft)return;
+  repDatesChanged();
   const {id,rep}=_repDraft;
   rep.text=document.getElementById('rep-m-text').value.trim();
   if(!rep.text){showConf('Rapor metni boş olamaz.','⚠️','Tamam',()=>{});return;}
+  if(!rep.from||!rep.to||rep.from>rep.to){showConf('Rapor dönemi tarihlerini kontrol edin.','⚠️','Tamam',()=>{});return;}
+  const s=students.find(x=>x.id===id);
+  const ph=document.getElementById('rep-m-wa').value;
+  const toStudent=(()=>{const sel=document.getElementById('rep-m-wa');return !!(sel&&sel.selectedOptions[0]&&sel.selectedOptions[0].textContent.startsWith('🎓'));})();
   rep.mode='manual';rep.createdAt=todays();
+  if(sendAfter&&s){
+    try{const pv=await fbGet('payments/'+id);if(payRestriction(s,Object.values(pv||{}))){restrictBlockMsg();return;}}catch(e){}
+  }
   showLoad('Kaydediliyor…');
   try{
     await fbSet('reports/'+id+'/'+rep.to,rep);
     repCache[id]=repCache[id]||{};
     repCache[id][rep.to]=rep;
     hideLoad();
-    repClose();
     if(id===curId)renderRepCard();
+    if(sendAfter&&s){
+      const msg=repMsgFor(s,rep,toStudent);
+      repClose();
+      window.open('https://wa.me/'+waPhone(ph)+'?text='+encodeURIComponent(msg),'_blank');
+      return;
+    }
+    repClose();
     showConf('Rapor kaydedildi. Veli bağlantısını yeniden oluşturursan yeni rapor bağlantıya eklenir.','✅','Tamam',()=>{});
   }catch(err){hideLoad();showConf('Kaydedilemedi: '+err.message,'⚠️','Tamam',()=>{});}
 }
