@@ -2924,7 +2924,7 @@ function renderCal(){
       if(att==='came') cls+=' came';
       else if(att==='absent') cls+=' absent';
       else if(att==='istisna') cls+=' istisna';
-      else if(rng&&d>=rng.a&&d<=rng.b) cls+=' payday';
+      else if(rng&&d>=rng.a&&d<=rng.b&&!(effStart(s)&&effStart(s).slice(0,7)>mkey(curY,curM))) cls+=' payday';
       if(ds===today&&!att) cls+=' today-r';
     } else {
       if(paid){ cls+=' paid'; extra='<span class="pay-amt">₺'+paidSum+(payData.some(p=>p.date===ds&&p.exception)?' 🎫':'')+'</span>'; }
@@ -3541,6 +3541,8 @@ function checkOverdue(){
   const now=new Date();
   const isCurMon=(curY===now.getFullYear()&&curM===now.getMonth());
   const mk=mkey(curY,curM);
+  const esO=effStart(s);
+  if(esO&&esO.slice(0,7)>mk){box.className='overdue';return;} // başlangıç ayından önce ödeme beklenmez
   const hasPaid=payData.some(p=>p.date.startsWith(mk)&&!p.recId);
   if(hasPaid){box.className='overdue';return;}
   const isPast=!isCurMon&&(curY*100+curM<now.getFullYear()*100+now.getMonth());
@@ -3926,7 +3928,7 @@ async function bulkExcel(){
     const rng=parseRange(s.payDay);
     const _lp=moPays.filter(p=>!p.recId);
     const onTime=rng?_lp.some(p=>{const d=new Date(p.date+'T12:00:00').getDate();return d>=rng.a&&d<=rng.b;}):null;
-    const payStatus=_lp.length===0?'Ödeme Yok':(onTime===null?'Ödeme Yapıldı':(onTime?'Zamanında':'Gecikmeli'));
+    const payStatus=(effStart(s)&&effStart(s).slice(0,7)>mk&&_lp.length===0)?'Henüz başlamadı':_lp.length===0?'Ödeme Yok':(onTime===null?'Ödeme Yapıldı':(onTime?'Zamanında':'Gecikmeli'));
     sumRows.push([s.name+' '+s.surname,s.education,s.program,s.fee?parseFloat(s.fee):'—',s.lessonFee?parseFloat(s.lessonFee):'—',cameDays,absDays,totPaid||'—',payStatus,s.payDay?'Her ay '+s.payDay+'. günler':'—',s.momName||'—',s.momPhone||'—',s.dadName||'—',s.dadPhone||'—']);
     const ar=[[s.name+' '+s.surname+' — '+MONTHS[m]+' '+y],['Eğitim',s.education],['Program',s.program],['Aylık',s.fee?s.fee+' ₺':'—'],['Ders Başı',s.lessonFee?s.lessonFee+' ₺':'—'],['Kayıt',s.registeredAt||'—'],['Taahhüt',s.payDay?'Her ay '+s.payDay+'. günler':'—'],[],['── YOKLAMA ──'],['Gün','Tarih','Gün Adı','Durum']];
     for(let d=1;d<=total;d++){const ds=fmt(y,m,d);const dayName=['Pazar','Pazartesi','Salı','Çarşamba','Perşembe','Cuma','Cumartesi'][new Date(ds+'T12:00:00').getDay()];const v=att[ds];ar.push([d,ds,dayName,v==='came'?'Geldi':v==='absent'?'Gelmedi':'—']);}
