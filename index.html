@@ -3105,7 +3105,7 @@ function renderPayStatus(){
   } else if(pays.length>0){
     box.style.display='block';box.style.background='#d1fae5';box.style.borderColor='#10b981';box.style.color='#065f46';
     box.innerHTML='✅ <b>'+MONTHS[curM]+' '+curY+'</b> — Ödemesi alındı';
-  } else if(isPast&&prevPays.length===0){
+  } else if(isPast&&prevPays.length===0&&!(effStart(s)&&effStart(s).slice(0,7)>mkey(prevY,prevM2))){
     box.style.display='block';box.style.background='#fee2e2';box.style.borderColor='#fecaca';box.style.color='#991b1b';
     box.innerHTML='🔴 <b>'+MONTHS[prevM2]+' '+prevY+'</b> — Geçen ay ödeme yapmadı!';
   } else {
@@ -3990,6 +3990,11 @@ function getMonthsBack(n){
 // Bir öğrencinin ay için alacağı: öğrenciye özel istisna tutarı varsa o, yoksa aylık ücret.
 // Ödemede "istisna" işaretliyse ay tam sayılır (alınan tutar = beklenen).
 function stuMonthDue(s,mk){
+  const es=effStart(s);
+  if(es&&es.slice(0,7)>mk){ // henüz başlamadı: bu ay için ücret beklenmez
+    const all0=Object.values(allPayCache[s.id]||{}).filter(p=>p.date.startsWith(mk)&&!p.recId);
+    return{fee:0,due:0,rec:all0.reduce((a,p)=>a+parseFloat(p.amount||0),0),exPay:false,hasEx:false,notStarted:true};
+  }
   const ex=stuExFor(s,mk);
   const fee=ex?parseFloat(ex.amount||0):parseFloat(s.fee||0);
   const all=Object.values(allPayCache[s.id]||{}).filter(p=>p.date.startsWith(mk)&&!p.recId);
@@ -4103,7 +4108,8 @@ function renderAnalysis(){
     const diff=Math.round((cm.rec-cm.due)*100)/100; // + fazla, - eksik
     const pct2=periodExp>0?Math.min(100,Math.round(periodPays/periodExp*100)):null;
     let statusTxt,statusColor;
-    if(cm.fee===0){statusTxt='—';statusColor='#7a8399';}
+    if(cm.notStarted){const es=effStart(s);statusTxt='🗓️ '+MONTHS[+es.slice(5,7)-1]+' başlar';statusColor='#1d4ed8';}
+    else if(cm.fee===0){statusTxt='—';statusColor='#7a8399';}
     else if(cm.rec===0){statusTxt='❌ Yok';statusColor='#dc2626';}
     else if(cm.exPay){statusTxt='✅ Tam';statusColor='#059669';}   // istisna: eksik yazma, tam say
     else if(diff===0){statusTxt='✅ Tam';statusColor='#059669';}
