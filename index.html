@@ -544,8 +544,8 @@ summary::-webkit-details-marker{display:none}
       <div><label class="lbl">Soyad *</label><input id="e-surname" oninput="ce('e-surname','e-err-surname')"><div class="err-msg" id="e-err-surname"></div></div>
     </div>
     <div class="mb14"><label class="lbl">Öğrenci Telefonu</label><input id="e-phone" type="tel"></div>
-    <div class="mb14"><label class="lbl">🗓️ Başlangıç Ayı</label><input id="e-start" type="month" style="font-weight:700" onchange="(function(v){if(v)document.getElementById('e-reg').value=v+'-01';})(this.value)"><div style="font-size:11px;color:var(--muted);font-weight:600;margin-top:4px">Gelecek bir ay seçilirse ders saatleri programdan çıkar, o ay gelince otomatik geri eklenir. Ödeme ve yoklama bu aydan başlar.</div></div>
-    <div class="mb14"><label class="lbl">📅 Kayıt Tarihi</label><input id="e-reg" type="date" onchange="(function(v){if(v)document.getElementById('e-start').value=v.slice(0,7);})(this.value)"><div style="font-size:11px;color:var(--muted);font-weight:600;margin-top:4px">Yanlış girildiyse buradan düzeltebilirsiniz. Ödeme takvimi ve yoklama bu tarihe göre başlar.</div></div>
+    <div class="mb14"><label class="lbl">🗓️ Başlangıç Ayı</label><input id="e-start" type="month" style="font-weight:700"><div style="font-size:11px;color:var(--muted);font-weight:600;margin-top:4px">Kayıt Tarihi'nden bağımsızdır (ekimde kayıt, kasımda başlangıç olabilir). Başlangıç ayı kayıt ayından sonraysa ödeme/yoklama o aydan başlar, ders saatleri programdan çıkar ve o ay gelince otomatik eklenir. Kayıt ayında başlıyorsa kayıt tarihindeki istisna kuralları geçerlidir.</div></div>
+    <div class="mb14"><label class="lbl">📅 Kayıt Tarihi</label><input id="e-reg" type="date"><div style="font-size:11px;color:var(--muted);font-weight:600;margin-top:4px">Gerçek kayıt tarihi. Başlangıç ayı kayıt ayıyla aynıysa (ya da boşsa) ödeme takvimi ve yoklama bu tarihe göre başlar.</div></div>
     <div class="mb14">
       <label class="lbl">Eğitim Türü *</label>
       <select id="e-edu" onchange="ce('e-edu','e-err-edu')">
@@ -1863,7 +1863,12 @@ function yfPrevKey(key,k){
 }
 async function yfBuildCarry(key){
   const p=key.split('-').map(Number),now=new Date();
-  if(p[0]*12+p[1]>now.getFullYear()*12+now.getMonth()+1)return null; // gelecek aylar kendiliğinden doldurulmaz
+  const idx=p[0]*12+p[1],curIdx=now.getFullYear()*12+now.getMonth()+1;
+  if(idx>curIdx+1)return null; // 2+ ay sonrası kendiliğinden doldurulmaz
+  if(idx===curIdx+1){ // gelecek ay: yalnızca başlamasına 1 hafta kala hazırlanır
+    const lastDay=new Date(now.getFullYear(),now.getMonth()+1,0).getDate();
+    if(now.getDate()<lastDay-6)return null;
+  }
   for(let k=1;k<=3;k++){
     const pk=yfPrevKey(key,k);
     let prev=null;try{prev=await fbGet('yoklamaForm/'+pk);}catch(e){}
@@ -1873,7 +1878,7 @@ async function yfBuildCarry(key){
   return null;
 }
 // Ay başında (uygulama açıkken) bu ayın formu boşsa kendiliğinden hazırla
-async function yfAutoRollCurrent(){
+async function yfAutoRollCurrentOnly(){
   try{
     if(typeof fbGet!=='function'||!students||!students.length)return;
     const n=new Date(),key=n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0');
@@ -1882,6 +1887,24 @@ async function yfAutoRollCurrent(){
     if(!cur&&YF_SEED[key])return;
     const c=await yfBuildCarry(key);
     if(c){await fbSet('yoklamaForm/'+key,c);}
+  }catch(e){}
+}
+async function yfAutoRollCurrent(){
+  try{await yfAutoRollCurrentOnly();}catch(e){}
+  try{await yfAutoRollNext();}catch(e){}
+}
+// Gelecek ayın formu, ay başlamadan 1 hafta önce (ayın son 7 gününde) bu aydan otomatik hazırlanır
+async function yfAutoRollNext(){
+  try{
+    if(typeof fbGet!=='function'||!students||!students.length)return;
+    const n=new Date(),lastDay=new Date(n.getFullYear(),n.getMonth()+1,0).getDate();
+    if(n.getDate()<lastDay-6)return;
+    const nx=new Date(n.getFullYear(),n.getMonth()+1,1),key=nx.getFullYear()+'-'+String(nx.getMonth()+1).padStart(2,'0');
+    const cur=await fbGet('yoklamaForm/'+key);
+    if(cur&&!yfRowsEmpty(cur.rows))return;
+    if(!cur&&YF_SEED[key])return;
+    const c=await yfBuildCarry(key);
+    if(c){await fbSet('yoklamaForm/'+key,c);try{snack('📋 '+MONTHS[nx.getMonth()]+' '+nx.getFullYear()+' yoklama formu otomatik hazırlandı.',[]);}catch(e){}}
   }catch(e){}
 }
 setTimeout(yfAutoRollCurrent,6000);
@@ -1956,7 +1979,7 @@ function yfMatchStudent(name){
 function yfStudentStatus(st,yy,my){
   const mk=yy+'-'+String(my+1).padStart(2,'0');
   if(isFrozen(st))return'exempt';
-  if(st.registeredAt&&st.registeredAt.slice(0,7)>mk)return'exempt';
+  if(effStart(st)&&effStart(st).slice(0,7)>mk)return'exempt';
   const pays=Object.values(yfPayments[st.id]||{}).filter(p=>p&&p.date&&!p.recId&&String(p.date).slice(0,7)===mk);
   if(pays.length)return pays.some(p=>p.exception)?'ex':'paid';
   const ex=stuExFor(st,mk);
@@ -2114,6 +2137,12 @@ function resetReg(){
   try{const rs=document.getElementById('r-start');if(rs){rs.min=curYM();rs.value=curYM();}}catch(e){}
 }
 
+// Fiili başlangıç: kayıt ayından sonraki bir başlangıç ayı seçildiyse o ayın 1'i, değilse kayıt tarihi
+function effStart(s){
+  const r=(s&&s.registeredAt)||'';
+  if(s&&s.startMonth&&(s.startMonth+'-01')>r)return s.startMonth+'-01';
+  return r;
+}
 function curYM(){const n=new Date();return n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0');}
 
 // ══ HAFTALIK DERS SAATLERİ (schedule) ═══════════════════════════════════
@@ -2299,7 +2328,6 @@ async function saveReg(){
   // Başlangıç ayı: gelecek ay seçildiyse kayıt o ayın 1'inden başlar, ders saatleri o aya kadar bekler
   const sm=((document.getElementById('r-start')||{}).value||'').trim();
   if(sm&&sm>curYM()){
-    student.registeredAt=sm+'-01';
     student.startMonth=sm;
     student.pendingSchedule=d.schedule||[];
     student.schedule=[];
@@ -2321,7 +2349,7 @@ function fillEdit(){
   keepOpt('e-edu',s.education);
   keepOpt('e-prog',s.program);
   document.getElementById('e-reg').value=s.registeredAt||'';
-  document.getElementById('e-start').value=(s.registeredAt||'').slice(0,7);
+  document.getElementById('e-start').value=effStart(s).slice(0,7);
   selPkg('e',s.pkg||'');
   document.getElementById('e-fee').value=s.fee||'';
   document.getElementById('e-lesson-fee').value=s.lessonFee||'';
@@ -2349,9 +2377,12 @@ async function saveEdit(){
   if(i>=0){
     students[i]={...students[i],...d};
     if(regVal)students[i].registeredAt=regVal;
-    const st=students[i],sm=(st.registeredAt||'').slice(0,7);
+    const st=students[i];
+    const smVal=((document.getElementById('e-start')||{}).value||'').trim();
+    if(smVal&&smVal>(st.registeredAt||'').slice(0,7))st.startMonth=smVal;else delete st.startMonth;
+    const sm=effStart(st).slice(0,7);
     if(!isFrozen(st)){
-      if(sm&&sm>curYM()){st.pendingSchedule=d.schedule||[];st.schedule=[];st.startMonth=sm;}
+      if(sm&&sm>curYM()){st.pendingSchedule=d.schedule||[];st.schedule=[];}
       else if(st.pendingSchedule){delete st.pendingSchedule;}
     }
   }
@@ -2422,6 +2453,7 @@ function renderDetail(){
   if(s.registeredAt){
     const[ry,rm,rd]=s.registeredAt.split('-');
     regBadge=`<div style="display:inline-flex;align-items:center;gap:5px;background:#1b2340;color:#b4bddb;border-radius:8px;padding:4px 10px;font-size:12px;font-weight:600;margin-top:5px">📅 Kayıt: ${rd} ${MONTHS[+rm-1]} ${ry}</div>`;
+    if(s.startMonth&&(s.startMonth+'-01')>s.registeredAt){const[sy,sm2]=s.startMonth.split('-');regBadge+=`<div style="display:inline-flex;align-items:center;gap:5px;background:#eff6ff;color:#1d4ed8;border-radius:8px;padding:4px 10px;font-size:12px;font-weight:700;margin:5px 0 0 6px">🗓️ Başlangıç: ${MONTHS[+sm2-1]} ${sy}</div>`;}
   }
   document.getElementById('det-hdr').innerHTML=`
     <div style="display:flex;align-items:flex-start;gap:13px">
@@ -3090,15 +3122,15 @@ function renderYearlyTable(){
   const now=new Date();
   const tableYear=curY;
   let regY=0,regM2=0;
-  if(s.registeredAt){const p=s.registeredAt.split('-');regY=+p[0];regM2=+p[1]-1;}
+  if(effStart(s)){const p=effStart(s).split('-');regY=+p[0];regM2=+p[1]-1;}
   let carryover=0,hasData=false;
   let html='<div style="font-weight:700;font-size:15px;color:var(--text);margin-bottom:4px">📋 '+tableYear+' Yılı Ödeme Tablosu'+(policyOn?' <span style="font-size:11px;background:#e9ecf5;color:#2f3f73;border-radius:8px;padding:2px 9px;vertical-align:middle">🏷️ Erken Ödeme İndirimi Aktif</span>':'')+'</div>';
-  if(s.registeredAt){const[ry,rm,rd]=s.registeredAt.split('-');html+='<div style="font-size:11px;color:var(--muted);font-weight:700;margin-bottom:12px">📅 Kayıt: '+rd+' '+MONTHS[+rm-1]+' '+ry+' tarihinden itibaren</div>';}
+  if(s.registeredAt){const[ry,rm,rd]=effStart(s).split('-');html+='<div style="font-size:11px;color:var(--muted);font-weight:700;margin-bottom:12px">📅 Başlangıç: '+rd+' '+MONTHS[+rm-1]+' '+ry+' tarihinden itibaren</div>';}
   else html+='<div style="margin-bottom:12px"></div>';
   html+='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px">';
   html+='<thead><tr style="background:var(--purple-l)"><th style="padding:8px 5px;text-align:left;font-weight:700;color:var(--purple)">Ay</th><th style="padding:8px 5px;text-align:right;font-weight:700;color:var(--purple)">Beklenen</th><th style="padding:8px 5px;text-align:right;font-weight:700;color:var(--purple)">Ödenen</th><th style="padding:8px 5px;text-align:right;font-weight:700;color:var(--purple)">Bakiye</th><th style="padding:8px 5px;text-align:left;font-weight:700;color:var(--purple)">Durum</th></tr></thead><tbody>';
   for(let m=0;m<12;m++){
-    if(s.registeredAt){if(tableYear<regY)break;if(tableYear===regY&&m<regM2)continue;}
+    if(effStart(s)){if(tableYear<regY)break;if(tableYear===regY&&m<regM2)continue;}
     const isFuture=(tableYear>now.getFullYear())||(tableYear===now.getFullYear()&&m>now.getMonth());
     const mk=mkey(tableYear,m);
     const moPaysAll=payData.filter(p=>p.date.startsWith(mk));
@@ -3473,7 +3505,7 @@ function payRestriction(s,pays){
     if(!(parseFloat(s.fee)>0||parseFloat(s.lessonFee)>0))return false; // ücreti tanımsız öğrenciye uygulanmaz
     const list=(pays||[]).filter(p=>p&&p.date&&!p.recId);
     const has=mk=>list.some(p=>p.date.startsWith(mk))||!!((typeof latePaid!=='undefined'&&latePaid&&latePaid[s.id]||{})[mk]);
-    const reg=(s.registeredAt||'').slice(0,7);
+    const reg=(effStart(s)||'').slice(0,7);
     const curK=mkey(now.getFullYear(),now.getMonth());
     // Bu ay: 20'sinden sonra ödeme yoksa kısıtlı
     if(now.getDate()>RESTRICT_DAY&&!has(curK)&&(!reg||reg<=curK))return true;
@@ -3674,7 +3706,7 @@ const LATE_DAY=20;
 function lateCheck(st,y,m,keepNoFee){
   const mk=mkey(y,m);
   if(isFrozen(st))return null;
-  if(st.registeredAt&&st.registeredAt.slice(0,7)>mk)return null;
+  if(effStart(st)&&effStart(st).slice(0,7)>mk)return null;
   if((latePaid[st.id]||{})[mk])return null;        // elle "ödedi" işaretlendi
   const pays=Object.values(lateAllPay[st.id]||{}).filter(x=>x&&x.date&&String(x.date).startsWith(mk)&&!x.recId);
   const paid=pays.reduce((a,x)=>a+parseFloat(x.amount||0),0);
@@ -3790,7 +3822,7 @@ function chronicInfo(st){
     if(!st||!(parseFloat(String(st.fee||'').replace(',','.'))>0||parseFloat(String(st.lessonFee||'').replace(',','.'))>0))return null;
     const now=new Date();
     const pays=Object.values(lateAllPay[st.id]||{}).filter(x=>x&&x.date&&!x.recId);
-    const reg=st.registeredAt||'';
+    const reg=effStart(st)||'';
     let y=now.getFullYear(),m=now.getMonth();
     const months=[];
     for(let i=0;i<12;i++){
@@ -4428,7 +4460,7 @@ function umPending(){
     const d=new Date(now.getFullYear(),now.getMonth(),now.getDate()-back);
     const ds=hwDateStr(d),idx=(d.getDay()+6)%7;
     students.forEach(s=>{
-      if(s.registeredAt&&ds<s.registeredAt)return;
+      if(effStart(s)&&ds<effStart(s))return;
       const times=(s.schedule||[]).filter(sl=>sl&&sl.day===idx&&sl.time).map(sl=>sl.time).sort((a,b)=>tmin(a)-tmin(b));
       if(!times.length)return;
       if(back===0&&nowMin<tmin(times[0])+umDur(s)+5)return;
@@ -6014,9 +6046,9 @@ async function makeVeliUrl(id,loadMsg){
   // Kayıt tarihinden bugüne aylık ödeme takvimi — erken ödeyince (5'ine kadar %10, 10'una kadar %5) bir sonraki ay indirim uygulanır
   const baseFee=parseFloat(s.fee||0);
   let regY=0,regM2=0;
-  if(s.registeredAt){const p=s.registeredAt.split('-');regY=+p[0];regM2=+p[1]-1;}
-  let cy=s.registeredAt?regY:now.getFullYear(), cm=s.registeredAt?regM2:now.getMonth();
-  if(!s.registeredAt){ cm=now.getMonth()-11; while(cm<0){cm+=12;cy--;} }
+  if(effStart(s)){const p=effStart(s).split('-');regY=+p[0];regM2=+p[1]-1;}
+  let cy=effStart(s)?regY:now.getFullYear(), cm=effStart(s)?regM2:now.getMonth();
+  if(!effStart(s)){ cm=now.getMonth()-11; while(cm<0){cm+=12;cy--;} }
   let carryover=0;
   const schedule=[];
   let guard=0;
@@ -6060,7 +6092,7 @@ async function makeVeliUrl(id,loadMsg){
   const data={
     rs:restricted?1:0,
     n:s.name+' '+s.surname, e:s.education||'', pr:s.program||'', pk:s.pkg||'',
-    f:baseFee||'', pd:s.payDay||'', reg:s.registeredAt||'',
+    f:baseFee||'', pd:s.payDay||'', reg:effStart(s)||'',
     att:attSummary, ist:istList, last5:last5, pay3:pay3, bal:carryover, nd:nextDiscount,
     hw:restricted?'':(note.homework||''), gr:restricted?'':(note.grade||''), hwLog:restricted?[]:hwLog, lvl:lvl,
     rep:lastRep?{from:lastRep.from,to:lastRep.to,score:lastRep.score,text:lastRep.text,mode:lastRep.mode||'auto'}:null,
@@ -6261,7 +6293,7 @@ function repLatest(map){
 // 3 ay geriye; öğrenci daha yeni kayıtlıysa kayıt tarihinden başlar
 function repDefaultFrom(s){
   const thr=repAddMonths(todays(),-3);
-  return (s&&s.registeredAt&&s.registeredAt>thr)?s.registeredAt:thr;
+  return (s&&effStart(s)&&effStart(s)>thr)?effStart(s):thr;
 }
 function repNoteSentiment(txt){
   let t=String(txt||'').toLocaleLowerCase('tr-TR');
@@ -6384,7 +6416,7 @@ async function autoQuarterReports(){
         from=repAddDays(latest.to,1);
         if(from<thr)from=thr;
       }else{
-        if(s.registeredAt&&s.registeredAt>thr)continue; // henüz 3 ay dolmadı
+        if(effStart(s)&&effStart(s)>thr)continue; // henüz 3 ay dolmadı
         from=thr;
       }
       const r=await repGenerate(s,from,today,'auto');
