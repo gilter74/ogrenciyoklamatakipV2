@@ -544,7 +544,8 @@ summary::-webkit-details-marker{display:none}
       <div><label class="lbl">Soyad *</label><input id="e-surname" oninput="ce('e-surname','e-err-surname')"><div class="err-msg" id="e-err-surname"></div></div>
     </div>
     <div class="mb14"><label class="lbl">Öğrenci Telefonu</label><input id="e-phone" type="tel"></div>
-    <div class="mb14"><label class="lbl">📅 Kayıt Tarihi</label><input id="e-reg" type="date"><div style="font-size:11px;color:var(--muted);font-weight:600;margin-top:4px">Yanlış girildiyse buradan düzeltebilirsiniz. Ödeme takvimi ve yoklama bu tarihe göre başlar.</div></div>
+    <div class="mb14"><label class="lbl">🗓️ Başlangıç Ayı</label><input id="e-start" type="month" style="font-weight:700" onchange="(function(v){if(v)document.getElementById('e-reg').value=v+'-01';})(this.value)"><div style="font-size:11px;color:var(--muted);font-weight:600;margin-top:4px">Gelecek bir ay seçilirse ders saatleri programdan çıkar, o ay gelince otomatik geri eklenir. Ödeme ve yoklama bu aydan başlar.</div></div>
+    <div class="mb14"><label class="lbl">📅 Kayıt Tarihi</label><input id="e-reg" type="date" onchange="(function(v){if(v)document.getElementById('e-start').value=v.slice(0,7);})(this.value)"><div style="font-size:11px;color:var(--muted);font-weight:600;margin-top:4px">Yanlış girildiyse buradan düzeltebilirsiniz. Ödeme takvimi ve yoklama bu tarihe göre başlar.</div></div>
     <div class="mb14">
       <label class="lbl">Eğitim Türü *</label>
       <select id="e-edu" onchange="ce('e-edu','e-err-edu')">
@@ -717,7 +718,15 @@ summary::-webkit-details-marker{display:none}
     <div style="margin-top:16px;padding-top:14px;border-top:1px dashed var(--border)">
       <div class="section-lbl" style="margin-bottom:10px">📲 WhatsApp ile Gönder</div>
       <label class="lbl">Kime gönderilsin?</label>
-      <select id="wa-hw-to" style="margin-bottom:10px"></select>
+      <select id="wa-hw-to" style="margin-bottom:10px" onchange="hwLangChanged()"></select>
+      <label class="lbl">🌐 Mesaj dili</label>
+      <select id="wa-hw-lang" class="msg-lang-sel" style="margin-bottom:10px" onchange="setMsgLang(this.value);hwLangChanged()">
+        <option value="tr">🇹🇷 Türkçe</option><option value="en">🇬🇧 English</option><option value="ru">🇷🇺 Русский</option>
+      </select>
+      <div id="wa-hw-prev-wrap" style="display:none;margin-bottom:12px">
+        <label class="lbl">🌐 Çeviri önizleme <span style="font-weight:600;text-transform:none;letter-spacing:0;font-size:11px;color:var(--dim)">(göndermeden önce düzeltebilirsiniz)</span></label>
+        <textarea id="wa-hw-prev" rows="9" style="width:100%;font-size:13px;line-height:1.5"></textarea>
+      </div>
       <label style="display:flex;align-items:center;gap:10px;cursor:pointer;margin-bottom:12px;font-weight:700;font-size:13px;color:var(--text2)">
         <input type="checkbox" id="wa-hw-link" style="width:auto;flex-shrink:0"> 🔗 Veli panel bağlantısını da ekle
       </label>
@@ -725,10 +734,11 @@ summary::-webkit-details-marker{display:none}
         <input type="checkbox" id="wa-hw-rep" style="width:auto;flex-shrink:0"> 📊 3 aylık gelişim raporunu da ekle
       </label>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button id="wa-hw-tr" class="btn-ghost" style="flex:1 1 100%;justify-content:center" onclick="hwPreviewTr()">🌐 Çeviriyi Hazırla / Önizle</button>
         <button id="wa-hw-send" class="btn btn-wa btn-sm" style="flex:1;justify-content:center" onclick="sendHwWA()">📲 WhatsApp'tan Gönder</button>
         <button id="wa-hw-copy" class="btn-ghost" style="flex:1;justify-content:center" onclick="copyHwMsg()">📋 Mesajı Kopyala</button>
       </div>
-      <p style="font-size:11px;color:var(--muted);font-weight:600;margin-top:8px;line-height:1.5">Yukarıdaki ödev/not alanındaki güncel metin gönderilir (önce Kaydet'e basmak zorunda değilsin). Alıcı seçilmezse WhatsApp'ta kişiyi kendin seçersin.</p>
+      <p style="font-size:11px;color:var(--muted);font-weight:600;margin-top:8px;line-height:1.5">Yukarıdaki ödev/not alanındaki güncel metin gönderilir (önce Kaydet'e basmak zorunda değilsin). Alıcı seçilmezse WhatsApp'ta kişiyi kendin seçersin. İngilizce/Rusça seçersen ödev, not ve rapor metni otomatik çevrilir; gönderimden önce önizlemede kontrol edip düzeltebilirsin.</p>
     </div>
   </div>
   </div>
@@ -2311,6 +2321,7 @@ function fillEdit(){
   keepOpt('e-edu',s.education);
   keepOpt('e-prog',s.program);
   document.getElementById('e-reg').value=s.registeredAt||'';
+  document.getElementById('e-start').value=(s.registeredAt||'').slice(0,7);
   selPkg('e',s.pkg||'');
   document.getElementById('e-fee').value=s.fee||'';
   document.getElementById('e-lesson-fee').value=s.lessonFee||'';
@@ -2336,13 +2347,12 @@ async function saveEdit(){
   const i=students.findIndex(x=>x.id===curId);
   const regVal=(document.getElementById('e-reg').value||'').trim();
   if(i>=0){
-    const wasPending=!!students[i].pendingSchedule;
     students[i]={...students[i],...d};
     if(regVal)students[i].registeredAt=regVal;
-    if(wasPending){
-      const st=students[i],sm=(st.registeredAt||'').slice(0,7);
+    const st=students[i],sm=(st.registeredAt||'').slice(0,7);
+    if(!isFrozen(st)){
       if(sm&&sm>curYM()){st.pendingSchedule=d.schedule||[];st.schedule=[];st.startMonth=sm;}
-      else{delete st.pendingSchedule;}
+      else if(st.pendingSchedule){delete st.pendingSchedule;}
     }
   }
   await fbSet('students/'+curId, students[i>=0?i:0]);
@@ -2723,26 +2733,85 @@ function fillHwRecipients(){
   if(s.phone)opts.push({v:s.phone,l:'🎓 Öğrenci — '+s.phone});
   opts.push({v:'',l:'📇 Numara seçmeden aç (WhatsApp\'ta kişiyi seç)'});
   sel.innerHTML=opts.map(o=>'<option value="'+o.v+'">'+o.l+'</option>').join('');
+  try{const ls=document.getElementById('wa-hw-lang');if(ls)ls.value=msgLang;}catch(e){}
 }
-function buildHwMsg(url){
+const HW_I18N={
+  tr:{dearP:'Sayın Velimiz,',hello:n=>'Merhaba '+n+',',intro:'için ödev ve öğretmen notu:',prog:'Program',hw:'Bu Haftanın Ödevi',gr:'Öğretmen Notu',rep:'3 Aylık Gelişim Raporu',link:'Ayrıntılı takip paneli:',bye:'Saygılarımla,'},
+  en:{dearP:'Dear Parent,',hello:n=>'Hello '+n+',',intro:'— homework and teacher\'s note:',prog:'Program',hw:'This Week\'s Homework',gr:'Teacher\'s Note',rep:'3-Month Progress Report',link:'Detailed tracking panel:',bye:'Best regards,'},
+  ru:{dearP:'Уважаемые родители,',hello:n=>'Здравствуйте, '+n+'!',intro:'— домашнее задание и заметка преподавателя:',prog:'Программа',hw:'Домашнее задание на эту неделю',gr:'Заметка преподавателя',rep:'Отчёт о развитии за 3 месяца',link:'Подробная панель отслеживания:',bye:'С уважением,'}
+};
+function hwLang(){const el=document.getElementById('wa-hw-lang');return el&&el.value||'tr';}
+function hwLangChanged(){
+  const w=document.getElementById('wa-hw-prev-wrap'),ta=document.getElementById('wa-hw-prev');
+  if(ta){ta.value='';ta.dataset.key='';}
+  if(w)w.style.display='none';
+}
+async function trLine(l,lang){
+  try{
+    const r=await fetch('https://translate.googleapis.com/translate_a/single?client=gtx&sl=tr&tl='+lang+'&dt=t&q='+encodeURIComponent(l));
+    if(!r.ok)throw new Error('gtx '+r.status);
+    const j=await r.json();
+    const out=(j[0]||[]).map(x=>x[0]).join('');
+    if(!out)throw new Error('empty');
+    return out;
+  }catch(e1){
+    const r=await fetch('https://api.mymemory.translated.net/get?q='+encodeURIComponent(l)+'&langpair=tr|'+lang);
+    if(!r.ok)throw new Error('mymemory '+r.status);
+    const j=await r.json();
+    const out=j&&j.responseData&&j.responseData.translatedText;
+    if(!out)throw new Error('empty');
+    return out;
+  }
+}
+async function trText(text,lang){
+  if(!text||lang==='tr')return text;
+  const lines=String(text).split('\n');
+  const out=await Promise.all(lines.map(l=>l.trim()?trLine(l,lang):Promise.resolve(l)));
+  return out.join('\n');
+}
+function buildHwMsg(url,lang,T){
+  lang=lang||'tr';
+  const L=HW_I18N[lang]||HW_I18N.tr;
   const s=students.find(x=>x.id===curId);if(!s)return '';
-  const hw=document.getElementById('n-hw').value.trim();
-  const gr=document.getElementById('n-grade').value.trim();
+  const hw=T?T.hw:document.getElementById('n-hw').value.trim();
+  const gr=T?T.gr:document.getElementById('n-grade').value.trim();
   const sel=document.getElementById('wa-hw-to');
   const toStudent=sel&&sel.selectedOptions[0]&&sel.selectedOptions[0].textContent.startsWith('🎓');
-  let m=toStudent?'Merhaba '+s.name+',\n\n':'Sayın Velimiz,\n\n';
-  m+='*'+s.name+' '+s.surname+'* için ödev ve öğretmen notu:\n';
-  if(pkgLabel(s.pkg))m+='📦 *Program: '+pkgLabel(s.pkg)+'*\n';
-  if(hw)m+='\n📚 *Bu Haftanın Ödevi*\n'+hw+'\n';
-  if(gr)m+='\n📝 *Öğretmen Notu*\n'+gr+'\n';
+  let m=toStudent?L.hello(s.name)+'\n\n':L.dearP+'\n\n';
+  m+='*'+s.name+' '+s.surname+'* '+(lang==='tr'?L.intro:L.intro)+'\n';
+  if(pkgLabel(s.pkg))m+='📦 *'+L.prog+': '+(T?T.pkg:pkgLabel(s.pkg))+'*\n';
+  if(hw)m+='\n📚 *'+L.hw+'*\n'+hw+'\n';
+  if(gr)m+='\n📝 *'+L.gr+'*\n'+gr+'\n';
   const wantRep=document.getElementById('wa-hw-rep')&&document.getElementById('wa-hw-rep').checked;
   const lr=wantRep?repLatest(repCache[curId]):null;
-  if(lr)m+='\n━━━━━━━━━━\n📊 *3 Aylık Gelişim Raporu* ('+repDL(lr.from)+' – '+repDL(lr.to)+')\n\n'+repWAText(lr.text)+'\n';
-  if(url)m+='\n🔗 Ayrıntılı takip paneli:\n'+url+'\n';
-  m+='\nSaygılarımla,\nRockJazz Müzik Aletleri ve Silifke Satranç Atölyesi';
+  if(lr)m+='\n━━━━━━━━━━\n📊 *'+L.rep+'* ('+repDL(lr.from)+' – '+repDL(lr.to)+')\n\n'+(T?T.rep:repWAText(lr.text))+'\n';
+  if(url)m+='\n🔗 '+L.link+'\n'+url+'\n';
+  m+='\n'+L.bye+'\nRockJazz Müzik Aletleri ve Silifke Satranç Atölyesi';
   return m;
 }
-async function hwMsgReady(){
+async function buildHwMsgLang(url,lang){
+  const s=students.find(x=>x.id===curId);
+  const hw=document.getElementById('n-hw').value.trim();
+  const gr=document.getElementById('n-grade').value.trim();
+  const wantRep=document.getElementById('wa-hw-rep')&&document.getElementById('wa-hw-rep').checked;
+  const lr=wantRep?repLatest(repCache[curId]):null;
+  const [h,g,pk,rp]=await Promise.all([
+    trText(hw,lang),trText(gr,lang),
+    s&&pkgLabel(s.pkg)?trText(pkgLabel(s.pkg),lang):Promise.resolve(''),
+    lr?trText(repWAText(lr.text),lang):Promise.resolve('')
+  ]);
+  return buildHwMsg(url,lang,{hw:h,gr:g,pkg:pk,rep:rp});
+}
+function hwPrevKey(lang){
+  const g=id=>{const e=document.getElementById(id);return e?e.value:'';};
+  const c=id=>{const e=document.getElementById(id);return e&&e.checked?'1':'0';};
+  return [lang,g('n-hw').trim(),g('n-grade').trim(),c('wa-hw-rep'),c('wa-hw-link'),g('wa-hw-to')].join('|');
+}
+async function hwPreviewTr(){
+  if(hwLang()==='tr'){showConf('Çeviri için önce Mesaj dili olarak English veya Русский seçin.','🌐','Tamam',()=>{});return;}
+  await hwMsgReady(true);
+}
+async function hwMsgReady(forPreview){
   if(payRestriction(students.find(x=>x.id===curId),payData)){restrictBlockMsg();return null;}
   const hw=document.getElementById('n-hw').value.trim();
   const gr=document.getElementById('n-grade').value.trim();
@@ -2756,7 +2825,20 @@ async function hwMsgReady(){
     if(!r)return null;
     url=r.url;
   }
-  return buildHwMsg(url);
+  const lang=hwLang();
+  if(lang==='tr')return buildHwMsg(url);
+  const ta=document.getElementById('wa-hw-prev'),wrap=document.getElementById('wa-hw-prev-wrap');
+  const key=hwPrevKey(lang);
+  if(!forPreview&&ta&&ta.value.trim()&&ta.dataset.key===key)return ta.value.trim();
+  showLoad('Çevriliyor…');
+  let msg;
+  try{msg=await buildHwMsgLang(url,lang);}
+  catch(e){hideLoad();showConf('Çeviri servisine ulaşılamadı. İnternet bağlantınızı kontrol edip tekrar deneyin ya da dili Türkçe yapın.','⚠️','Tamam',()=>{});return null;}
+  hideLoad();
+  ta.value=msg;ta.dataset.key=key;wrap.style.display='block';
+  if(forPreview)return msg;
+  showConf('Çeviri hazır. Önizlemeyi kontrol edin (gerekirse düzeltin), sonra tekrar gönderin.','🌐','Tamam',()=>{});
+  return null;
 }
 async function sendHwWA(){
   const msg=await hwMsgReady();if(!msg)return;
@@ -5434,6 +5516,63 @@ function hwEntriesFor(sid){
   }
   return hwData[sid]||{};
 }
+// ══ ORTAK: mesaj dili + çeviri önizleme penceresi ═══════════════════════
+let msgLang='tr';
+const MSG_MON={en:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],ru:['янв','фев','мар','апр','мая','июн','июл','авг','сен','окт','ноя','дек']};
+const MSG_MONFULL={tr:MONTHS,en:['January','February','March','April','May','June','July','August','September','October','November','December'],ru:['январь','февраль','март','апрель','май','июнь','июль','август','сентябрь','октябрь','ноябрь','декабрь']};
+const MSG_MONGEN={ru:['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря']};
+function msgDateLong(ds,lang){
+  const d=new Date(ds+'T12:00:00');
+  if(lang==='ru')return d.getDate()+' '+MSG_MONGEN.ru[d.getMonth()]+' '+d.getFullYear();
+  if(lang==='en')return MSG_MONFULL.en[d.getMonth()]+' '+d.getDate()+', '+d.getFullYear();
+  return repDL(ds);
+}
+function langSelHtml(){
+  return '<select class="msg-lang-sel" onchange="setMsgLang(this.value)" title="Mesaj dili" style="padding:7px 8px;font-size:12px;font-weight:700;border-radius:9px;border:1px solid var(--border);flex:0 0 auto">'+
+    [['tr','🇹🇷 Türkçe'],['en','🇬🇧 English'],['ru','🇷🇺 Русский']].map(o=>'<option value="'+o[0]+'"'+(msgLang===o[0]?' selected':'')+'>'+o[1]+'</option>').join('')+'</select>';
+}
+function setMsgLang(v){
+  msgLang=v;
+  document.querySelectorAll('.msg-lang-sel').forEach(e=>{if(e.value!==v)e.value=v;});
+}
+function trPreviewModal(text,phone,title){
+  let ov=document.getElementById('tr-prev-ov');if(ov)ov.remove();
+  ov=document.createElement('div');ov.id='tr-prev-ov';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:99999;display:flex;align-items:center;justify-content:center;padding:14px';
+  ov.innerHTML='<div style="background:#fff;border-radius:16px;max-width:560px;width:100%;max-height:92vh;overflow:auto;padding:16px">'+
+    '<div style="font-weight:800;font-size:15px;margin-bottom:4px">🌐 '+(title||'Çeviri önizleme')+'</div>'+
+    '<div style="font-size:11px;color:#667085;font-weight:600;margin-bottom:8px">Makine çevirisidir; göndermeden önce kontrol edip düzeltebilirsiniz.</div>'+
+    '<textarea id="tr-prev-ta" rows="14" style="width:100%;font-size:13px;line-height:1.5;padding:10px;border:1px solid #d0d5dd;border-radius:10px"></textarea>'+
+    '<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">'+
+    '<button class="btn btn-wa btn-sm" id="tr-prev-send" style="flex:1;justify-content:center">📲 WhatsApp\'tan Gönder</button>'+
+    '<button class="btn-ghost" id="tr-prev-copy" style="flex:1;justify-content:center">📋 Kopyala</button>'+
+    '<button class="btn-ghost" id="tr-prev-close" style="flex:1 1 100%;justify-content:center">Kapat</button></div></div>';
+  document.body.appendChild(ov);
+  const ta=document.getElementById('tr-prev-ta');ta.value=text;
+  document.getElementById('tr-prev-send').onclick=()=>{window.open('https://wa.me/'+waPhone(phone)+'?text='+encodeURIComponent(ta.value),'_blank');};
+  document.getElementById('tr-prev-copy').onclick=()=>{
+    const done=()=>showConf('Mesaj kopyalandı!','✅','Tamam',()=>{});
+    if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(ta.value).then(done,()=>window.prompt('Kopyalayın:',ta.value));else window.prompt('Kopyalayın:',ta.value);
+  };
+  document.getElementById('tr-prev-close').onclick=()=>ov.remove();
+}
+// mode: 'send' | 'copy'. Türkçe ise doğrudan; değilse çevirip önizleme penceresinde gösterir.
+async function deliverMsg(mode,trBuilder,langBuilder,phone,title){
+  if(msgLang==='tr'){
+    const m=trBuilder();if(!m)return;
+    if(mode==='send'){window.open('https://wa.me/'+waPhone(phone)+'?text='+encodeURIComponent(m),'_blank');return;}
+    const done=()=>showConf('Mesaj kopyalandı!','✅','Tamam',()=>{});
+    if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(m).then(done,()=>window.prompt('Kopyalayın:',m));else window.prompt('Kopyalayın:',m);
+    return;
+  }
+  showLoad('Çevriliyor…');
+  let m;
+  try{m=await langBuilder(msgLang);}
+  catch(e){hideLoad();showConf('Çeviri servisine ulaşılamadı. İnternet bağlantınızı kontrol edip tekrar deneyin ya da dili Türkçe yapın.','⚠️','Tamam',()=>{});return;}
+  hideLoad();
+  if(m)trPreviewModal(m,phone,title);
+}
+
 function hwSumText(s,y,m){
   const r=hwMonthItems(hwEntriesFor(s.id),y,m);
   let t='*'+s.name+' '+s.surname+'* – '+MONTHS[m]+' '+y+' ödev özeti\n';
@@ -5444,20 +5583,29 @@ function hwSumText(s,y,m){
   t+='\n\nSaygılarımla,\nRockJazz Müzik Aletleri · Silifke Satranç Atölyesi';
   return t;
 }
+async function hwSumTextLang(s,y,m,lang){
+  const L=HW_I18N[lang];
+  const r=hwMonthItems(hwEntriesFor(s.id),y,m);
+  const [its,pk]=await Promise.all([Promise.all(r.items.map(it=>trLine(it.t,lang))),pkgLabel(s.pkg)?trText(pkgLabel(s.pkg),lang):Promise.resolve('')]);
+  const title=lang==='ru'?'итоги домашних заданий за '+MSG_MONFULL.ru[m]+' '+y:MSG_MONFULL.en[m]+' '+y+' homework summary';
+  let t='*'+s.name+' '+s.surname+'* – '+title+'\n';
+  if(pkgLabel(s.pkg))t+='📦 *'+L.prog+': '+pk+'*\n';
+  t+='\n';
+  t+=r.items.map((it,i)=>(i+1)+'. '+(+it.d.split(' ')[0])+' '+MSG_MON[lang][m]+' · '+its[i]+(it.n>1?' (×'+it.n+')':'')).join('\n');
+  if(r.extra)t+='\n\n'+(lang==='ru'?'(Более ранние задания месяца ('+r.extra+') не вошли в эту сводку.)':'(The month\'s '+r.extra+' earlier assignments are not included in this summary.)');
+  t+='\n\n'+L.bye+'\nRockJazz Müzik Aletleri · Silifke Satranç Atölyesi';
+  return t;
+}
 async function hwSumSend(sid,y,m){
   const s=students.find(x=>x.id===sid);if(!s)return;
   try{const pv=await fbGet('payments/'+sid);if(payRestriction(s,Object.values(pv||{}))){restrictBlockMsg();return;}}catch(e){}
   const to=s.momPhone||s.dadPhone||s.phone||s.kinPhone||'';
-  window.open('https://wa.me/'+waPhone(to)+'?text='+encodeURIComponent(hwSumText(s,y,m)),'_blank');
+  await deliverMsg('send',()=>hwSumText(s,y,m),L=>hwSumTextLang(s,y,m,L),to,'Aylık ödev özeti çevirisi');
 }
 function hwSumCopy(sid,y,m){
   const s=students.find(x=>x.id===sid);if(!s)return;
-  const t=hwSumText(s,y,m);
-  const done=()=>showConf('Özet kopyalandı.','✅','Tamam',()=>{});
-  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(t).then(done,()=>window.prompt('Kopyalayın:',t));
-  else window.prompt('Kopyalayın:',t);
+  return deliverMsg('copy',()=>hwSumText(s,y,m),L=>hwSumTextLang(s,y,m,L),'','Aylık ödev özeti çevirisi');
 }
-// Tek bir öğrenci+ay için özet kartı (ready değilse bilgi notu)
 function hwSumCardHtml(s,y,m,showName){
   const ll=hwLastLesson(s,y,m);
   const ready=hwSumReady(ll);
@@ -5474,7 +5622,7 @@ function hwSumCardHtml(s,y,m,showName){
   return '<div style="background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:10px 12px;margin-bottom:8px">'+head+
     r.items.map((it,i)=>'<div style="display:flex;gap:8px;font-size:13px;font-weight:600;margin-bottom:5px;line-height:1.4"><span style="color:var(--purple);font-weight:700;min-width:18px">'+(i+1)+'.</span><span style="flex:1"><span style="color:var(--muted);font-weight:700">'+it.d+' ·</span> '+hwEsc(it.t)+(it.n>1?' <span style="color:#d97706;font-weight:700">×'+it.n+'</span>':'')+'</span></div>').join('')+
     (r.extra?'<div style="font-size:11px;color:var(--muted);font-weight:700;margin-top:4px">Ayın daha önceki '+r.extra+' ödevi özete alınmadı.</div>':'')+
-    '<div style="display:flex;gap:8px;margin-top:10px">'+
+    '<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">'+langSelHtml()+
       '<button class="btn btn-wa btn-sm" style="flex:1;justify-content:center" onclick="hwSumSend(\''+s.id+'\','+y+','+m+')">📲 Veliye Gönder</button>'+
       '<button class="btn-ghost" style="flex:1;justify-content:center;padding:7px" onclick="hwSumCopy(\''+s.id+'\','+y+','+m+')">📋 Kopyala</button>'+
     '</div></div>';
@@ -6268,6 +6416,7 @@ function renderRepCard(){
     <div style="font-size:11px;font-weight:700;color:var(--muted);margin:4px 0 8px">📅 ${repDL(r.from)} – ${repDL(r.to)} · Sonraki otomatik rapor: ${repDL(next)}</div>
     <div style="white-space:pre-wrap;font-size:13px;font-weight:600;color:var(--text);line-height:1.55;max-height:190px;overflow-y:auto">${repEsc(r.text)}</div>
     <div style="display:flex;gap:7px;flex-wrap:wrap;margin-top:10px">
+      ${langSelHtml()}
       <button class="btn-ghost" style="flex:1;justify-content:center;padding:8px" onclick="repEditLatest()">✏️ Düzenle</button>
       <button class="btn btn-wa btn-sm" style="flex:1;justify-content:center" onclick="repSendWA()">📲 WhatsApp</button>
       <button class="btn-ghost" style="flex:1;justify-content:center;padding:8px" onclick="repCopy()">📋 Kopyala</button>
@@ -6280,6 +6429,22 @@ function repMsgFor(s,r,toStudent){
     (pkgLabel(s.pkg)?'\n📦 *KATILDIĞI PROGRAM: '+pkgLabel(s.pkg).toUpperCase('tr')+'*\n':'')+'\n'+
     repWAText(r.text)+'\n\nSaygılarımla,\nRockJazz Müzik Aletleri ve Silifke Satranç Atölyesi';
 }
+function repToStudent(){
+  const sel=document.getElementById('wa-hw-to');
+  return !!(sel&&sel.selectedOptions[0]&&sel.selectedOptions[0].textContent.startsWith('🎓'));
+}
+async function repFullMsgLang(lang){
+  const s=students.find(x=>x.id===curId);const r=repLatest(repCache[curId]);
+  if(!s||!r)return '';
+  const L=HW_I18N[lang];
+  const [body,pk]=await Promise.all([trText(repWAText(r.text),lang),pkgLabel(s.pkg)?trText(pkgLabel(s.pkg),lang):Promise.resolve('')]);
+  const per=msgDateLong(r.from,lang)+' – '+msgDateLong(r.to,lang);
+  const intro=lang==='ru'?'трёхмесячный отчёт об общей оценке за период '+per+':':'3-month overall evaluation report for '+per+':';
+  return (repToStudent()?L.hello(s.name)+'\n\n':L.dearP+'\n\n')+
+    '*'+s.name+' '+s.surname+'* — '+intro+'\n'+
+    (pkgLabel(s.pkg)?'\n📦 *'+(lang==='ru'?'ПРОГРАММА':'PROGRAM ENROLLED')+': '+pk.toUpperCase()+'*\n':'')+'\n'+
+    body+'\n\n'+L.bye+'\nRockJazz Müzik Aletleri ve Silifke Satranç Atölyesi';
+}
 function repFullMsg(){
   const s=students.find(x=>x.id===curId);const r=repLatest(repCache[curId]);
   if(!s||!r)return '';
@@ -6289,15 +6454,11 @@ function repFullMsg(){
 }
 function repSendWA(){
   if(payRestriction(students.find(x=>x.id===curId),payData)){restrictBlockMsg();return;}
-  const m=repFullMsg();if(!m)return;
-  const ph=waPhone(document.getElementById('wa-hw-to').value);
-  window.open('https://wa.me/'+ph+'?text='+encodeURIComponent(m),'_blank');
+  const ph=document.getElementById('wa-hw-to').value;
+  return deliverMsg('send',repFullMsg,repFullMsgLang,ph,'3 aylık rapor çevirisi');
 }
 function repCopy(){
-  const m=repFullMsg();if(!m)return;
-  const done=()=>showConf('Rapor mesajı kopyalandı!','✅','Tamam',()=>{});
-  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(m).then(done).catch(()=>{prompt('Mesajı kopyalayın:',m);});
-  else prompt('Mesajı kopyalayın:',m);
+  return deliverMsg('copy',repFullMsg,repFullMsgLang,'','3 aylık rapor çevirisi');
 }
 
 // ── Manuel hazırlama / düzenleme modalı ──
