@@ -465,6 +465,11 @@ summary::-webkit-details-marker{display:none}
       <div class="err-msg" id="r-err-pkg"></div>
     </div>
     <div class="mb20">
+      <label class="lbl">🗓️ Başlangıç Ayı *</label>
+      <input id="r-start" type="month" style="font-weight:700">
+      <div style="font-size:11px;color:var(--dim);font-weight:600;margin-top:5px">Ödeme takvimi ve yoklama bu aydan başlar. Gelecek bir ay seçerseniz ders saatleri o ay otomatik olarak haftalık programa eklenir; o zamana kadar saatler boş görünür.</div>
+    </div>
+    <div class="mb20">
       <label class="lbl">📅 Haftalık Ders Saatleri <span style="font-weight:600;text-transform:none;letter-spacing:0;font-size:11px;color:var(--dim)">(Öğrenci kartında görünür)</span></label>
       <div id="r-sched-rows"></div>
       <button type="button" class="btn-ghost" style="width:100%;justify-content:center;padding:9px;font-size:13px;margin-top:6px" onclick="addSchedRow('r')">➕ Saat Ekle</button>
@@ -2096,7 +2101,10 @@ function resetReg(){
   const rKdv=document.getElementById('r-kdv');if(rKdv)rKdv.value='0';
   document.querySelectorAll('#r-kdv-btns .pr-btn').forEach(b=>b.classList.remove('sel'));
   renderSchedRows('r',[]);
+  try{const rs=document.getElementById('r-start');if(rs){rs.min=curYM();rs.value=curYM();}}catch(e){}
 }
+
+function curYM(){const n=new Date();return n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0');}
 
 // ══ HAFTALIK DERS SAATLERİ (schedule) ═══════════════════════════════════
 const SCHED_DAYS=['Pt','Sa','Ça','Pe','Cu','Ct','Pz'];
@@ -2149,9 +2157,25 @@ function isDupName(s){
   const fn=((s.name||'')+' '+(s.surname||'')).trim().toLocaleUpperCase('tr').replace(/\s+/g,' ');
   return fullNameDupSet().has(fn);
 }
+async function activatePendingSchedules(){
+  const cym=curYM(),clash=[];
+  for(const s of students){
+    if(!s||!s.pendingSchedule||!s.startMonth||s.startMonth>cym)continue;
+    const slots=(s.pendingSchedule||[]).map(x=>({day:x.day,time:x.time}));
+    s.schedule=slots;
+    delete s.pendingSchedule;
+    slots.forEach(sl=>students.forEach(o=>{
+      if(o.id!==s.id&&(o.schedule||[]).some(x=>x&&x.day===sl.day&&x.time===sl.time))clash.push(s.name+' '+s.surname+' ↔ '+o.name+' '+o.surname+' ('+SCHED_DAYS[sl.day]+' '+sl.time+')');
+    }));
+    try{await fbSet('students/'+s.id,s);}catch(e){}
+  }
+  if(clash.length)showConf('Başlangıç ayı gelen öğrencilerin ders saati başka bir öğrenciyle çakışıyor:\n\n'+clash.join('\n')+'\n\nÖğrenci kartından saatleri düzenleyebilirsiniz.','⚠️','Tamam',()=>{});
+}
 async function autoFillSchedules(){
+  try{await activatePendingSchedules();}catch(e){}
   const nameCounts=firstNameCounts();
   for(const s of students){
+    if(s.pendingSchedule)continue;
     if(s.schedule&&s.schedule.length)continue;
     if(isFrozen(s))continue;
     const key=normName(s.name);
@@ -2259,9 +2283,17 @@ async function saveReg(){
   if(!validate(d,'r'))return;
   showLoad('Kaydediliyor…');
   const now=new Date();
-  const regDate=fmt(now.getFullYear(),now.getMonth(),now.getDate());
+  let regDate=fmt(now.getFullYear(),now.getMonth(),now.getDate());
   const id=String(Date.now());
   const student={id,registeredAt:regDate,...d};
+  // Başlangıç ayı: gelecek ay seçildiyse kayıt o ayın 1'inden başlar, ders saatleri o aya kadar bekler
+  const sm=((document.getElementById('r-start')||{}).value||'').trim();
+  if(sm&&sm>curYM()){
+    student.registeredAt=sm+'-01';
+    student.startMonth=sm;
+    student.pendingSchedule=d.schedule||[];
+    student.schedule=[];
+  }
   students.push(student);
   await fbSet('students/'+id, student);
   try{await prosOnRegistered(id);}catch(e){}
@@ -2290,7 +2322,7 @@ function fillEdit(){
   document.getElementById('e-dad-name').value=s.dadName||'';
   document.getElementById('e-dad-phone').value=s.dadPhone||'';
   document.querySelectorAll('#e-pr-btns .pr-btn').forEach(b=>b.classList.toggle('sel',b.dataset.v===(s.payDay||'')));
-  renderSchedRows('e',s.schedule||[]);
+  renderSchedRows('e',s.pendingSchedule||s.schedule||[]);
   fillExForm('e',s);
   ['e-err-name','e-err-surname','e-err-edu','e-err-prog'].forEach(id=>{
     const el=document.getElementById(id);if(el)el.textContent='';
@@ -2303,7 +2335,16 @@ async function saveEdit(){
   showLoad('Güncelleniyor…');
   const i=students.findIndex(x=>x.id===curId);
   const regVal=(document.getElementById('e-reg').value||'').trim();
-  if(i>=0){students[i]={...students[i],...d};if(regVal)students[i].registeredAt=regVal;}
+  if(i>=0){
+    const wasPending=!!students[i].pendingSchedule;
+    students[i]={...students[i],...d};
+    if(regVal)students[i].registeredAt=regVal;
+    if(wasPending){
+      const st=students[i],sm=(st.registeredAt||'').slice(0,7);
+      if(sm&&sm>curYM()){st.pendingSchedule=d.schedule||[];st.schedule=[];st.startMonth=sm;}
+      else{delete st.pendingSchedule;}
+    }
+  }
   await fbSet('students/'+curId, students[i>=0?i:0]);
   hideLoad();
   go('s-detail');
@@ -2387,6 +2428,7 @@ function renderDetail(){
           ${s.fee?(s.kdvDahil?'<span class="badge" style="background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe">✅ KDV Dahil</span>':'<span class="badge" style="background:#f3f4f6;color:#4b5563;border:1px solid #d1d5db">🚫 KDV Hariç</span>'):''}
           ${rng?'<span class="badge" style="background:#fef9c3;color:#713f12;border:1px solid #fde047">💳 Her ay '+s.payDay+'. günler</span>':''}
           ${s.exMonth?'<span class="badge" style="background:#fef3c7;color:#92400e;border:1px solid #fcd34d;white-space:normal">🎫 İstisna: yalnızca '+MONTHS[+s.exMonth.ym.split('-')[1]-1]+' '+s.exMonth.ym.split('-')[0]+' ayı '+parseFloat(s.exMonth.amount).toLocaleString('tr-TR')+' ₺'+(s.fee?' — sonraki aylar '+parseFloat(s.fee).toLocaleString('tr-TR')+' ₺':'')+(s.exMonth.note?' ('+repEsc(s.exMonth.note)+')':'')+'</span>':''}
+          ${s.pendingSchedule&&s.startMonth?'<span class="badge" style="background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;white-space:normal">⏳ Başlangıç: '+MONTHS[+s.startMonth.split('-')[1]-1]+' '+s.startMonth.split('-')[0]+(s.pendingSchedule.length?' — saatler o ay eklenecek: '+s.pendingSchedule.map(sl=>SCHED_DAYS[sl.day]+' '+sl.time).join(' · '):'')+'</span>':''}
           ${s.schedule&&s.schedule.length?'<span class="badge" style="background:#ecfdf5;color:#15803d;border:1px solid #86efac">📅 '+s.schedule.map(sl=>SCHED_DAYS[sl.day]+' '+sl.time).join(' · ')+'</span>':''}
         </div>
         <div style="margin-top:10px;display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12px;font-weight:700">
