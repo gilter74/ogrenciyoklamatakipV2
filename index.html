@@ -3956,16 +3956,32 @@ function bulkDrive(){
 
 // ══ ANALYSIS ══════════════════════════════════════════════════════════
 let analysisPeriod=1;
-let allAttCache={}, allPayCache={};
+let allAttCache={}, allPayCache={}, archStudents=[];
+// Kaydı silinen (arşive alınan) öğrenciler: ödemeleri aylık ödeme sayfasında korunsun diye arşivden okunur
+function loadArchivedForAnalysis(arc){
+  archStudents=[];
+  Object.values(arc||{}).forEach(e=>{
+    if(!e||!e.id)return;
+    const {attendance,payments,notes,discount,receivables,istisna,...s}=e;
+    if(payments&&!allPayCache[e.id])allPayCache[e.id]=payments;
+    archStudents.push({...s,_archived:true});
+  });
+}
+function analysisStudents(){
+  const ids=new Set(students.map(s=>s.id));
+  return students.concat(archStudents.filter(a=>!ids.has(a.id)));
+}
 
 async function openAnalysis(){
   showLoad('Veriler yükleniyor…');
-  const [attSnap,paySnap]=await Promise.all([
+  const [attSnap,paySnap,arcSnap]=await Promise.all([
     db.ref('attendance').once('value'),
-    db.ref('payments').once('value')
+    db.ref('payments').once('value'),
+    db.ref('archived').once('value')
   ]);
   allAttCache=attSnap.val()||{};
   allPayCache=paySnap.val()||{};
+  loadArchivedForAnalysis(arcSnap.val());
   hideLoad();
   go('s-analysis');
   renderAnalysis();
@@ -3997,6 +4013,10 @@ function stuMonthDue(s,mk){
     const all0=Object.values(allPayCache[s.id]||{}).filter(p=>p.date.startsWith(mk)&&!p.recId);
     return{fee:0,due:0,rec:all0.reduce((a,p)=>a+parseFloat(p.amount||0),0),exPay:false,hasEx:false,notStarted:true};
   }
+  if(s._archived&&s.deletedAt&&s.deletedAt.slice(0,7)<mk){ // kaydı silindikten sonraki aylarda hiçbir listede/beklentide yok
+    const all1=Object.values(allPayCache[s.id]||{}).filter(p=>p.date.startsWith(mk)&&!p.recId);
+    return{fee:0,due:0,rec:all1.reduce((a,p)=>a+parseFloat(p.amount||0),0),exPay:false,hasEx:false,ended:true};
+  }
   const ex=stuExFor(s,mk);
   const fee=ex?parseFloat(ex.amount||0):parseFloat(s.fee||0);
   const all=Object.values(allPayCache[s.id]||{}).filter(p=>p.date.startsWith(mk)&&!p.recId);
@@ -4009,7 +4029,7 @@ function stuMonthDue(s,mk){
 function calcMonthData(mk){
   let expected=0,received=0;
   const g={music:{rec:0,exp:0},chess:{rec:0,exp:0},ai:{rec:0,exp:0}};
-  students.forEach(s=>{
+  analysisStudents().forEach(s=>{
     const m=stuMonthDue(s,mk);
     expected+=m.due;received+=m.rec;
     const k=g[eduGroup(s.education)];k.rec+=m.rec;k.exp+=m.due;
@@ -4098,7 +4118,7 @@ function renderAnalysis(){
   // Öğrenci bazlı tablo
   const now=new Date();
   const curMk=mkey(now.getFullYear(),now.getMonth());
-  const stuRows=students.map(s=>{
+  const stuRows=analysisStudents().map(s=>{
     const fee=parseFloat(s.fee||0);
     const allPays=Object.values(allPayCache[s.id]||{}).filter(p=>!p.recId);
     let periodPays=0,periodExp=0;
@@ -4110,20 +4130,21 @@ function renderAnalysis(){
     const diff=Math.round((cm.rec-cm.due)*100)/100; // + fazla, - eksik
     const pct2=periodExp>0?Math.min(100,Math.round(periodPays/periodExp*100)):null;
     let statusTxt,statusColor;
-    if(cm.notStarted){const es=effStart(s);statusTxt='🗓️ '+MONTHS[+es.slice(5,7)-1]+' başlar';statusColor='#1d4ed8';}
+    if(cm.ended){statusTxt='🗂️ Devam etmiyor';statusColor='#7a8399';}
+    else if(cm.notStarted){const es=effStart(s);statusTxt='🗓️ '+MONTHS[+es.slice(5,7)-1]+' başlar';statusColor='#1d4ed8';}
     else if(cm.fee===0){statusTxt='—';statusColor='#7a8399';}
     else if(cm.rec===0){statusTxt='❌ Yok';statusColor='#dc2626';}
     else if(cm.exPay){statusTxt='✅ Tam';statusColor='#059669';}   // istisna: eksik yazma, tam say
     else if(diff===0){statusTxt='✅ Tam';statusColor='#059669';}
     else if(diff<0){statusTxt='⚠ Eksik '+fmtN(-diff)+' ₺';statusColor='#dc2626';}
     else{statusTxt='➕ Fazla '+fmtN(diff)+' ₺';statusColor='#2563eb';}
-    return{s,periodPays,periodExp,pct2,statusTxt,statusColor,kdvDahil:!!s.kdvDahil,grp:eduGroup(s.education)};
-  }).sort((a,b)=>b.periodPays-a.periodPays);
+    return{s,periodPays,periodExp,pct2,statusTxt,statusColor,kdvDahil:!!s.kdvDahil,grp:eduGroup(s.education),archived:!!s._archived};
+  }).filter(r=>!r.archived||r.periodPays>0||r.periodExp>0).sort((a,b)=>b.periodPays-a.periodPays);
 
   // ── Branş bazlı sade KDV özeti (bugüne kadar alınan tüm ödemeler) ──
   // KDV dahil öğrenci: KDV = alınan × 20/120. KDV hariç öğrenci: KDV = 0.
   const f2=n=>(Math.round(n*100)/100).toLocaleString('tr-TR',{maximumFractionDigits:2});
-  const allTime=students.map(s=>{
+  const allTime=analysisStudents().map(s=>{
     const gross=Object.values(allPayCache[s.id]||{}).filter(p=>!p.recId).reduce((a,p)=>a+parseFloat(p.amount||0),0);
     const kdv=s.kdvDahil?Math.round(gross*20/120*100)/100:0;
     return{s,gross,kdv,net:gross-kdv,grp:eduGroup(s.education)};
@@ -4143,7 +4164,7 @@ function renderAnalysis(){
   const payerRow=r=>`
     <div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-top:1px solid var(--border)">
       <div style="flex:1;min-width:0">
-        <div style="font-weight:600;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${eduIcon(r.s.education)} ${r.s.name} ${r.s.surname}</div>
+        <div style="font-weight:600;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${eduIcon(r.s.education)} ${r.s.name} ${r.s.surname}${r.s._archived?' <span style="font-size:10px;font-weight:700;color:#92400e;background:#fef3c7;border-radius:6px;padding:1px 6px">kaydı silindi</span>':''}</div>
         <div style="font-size:11px;color:var(--muted);margin-top:1px">${r.s.kdvDahil?'KDV dahil':'KDV yok'}</div>
       </div>
       <div style="text-align:right;flex-shrink:0">
@@ -4173,19 +4194,21 @@ function renderAnalysis(){
     <div class="stu-pay-row">
       <div style="font-size:18px;flex-shrink:0">${eduIcon(s.education)}</div>
       <div style="flex:1;min-width:0">
-        <div style="font-weight:600;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${s.name} ${s.surname}</div>
+        <div style="font-weight:600;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${s.name} ${s.surname}${s._archived?' <span style="font-size:10px;font-weight:700;color:#92400e;background:#fef3c7;border-radius:6px;padding:1px 6px">kaydı silindi'+(s.deletedAt?' · '+s.deletedAt.split('-').reverse().join('.'):'')+'</span>':''}</div>
         <div style="font-size:11px;color:var(--muted);margin-top:2px">${fmtN(periodPays)} ₺ / ${fmtN(periodExp)} ₺</div>
         ${pct2!==null?`<div class="prog-bar" style="margin-top:4px"><div class="prog-fill" style="width:${pct2}%;background:${pct2>=100?'#059669':pct2>=50?'#d97706':'#dc2626'}"></div></div>`:''}
       </div>
       <div style="font-weight:700;font-size:12px;color:${statusColor};flex-shrink:0;text-align:right">${statusTxt}</div>
     </div>`;
 
-  const kdvRows=stuRows.filter(r=>r.kdvDahil),nonKdvRows=stuRows.filter(r=>!r.kdvDahil);
+  const arcRows=stuRows.filter(r=>r.archived);
+  const kdvRows=stuRows.filter(r=>!r.archived&&r.kdvDahil),nonKdvRows=stuRows.filter(r=>!r.archived&&!r.kdvDahil);
   document.getElementById('ana-students').innerHTML=`
     <div style="font-weight:700;font-size:12px;color:#1d4ed8;margin:6px 0 8px">✅ KDV Dahil Öğrenciler (${kdvRows.length})</div>
     ${kdvRows.length?kdvRows.map(stuRowHtml).join(''):'<div style="font-size:12px;color:var(--muted);padding:6px 0">KDV dahil öğrenci yok.</div>'}
     <div style="font-weight:700;font-size:12px;color:#4b5563;margin:14px 0 8px">🚫 KDV Hariç Öğrenciler (${nonKdvRows.length})</div>
-    ${nonKdvRows.length?nonKdvRows.map(stuRowHtml).join(''):'<div style="font-size:12px;color:var(--muted);padding:6px 0">KDV hariç öğrenci yok.</div>'}`;
+    ${nonKdvRows.length?nonKdvRows.map(stuRowHtml).join(''):'<div style="font-size:12px;color:var(--muted);padding:6px 0">KDV hariç öğrenci yok.</div>'}
+    ${arcRows.length?`<div style="font-weight:700;font-size:12px;color:#92400e;margin:14px 0 4px">🗂️ Kaydı Silinenler / Devam Etmeyenler (${arcRows.length})</div><div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:8px">Seçili dönemde ödemesi alınan veya ücreti beklenen öğrenciler. Kayıt silindikten sonraki aylarda listede ve beklenen tutarda yer almazlar.</div>${arcRows.map(stuRowHtml).join('')}`:''}`;
 }
 
 function exportAnalysisExcel(){
@@ -4213,12 +4236,12 @@ function exportAnalysisExcel(){
 
   const stuRows=[['Ad Soyad','Eğitim','Aylık Ücret (₺)','Bu Ay Alınan (₺)','Bu Ay Eksik (₺)','Durum']];
   const curMk=mkey(new Date().getFullYear(),new Date().getMonth());
-  students.forEach(s=>{
+  analysisStudents().filter(s=>!s._archived||stuMonthDue(s,curMk).rec>0||stuMonthDue(s,curMk).due>0).forEach(s=>{
     const m=stuMonthDue(s,curMk);
     const diff=Math.round((m.rec-m.due)*100)/100;
     const missing=m.exPay?0:Math.max(0,-diff);
     const status=m.fee===0?'Ücret Yok':m.rec===0?'Ödeme Yok':(m.exPay||diff===0)?'Tam':diff<0?'Eksik '+(-diff)+' ₺':'Fazla '+diff+' ₺';
-    stuRows.push([s.name+' '+s.surname,s.education,m.fee,m.rec,missing,status]);
+    stuRows.push([s.name+' '+s.surname+(s._archived?' (kaydı silindi)':''),s.education,m.fee,m.rec,missing,status]);
   });
   const ws2=XLSX.utils.aoa_to_sheet(stuRows);
   ws2['!cols']=[{wch:22},{wch:24},{wch:14},{wch:14},{wch:14},{wch:12}];
@@ -4229,11 +4252,14 @@ function exportAnalysisExcel(){
 
 async function exportAllPayments(){
   showLoad('Tüm ödemeler hazırlanıyor…');
-  const paySnap=await db.ref('payments').once('value');
+  const [paySnap,arcSnap]=await Promise.all([db.ref('payments').once('value'),db.ref('archived').once('value')]);
   const allPay=paySnap.val()||{};
+  const arcList=[];
+  Object.values(arcSnap.val()||{}).forEach(e=>{if(!e||!e.id)return;const {attendance,payments,notes,discount,receivables,istisna,...s}=e;if(payments&&!allPay[e.id])allPay[e.id]=payments;arcList.push({...s,name:s.name,surname:(s.surname||'')+' (kaydı silindi)'});});
   hideLoad();
   const rows=[['Tarih','Öğrenci','Eğitim','Tutar (₺)','Açıklama','Durum']];
-  students.forEach(s=>{
+  const ids0=new Set(students.map(x=>x.id));
+  students.concat(arcList.filter(a=>!ids0.has(a.id))).forEach(s=>{
     const pays=Object.values(allPay[s.id]||{}).sort((a,b)=>a.date.localeCompare(b.date));
     const rng=parseRange(s.payDay);
     pays.forEach(p=>{
