@@ -370,6 +370,7 @@ summary::-webkit-details-marker{display:none}
     <button class="tile primary" onclick="go('s-daily')"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg><span>Günlük Yoklama<small>Bugünün derslerini tek dokunuşla işaretle</small></span></button>
     <button class="tile orange" onclick="go('s-yform')"><svg viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4h6v3H9zM9 12h6M9 16h6"/></svg><span>Yoklama Formu</span></button>
   </div>
+  <div id="tel-remind"></div>
   <div id="dup-name-warn" style="display:none"></div>
   <div id="rec-banner"></div>
   <div id="lvl-banner"></div>
@@ -4999,7 +5000,59 @@ function telNotifyCheck(){
     });
   });
 }
+// ── Telafi hatırlatması (ana ekran, Yoklama Formu'nun hemen altında, sarı bar)
+// Telafi gününden 1 gün önce (gün boyu) ve telafi günü saat 11:00'den telafi saatine kadar görünür;
+// "Kapat"a basılana kadar sabit kalır.
+let telRemindClosed={};
+try{telRemindClosed=JSON.parse(localStorage.getItem('telRemindClosed')||'{}');}catch(e){}
+function telRemindClose(key){
+  telRemindClosed[key]=1;
+  try{localStorage.setItem('telRemindClosed',JSON.stringify(telRemindClosed));}catch(e){}
+  telRemindRender();
+}
+function telRemindRows(){
+  const out=[];if(!telReady)return out;
+  const now=new Date(),today=todays(),nowMin=now.getHours()*60+now.getMinutes();
+  Object.keys(telAll).forEach(id=>{
+    const s=students.find(x=>x.id===id);if(!s)return;
+    Object.keys(telAll[id]||{}).forEach(ds=>{
+      const r=telAll[id][ds];
+      if(!r||!r.grant||!r.tDate||r.tStatus)return;
+      const d=ydDateObj(r.tDate);d.setDate(d.getDate()-1);
+      const eve=fmt(d.getFullYear(),d.getMonth(),d.getDate());
+      const tm=r.tTime?tmin(r.tTime):null;
+      let phase='';
+      if(today===eve)phase='eve';
+      else if(today===r.tDate){
+        const start=tm==null?660:Math.max(0,Math.min(660,tm-60));
+        if(nowMin>=start&&(tm==null||nowMin<=tm))phase='day';
+      }
+      if(!phase)return;
+      const key=id+'|'+ds+'|'+r.tDate+'|'+(r.tTime||'')+'|'+phase;
+      if(telRemindClosed[key])return;
+      out.push({s:s,r:r,phase:phase,key:key,tm:tm});
+    });
+  });
+  return out.sort((a,b)=>(a.r.tDate+(a.r.tTime||'')).localeCompare(b.r.tDate+(b.r.tTime||'')));
+}
+function telRemindRender(){
+  const el=document.getElementById('tel-remind');if(!el)return;
+  // süresi geçmiş kapatma kayıtlarını temizle
+  try{const t0=todays();Object.keys(telRemindClosed).forEach(k=>{const p=k.split('|');if(p[2]&&p[2]<t0){delete telRemindClosed[k];}});}catch(e){}
+  const rows=telRemindRows();
+  if(!rows.length){el.innerHTML='';return;}
+  el.innerHTML='<div class="card mb14" style="border:2px solid #f59e0b;background:#fef08a;box-shadow:0 2px 10px rgba(245,158,11,.25)">'+
+    '<div style="font-weight:800;font-size:14px;color:#854d0e;margin-bottom:6px">🔔 Telafi Hatırlatma ('+rows.length+')</div>'+
+    rows.map(x=>{
+      const when=(x.phase==='eve'?'Yarın':'Bugün')+' · '+telDLong(x.r.tDate)+(x.r.tTime?' · saat '+x.r.tTime:'');
+      return '<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-top:1px solid #facc15">'+
+        '<div style="flex:1;min-width:0"><div style="font-weight:800;font-size:15px;color:#713f12">'+hwEsc(x.s.name+' '+x.s.surname)+'</div>'+
+        '<div style="font-size:12px;font-weight:700;color:#854d0e">'+hwEsc(when)+'</div></div>'+
+        '<button onclick="telRemindClose(\''+x.key.replace(/'/g,"\\'")+'\')" style="border:1px solid #ca8a04;background:#fff;color:#854d0e;border-radius:10px;padding:7px 12px;font-size:12px;font-weight:800;cursor:pointer;font-family:inherit">✖ Kapat</button></div>';
+    }).join('')+'</div>';
+}
 function telRefresh(){
+  try{telRemindRender();}catch(e){}
   try{umRender();}catch(e){}
   try{renderTelBox();}catch(e){}
   try{const a=document.querySelector('.screen.active');if(a&&a.id==='s-list')renderList();}catch(e){}
@@ -5009,7 +5062,7 @@ function startTelWatch(){
     db.ref('istisna').on('value',snap=>{telAll=snap.val()||{};telReady=true;telRefresh();telNotifyCheck();});
     db.ref('guests').on('value',snap=>{guestAll=snap.val()||{};try{umRender();}catch(e){}});
   }catch(e){console.warn('telWatch',e);}
-  setInterval(()=>{telNotifyCheck();},60000);
+  setInterval(()=>{telNotifyCheck();try{telRemindRender();}catch(e){}},30000);
 }
 // ── Misafir öğrenci (boş saate geçici gelen; asıl öğrenci kaydı etkilenmez)
 function guestList(ds){
