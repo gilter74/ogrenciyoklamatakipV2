@@ -5092,40 +5092,13 @@ function telRemindRender(){
     });
   }catch(e){}
   if(!rows.length){el.innerHTML='';return;}
-  el.innerHTML='<div class="card mb14" style="border:2px solid #f59e0b;background:#fef08a;box-shadow:0 2px 10px rgba(245,158,11,.25)">'+
-    '<div style="font-weight:800;font-size:14px;color:#854d0e;margin-bottom:6px">🔔 Telafi Hatırlatma ('+rows.length+')</div>'+
-    rows.map(x=>{
-      const when=(x.phase==='eve'?'Yarın':x.phase==='later'?'Planlandı':'Bugün')+' · '+telDLong(x.r.tDate)+(x.r.tTime?' · saat '+x.r.tTime:'');
-      return '<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-top:1px solid #facc15">'+
-        '<div style="flex:1;min-width:0"><div style="font-weight:800;font-size:15px;color:#713f12">'+hwEsc(x.s.name+' '+x.s.surname)+'</div>'+
-        '<div style="font-size:12px;font-weight:700;color:#854d0e">'+hwEsc(when)+'</div></div>'+
-        '<button onclick="telRemindClose(\''+x.key.replace(/'/g,"\\'")+'\')" style="border:1px solid #ca8a04;background:#fff;color:#854d0e;border-radius:10px;padding:7px 12px;font-size:12px;font-weight:800;cursor:pointer;font-family:inherit">✖ Kapat</button></div>';
-    }).join('')+'</div>';
-}
-// ── Telafi günü takvimde sarı (istisna) işaretlenir; ders yapılınca elle mavi/kırmızı yapılır
-async function telPlaceMark(id,r){
-  if(!r||!r.tDate)return;
-  let cur=null;try{cur=await fbGet('attendance/'+id+'/'+r.tDate);}catch(e){}
-  if(cur)return; // o gün zaten işaretli (geldi/gelmedi/istisna): dokunma
-  r.tMarked=true;
-  if(umAtt[id]===undefined)umAtt[id]={};umAtt[id][r.tDate]='istisna';
-  if(curId===id&&attData)attData[r.tDate]='istisna';
-  try{await fbSet('attendance/'+id+'/'+r.tDate,'istisna');}catch(e){}
-}
-async function telClearMark(id,r){
-  if(!r||!r.tMarked||!r.tDate){if(r)delete r.tMarked;return;}
-  let cur=null;try{cur=await fbGet('attendance/'+id+'/'+r.tDate);}catch(e){}
-  if(cur==='istisna'){
-    try{await fbDel('attendance/'+id+'/'+r.tDate);}catch(e){}
-    if(umAtt[id])delete umAtt[id][r.tDate];
-    if(curId===id&&attData)delete attData[r.tDate];
-  }
-  delete r.tMarked;
-}
-function telRecByDate(id,ds){
-  const o=telAll[id]||{};
-  const k=Object.keys(o).find(x=>o[x]&&o[x].grant&&o[x].tDate===ds);
-  return k?{k:k,r:o[k]}:null;
+  el.innerHTML='<div style="margin:6px 0 12px">'+rows.map(x=>{
+    const when=(x.phase==='eve'?'Yarın':x.phase==='later'?'Planlandı':'Bugün')+' · '+telDShort(x.r.tDate)+(x.r.tTime?' · '+x.r.tTime:'');
+    const hot=x.phase!=='later';
+    return '<div onclick="openDetCal(\''+x.s.id+'\')" style="margin-bottom:6px;background:'+(hot?'#fef08a':'#fefce8')+';border:1px dashed #f59e0b;border-radius:12px;padding:6px 12px;display:flex;justify-content:space-between;align-items:center;gap:8px;cursor:pointer;font-size:12px;font-weight:700;color:#854d0e">'+
+      '<span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">🔔 Telafi · '+hwEsc(x.s.name+' '+x.s.surname)+' · '+hwEsc(when)+'</span>'+
+      '<button onclick="event.stopPropagation();telRemindClose(\''+x.key.replace(/'/g,"\\'")+'\')" style="flex-shrink:0;border:1px solid #ca8a04;background:#fff;color:#854d0e;border-radius:8px;padding:3px 9px;font-size:11px;font-weight:800;cursor:pointer;font-family:inherit">✖ Kapat</button></div>';
+  }).join('')+'</div>';
 }
 function telRefresh(){
   try{telRemindRender();}catch(e){}
