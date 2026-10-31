@@ -998,6 +998,26 @@ summary::-webkit-details-marker{display:none}
   <div id="wk-body"></div>
 </div>
 
+<!-- AYLIK ÖZETLER (tüm öğrenciler) -->
+<div id="s-msum" class="screen">
+  <button class="btn-ghost mb14" onclick="go('s-list')">← Geri</button>
+  <div class="card mb14">
+    <div class="section-lbl">📋 Aylık Özetler</div>
+    <div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:10px">
+      <button class="btn-ghost" style="padding:9px 14px;font-size:15px" onclick="msumShift(-1)">◀</button>
+      <div id="msum-range" style="flex:1;text-align:center;font-weight:700;font-size:15px;color:var(--text)"></div>
+      <button class="btn-ghost" style="padding:9px 14px;font-size:15px" onclick="msumShift(1)">▶</button>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+      <input id="msum-search" placeholder="Öğrenci ara…" oninput="msumRender()" style="flex:1;min-width:140px">
+      <span id="msum-lang-wrap"></span>
+      <label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--text2);cursor:pointer"><input type="checkbox" id="msum-unsent" onchange="msumRender()" style="width:auto"> Sadece gönderilmeyenler</label>
+    </div>
+    <div id="msum-count" style="font-size:12px;font-weight:700;color:var(--muted);margin-top:8px"></div>
+  </div>
+  <div id="msum-list"></div>
+</div>
+
 <!-- ÖDEV TAKİBİ (toplu) -->
 <div id="s-hw" class="screen">
   <button class="btn-ghost mb14" onclick="go('s-list')">← Geri</button>
@@ -1390,6 +1410,7 @@ function go(id){
   if(id==='s-pros') renderPros();
   if(id==='s-daily') openDaily();
   if(id==='s-hw') openHwScreen();
+  if(id==='s-msum') openMsum();
   if(id==='s-chronic') renderChronic();
   const bm={'s-list':'home','s-daily':'daily','s-week':'week','s-veli-share':'veli'};
   ['home','daily','week','veli'].forEach(k=>{const b=document.getElementById('bn-'+k);if(b)b.className=(bm[id]===k)?'on':'';});
@@ -3804,15 +3825,10 @@ function lateOlder(){
 function lateWaUrl(st){return 'https://wa.me/'+waPhone(st.momPhone||st.dadPhone||st.phone);}
 // Ana ekranda ince çubuk → Geç Ödeyenler sekmesine gider
 function renderLateBanner(){
-  const box=document.getElementById('late-banner');if(!box)return;
-  const cur=lateList(),old=lateOlder();
-  if(!cur.length&&!old.length){box.innerHTML='';}
-  else{
-    const mon=MONTHS[new Date().getMonth()];
-    const txt=cur.length?'🚨 '+mon+' ödemesi gelmeyenler ('+cur.length+')':'🚨 Geciken ödemeler';
-    const ext=old.length?' · '+old.length+' kişi 1-2 ay geride':'';
-    box.innerHTML='<div onclick="go(\'s-chronic\')" style="margin:-4px 0 14px;background:#fff1f2;border:1px dashed #f87171;border-radius:12px;padding:6px 12px;display:flex;justify-content:space-between;align-items:center;gap:8px;cursor:pointer;font-size:12px;font-weight:700;color:#991b1b">'+
-      '<span style="min-width:0">'+txt+ext+'</span><span style="flex-shrink:0">Geç Ödeyenler ›</span></div>';
+  const box=document.getElementById('late-banner');
+  if(box){
+    box.innerHTML='<div onclick="go(\'s-msum\')" style="margin:-4px 0 14px;background:#f5f3ff;border:1px dashed #a78bfa;border-radius:12px;padding:8px 12px;display:flex;justify-content:space-between;align-items:center;gap:8px;cursor:pointer;font-size:12px;font-weight:700;color:#5b21b6">'+
+      '<span style="min-width:0">📋 Aylık Özetler · tüm öğrenciler · ⭐ başarı, devam, ödev, öğretmen notu · veliye WhatsApp</span><span style="flex-shrink:0">Aç ›</span></div>';
   }
   const a=document.querySelector('.screen.active');
   if(a&&a.id==='s-chronic')renderChronic();
@@ -5732,7 +5748,7 @@ function setMsgLang(v){
   msgLang=v;
   document.querySelectorAll('.msg-lang-sel').forEach(e=>{if(e.value!==v)e.value=v;});
 }
-function trPreviewModal(text,phone,title){
+function trPreviewModal(text,phone,title,onSent){
   let ov=document.getElementById('tr-prev-ov');if(ov)ov.remove();
   ov=document.createElement('div');ov.id='tr-prev-ov';
   ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:99999;display:flex;align-items:center;justify-content:center;padding:14px';
@@ -5746,7 +5762,7 @@ function trPreviewModal(text,phone,title){
     '<button class="btn-ghost" id="tr-prev-close" style="flex:1 1 100%;justify-content:center">Kapat</button></div></div>';
   document.body.appendChild(ov);
   const ta=document.getElementById('tr-prev-ta');ta.value=text;
-  document.getElementById('tr-prev-send').onclick=()=>{window.open('https://wa.me/'+waPhone(phone)+'?text='+encodeURIComponent(ta.value),'_blank');};
+  document.getElementById('tr-prev-send').onclick=()=>{window.open('https://wa.me/'+waPhone(phone)+'?text='+encodeURIComponent(ta.value),'_blank');if(onSent)try{onSent();}catch(e){}};
   document.getElementById('tr-prev-copy').onclick=()=>{
     const done=()=>showConf('Mesaj kopyalandı!','✅','Tamam',()=>{});
     if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(ta.value).then(done,()=>window.prompt('Kopyalayın:',ta.value));else window.prompt('Kopyalayın:',ta.value);
@@ -5754,10 +5770,10 @@ function trPreviewModal(text,phone,title){
   document.getElementById('tr-prev-close').onclick=()=>ov.remove();
 }
 // mode: 'send' | 'copy'. Türkçe ise doğrudan; değilse çevirip önizleme penceresinde gösterir.
-async function deliverMsg(mode,trBuilder,langBuilder,phone,title){
+async function deliverMsg(mode,trBuilder,langBuilder,phone,title,onSent){
   if(msgLang==='tr'){
     const m=trBuilder();if(!m)return;
-    if(mode==='send'){window.open('https://wa.me/'+waPhone(phone)+'?text='+encodeURIComponent(m),'_blank');return;}
+    if(mode==='send'){window.open('https://wa.me/'+waPhone(phone)+'?text='+encodeURIComponent(m),'_blank');if(onSent)try{onSent();}catch(e){}return;}
     const done=()=>showConf('Mesaj kopyalandı!','✅','Tamam',()=>{});
     if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(m).then(done,()=>window.prompt('Kopyalayın:',m));else window.prompt('Kopyalayın:',m);
     return;
@@ -5767,7 +5783,138 @@ async function deliverMsg(mode,trBuilder,langBuilder,phone,title){
   try{m=await langBuilder(msgLang);}
   catch(e){hideLoad();showConf('Çeviri servisine ulaşılamadı. İnternet bağlantınızı kontrol edip tekrar deneyin ya da dili Türkçe yapın.','⚠️','Tamam',()=>{});return;}
   hideLoad();
-  if(m)trPreviewModal(m,phone,title);
+  if(m)trPreviewModal(m,phone,title,onSent);
+}
+
+// ══ AYLIK ÖZETLER: tüm öğrenciler, madde madde (en fazla 5), yıldızlı başarı, veliye WhatsApp ══
+let msumAnchor=new Date(), msumLog={}, msumAtt={}, msumLv={}, msumSent={}, msumReady=false;
+const MS_LVL={tr:['Başlangıç','Temel','Orta','İleri','Uzman'],en:['Beginner','Basic','Intermediate','Advanced','Expert'],ru:['Начальный','Базовый','Средний','Продвинутый','Эксперт']};
+const MS_I18N={
+  tr:{dear:'Sayın Velimiz,',head:(n,mo,y)=>'*'+n+'* – '+mo+' '+y+' aylık gelişim özeti 🌟',star:'Aylık başarı',lvl:'Seviye',att:'Devam',came:c=>c+' ders katıldı',abs:a=>a+' gelmedi',topics:'Bu ay çalıştıklarımız',hw:n=>'Ödevler ('+n+')',note:'Öğretmen notu',bye:'Saygılarımla,'},
+  en:{dear:'Dear Parent,',head:(n,mo,y)=>'*'+n+'* – '+mo+' '+y+' monthly progress summary 🌟',star:'Monthly achievement',lvl:'Level',att:'Attendance',came:c=>c+' lessons attended',abs:a=>a+' absent',topics:'What we worked on this month',hw:n=>'Homework ('+n+')',note:'Teacher\'s note',bye:'Best regards,'},
+  ru:{dear:'Уважаемые родители,',head:(n,mo,y)=>'*'+n+'* – итоги месяца ('+mo+' '+y+') 🌟',star:'Успехи за месяц',lvl:'Уровень',att:'Посещаемость',came:c=>'посещено занятий: '+c,abs:a=>'пропущено: '+a,topics:'Что мы изучали в этом месяце',hw:n=>'Домашние задания ('+n+')',note:'Заметка преподавателя',bye:'С уважением,'}
+};
+function msumKey(){return msumAnchor.getFullYear()+'-'+String(msumAnchor.getMonth()+1).padStart(2,'0');}
+function msCut(s,n){s=String(s||'').replace(/\s+/g,' ').trim();return s.length>n?s.slice(0,n-1).trimEnd()+'…':s;}
+async function openMsum(){
+  showLoad('Aylık özetler hazırlanıyor…');
+  try{
+    const [log,att,lv,sent]=await Promise.all([fbGet('notesLog'),fbGet('attendance'),fbGet('levels'),fbGet('msumSent')]);
+    msumLog=log||{};msumAtt=att||{};msumLv=lv||{};msumSent=sent||{};msumReady=true;
+  }catch(e){console.warn('msum',e);}
+  hideLoad();
+  const w=document.getElementById('msum-lang-wrap');if(w)w.innerHTML=langSelHtml();
+  msumRender();
+}
+function msumShift(n){const d=new Date(msumAnchor.getFullYear(),msumAnchor.getMonth()+n,1);msumAnchor=d;msumRender();}
+// Bir öğrencinin seçili ay verisi
+function msumData(s,y,m){
+  const mk=y+'-'+String(m+1).padStart(2,'0');
+  const days=msumLog[s.id]||{};
+  const hwMap={},notes=[];
+  Object.keys(days).sort().forEach(k=>{
+    const l=days[k];if(!l||!l.date||!l.date.startsWith(mk))return;
+    if(l.hw)hwPickLatest(hwMap,l.date,{hw:l.hw,time:l.time||''});
+    const g=String(l.gr||'').replace(/\s+/g,' ').trim();
+    if(g&&!notes.includes(g))notes.push(g);
+  });
+  const hwr=hwMonthItems(hwMap,y,m);
+  const att=msumAtt[s.id]||{};
+  let came=0,absent=0,ist=0;
+  Object.keys(att).forEach(k=>{if(!k.startsWith(mk))return;const v=att[k];if(v==='came')came++;else if(v==='absent')absent++;else if(v==='istisna')ist++;});
+  const lv=(msumLv[s.id]||{})[mk]||null;
+  return{mk:mk,items:hwr.items,hwCount:hwr.items.length,came:came,absent:absent,ist:ist,notes:notes,lv:lv};
+}
+function msumBullets(s,y,m){
+  const d=msumData(s,y,m),L=MS_I18N.tr,out=[];
+  const pr=d.lv&&d.lv.progress?d.lv.progress:0;
+  out.push('⭐ '+L.star+': '+(pr?lvlStars(pr)+' ('+pr+'/5)'+(d.lv.level?' · 🎯 '+L.lvl+' '+d.lv.level+' – '+MS_LVL.tr[d.lv.level-1]:''):'henüz puanlanmadı'));
+  out.push('📅 '+L.att+': '+L.came(d.came)+(d.absent?' · '+L.abs(d.absent):''));
+  if(d.lv&&d.lv.topics)out.push('🎼 '+L.topics+': '+msCut(d.lv.topics,140));
+  if(d.hwCount)out.push('📚 '+L.hw(d.hwCount)+': '+d.items.slice(-3).map(it=>msCut(it.t,45)).join(' · '));
+  const nt=d.notes.slice(-2).map(x=>msCut(x,100)).join(' · ')||(d.lv&&d.lv.note?msCut(d.lv.note,160):'');
+  if(nt)out.push('📝 '+L.note+': '+nt);
+  return {bullets:out.slice(0,5),d:d};
+}
+function msumRender(){
+  const el=document.getElementById('msum-list');if(!el)return;
+  const y=msumAnchor.getFullYear(),m=msumAnchor.getMonth(),mk=msumKey();
+  document.getElementById('msum-range').textContent=MONTHS[m]+' '+y;
+  const q=(document.getElementById('msum-search')||{value:''}).value.trim().toLocaleLowerCase('tr');
+  const onlyUnsent=!!(document.getElementById('msum-unsent')||{}).checked;
+  const sentMap=msumSent[mk]||{};
+  let list=students.filter(s=>!isFrozen(s)&&!(effStart(s)&&effStart(s).slice(0,7)>mk)).sort((a,b)=>(a.name+' '+a.surname).localeCompare(b.name+' '+b.surname,'tr'));
+  const total=list.length,sentN=list.filter(s=>sentMap[s.id]).length;
+  document.getElementById('msum-count').textContent=total+' öğrenci · '+sentN+' veliye gönderildi';
+  if(q)list=list.filter(s=>(s.name+' '+s.surname).toLocaleLowerCase('tr').includes(q));
+  if(onlyUnsent)list=list.filter(s=>!sentMap[s.id]);
+  if(!list.length){el.innerHTML='<div class="card" style="text-align:center;color:var(--muted);font-weight:600">Gösterilecek öğrenci yok.</div>';return;}
+  el.innerHTML=list.map(s=>{
+    const r=msumBullets(s,y,m),pr=r.d.lv&&r.d.lv.progress?r.d.lv.progress:0;
+    const stars=[1,2,3,4,5].map(n=>'<span onclick="event.stopPropagation();msumSetStar(\''+s.id+'\','+n+')" style="cursor:pointer;font-size:22px;color:'+(n<=pr?'#f59e0b':'#d1d5db')+'" title="'+n+'/5">★</span>').join('');
+    return '<div class="card mb12" style="border-left:4px solid #8b5cf6">'+
+      '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px">'+
+        '<div style="font-weight:800;font-size:15px;min-width:0">'+eduIcon(s.education)+' '+hwEsc(s.name+' '+s.surname)+'</div>'+
+        '<div style="white-space:nowrap">'+stars+'</div></div>'+
+      r.bullets.map(b=>'<div style="font-size:13px;font-weight:600;line-height:1.5;padding:2px 0">'+hwEsc(b)+'</div>').join('')+
+      '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;align-items:center">'+
+        '<button class="btn btn-wa btn-sm" style="flex:1;justify-content:center" onclick="msumSend(\''+s.id+'\')">📲 Veliye Gönder</button>'+
+        '<button class="btn-ghost" style="flex:1;justify-content:center;padding:7px" onclick="msumCopy(\''+s.id+'\')">📋 Kopyala</button>'+
+        (sentMap[s.id]?'<span style="font-size:11px;font-weight:700;color:#166534;background:#dcfce7;border-radius:8px;padding:3px 8px">✅ gönderildi · '+hwEsc(sentMap[s.id])+'</span>':'')+
+      '</div></div>';
+  }).join('');
+}
+async function msumSetStar(id,n){
+  const mk=msumKey(),old=(msumLv[id]||{})[mk]||{};
+  let lvl=old.level;
+  if(!lvl){const ks=Object.keys(msumLv[id]||{}).filter(k=>k<mk).sort();lvl=ks.length?(msumLv[id][ks[ks.length-1]].level||1):1;}
+  const nw=new Date();
+  const rec=Object.assign({},old,{month:mk,level:lvl,progress:(old.progress===n?0:n),topics:old.topics||'',note:old.note||'',date:todays(),time:String(nw.getHours()).padStart(2,'0')+':'+String(nw.getMinutes()).padStart(2,'0')});
+  if(!msumLv[id])msumLv[id]={};
+  msumLv[id][mk]=rec;
+  msumRender();
+  try{await fbSet('levels/'+id+'/'+mk,rec);if(typeof allLevels!=='undefined'&&allLevelsLoaded){if(!allLevels[id])allLevels[id]={};allLevels[id][mk]=rec;}}catch(e){showConf('Kaydedilemedi: '+e.message,'⚠️','Tamam',()=>{});}
+}
+function msumTextTr(s){
+  const y=msumAnchor.getFullYear(),m=msumAnchor.getMonth(),L=MS_I18N.tr;
+  const r=msumBullets(s,y,m);
+  return L.dear+'\n\n'+L.head(s.name+' '+s.surname,MONTHS[m],y)+'\n\n'+r.bullets.join('\n')+'\n\n'+L.bye+'\nRockJazz Müzik Aletleri · Silifke Satranç Atölyesi';
+}
+async function msumTextLang(s,lang){
+  const y=msumAnchor.getFullYear(),m=msumAnchor.getMonth(),L=MS_I18N[lang];
+  const d=msumData(s,y,m),out=[];
+  const pr=d.lv&&d.lv.progress?d.lv.progress:0;
+  const T=async x=>x?trLine(x,lang):'';
+  const [topics,hws,nt]=await Promise.all([
+    T(d.lv&&d.lv.topics?msCut(d.lv.topics,140):''),
+    Promise.all(d.items.slice(-3).map(it=>trLine(msCut(it.t,45),lang))),
+    T(d.notes.slice(-2).map(x=>msCut(x,100)).join(' · ')||(d.lv&&d.lv.note?msCut(d.lv.note,160):''))
+  ]);
+  out.push('⭐ '+L.star+': '+(pr?lvlStars(pr)+' ('+pr+'/5)'+(d.lv.level?' · 🎯 '+L.lvl+' '+d.lv.level+' – '+MS_LVL[lang][d.lv.level-1]:''):'—'));
+  out.push('📅 '+L.att+': '+L.came(d.came)+(d.absent?' · '+L.abs(d.absent):''));
+  if(topics)out.push('🎼 '+L.topics+': '+topics);
+  if(d.hwCount)out.push('📚 '+L.hw(d.hwCount)+': '+hws.join(' · '));
+  if(nt)out.push('📝 '+L.note+': '+nt);
+  const mon=lang==='ru'?MSG_MONFULL.ru[m]:MSG_MONFULL.en[m];
+  return L.dear+'\n\n'+L.head(s.name+' '+s.surname,mon,y)+'\n\n'+out.slice(0,5).join('\n')+'\n\n'+L.bye+'\nRockJazz Müzik Aletleri · Silifke Satranç Atölyesi';
+}
+function msumToPhone(s){return s.momPhone||s.dadPhone||s.phone||s.kinPhone||'';}
+async function msumMarkSent(id){
+  const mk=msumKey(),n=new Date();
+  const tx=String(n.getDate()).padStart(2,'0')+'.'+String(n.getMonth()+1).padStart(2,'0')+' '+String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');
+  if(!msumSent[mk])msumSent[mk]={};
+  msumSent[mk][id]=tx;
+  msumRender();
+  try{await fbSet('msumSent/'+mk+'/'+id,tx);}catch(e){}
+}
+async function msumSend(id){
+  const s=students.find(x=>x.id===id);if(!s)return;
+  try{const pv=await fbGet('payments/'+id);if(payRestriction(s,Object.values(pv||{}))){restrictBlockMsg();return;}}catch(e){}
+  await deliverMsg('send',()=>msumTextTr(s),L=>msumTextLang(s,L),msumToPhone(s),'Aylık özet çevirisi',()=>msumMarkSent(id));
+}
+function msumCopy(id){
+  const s=students.find(x=>x.id===id);if(!s)return;
+  return deliverMsg('copy',()=>msumTextTr(s),L=>msumTextLang(s,L),'','Aylık özet çevirisi');
 }
 
 function hwSumText(s,y,m){
