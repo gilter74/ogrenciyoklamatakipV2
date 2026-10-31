@@ -385,7 +385,6 @@ summary::-webkit-details-marker{display:none}
     <button class="tile" onclick="go('s-week')"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg><span>Haftalık Program</span></button>
     <button class="tile" onclick="go('s-hw')"><svg viewBox="0 0 24 24"><path d="M5 4h11l3 3v13H5z"/><path d="M8 11h8M8 15h8M8 7h4"/></svg><span>Ödev Takibi<small>Haftalık · Aylık · Özet</small></span></button>
     <button class="tile" onclick="go('s-veli-share')"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6M16 5a3 3 0 010 6M18 14c1.8.8 3 2.6 3 5"/></svg><span>Veli Paylaşımı</span></button>
-    <button class="tile" style="border:2px solid #7c3aed;background:#f5f3ff" onclick="go('s-chronic')"><svg viewBox="0 0 24 24" style="stroke:#7c3aed"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span style="color:#5b21b6">Geç Ödeyenler (2 ay)<small id="chronic-cnt" style="color:#7c3aed;font-weight:700"></small></span></button>
     <button class="tile" onclick="openAnalysis()"><svg viewBox="0 0 24 24"><path d="M4 20V4M4 20h16M8 16v-4M12 16V8M16 16v-6"/></svg><span>Gelir &amp; Ödeme Analizi</span></button>
     <button class="tile" onclick="go('s-fiyat')"><svg viewBox="0 0 24 24"><path d="M3 12V4h8l10 10-8 8L3 12z"/><circle cx="7.5" cy="8.5" r="1"/></svg><span>Fiyat Güncelleyici</span></button>
     <button class="tile" onclick="openArchive()"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v11a1 1 0 001 1h12a1 1 0 001-1V8M10 12h4"/></svg><span>Eski Kursiyer Arşivi</span></button>
@@ -1002,7 +1001,8 @@ summary::-webkit-details-marker{display:none}
 <div id="s-msum" class="screen">
   <button class="btn-ghost mb14" onclick="go('s-list')">← Geri</button>
   <div class="card mb14">
-    <div class="section-lbl">📋 Aylık Özetler</div>
+    <div class="section-lbl">📋 Aylık Öğrenci Özetleri</div>
+    <div style="font-size:12px;font-weight:600;color:var(--muted);line-height:1.6;margin:-4px 0 12px">Her öğrenci için seçili ayın özeti otomatik hazırlanır (en fazla 5 madde):<br>⭐ başarı yıldızı · 📅 devam · 🎼 çalışılanlar · 📚 ödevler · 📝 öğretmen notu<br>📲 Veliye WhatsApp ile gönder · 📋 kopyala · 🌐 Türkçe / English / Русский</div>
     <div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:10px">
       <button class="btn-ghost" style="padding:9px 14px;font-size:15px" onclick="msumShift(-1)">◀</button>
       <div id="msum-range" style="flex:1;text-align:center;font-weight:700;font-size:15px;color:var(--text)"></div>
@@ -3827,8 +3827,8 @@ function lateWaUrl(st){return 'https://wa.me/'+waPhone(st.momPhone||st.dadPhone|
 function renderLateBanner(){
   const box=document.getElementById('late-banner');
   if(box){
-    box.innerHTML='<div onclick="go(\'s-msum\')" style="margin:-4px 0 14px;background:#f5f3ff;border:1px dashed #a78bfa;border-radius:12px;padding:8px 12px;display:flex;justify-content:space-between;align-items:center;gap:8px;cursor:pointer;font-size:12px;font-weight:700;color:#5b21b6">'+
-      '<span style="min-width:0">📋 Aylık Özetler · tüm öğrenciler · ⭐ başarı, devam, ödev, öğretmen notu · veliye WhatsApp</span><span style="flex-shrink:0">Aç ›</span></div>';
+    box.innerHTML='<div onclick="go(\'s-msum\')" style="margin:-4px 0 14px;background:linear-gradient(135deg,#be185d,#9d174d);border-radius:12px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;gap:8px;cursor:pointer;font-size:13px;font-weight:700;color:#fff;box-shadow:0 2px 8px rgba(190,24,93,.35)">'+
+      '<span style="flex:1;min-width:0;white-space:normal;line-height:1.4;overflow-wrap:anywhere">📋 <b>Aylık Öğrenci Özetleri</b></span><span style="flex-shrink:0;background:rgba(255,255,255,.2);border-radius:8px;padding:3px 10px">Aç ›</span></div>';
   }
   const a=document.querySelector('.screen.active');
   if(a&&a.id==='s-chronic')renderChronic();
