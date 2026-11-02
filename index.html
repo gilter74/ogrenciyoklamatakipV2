@@ -352,6 +352,21 @@ summary::-webkit-details-marker{display:none}
 @media(min-width:1600px){
   #s-list.active{grid-template-columns:minmax(0,1.7fr) minmax(460px,1fr)}
 }
+
+/* RockJazz Toplu WhatsApp Merkezi — premium gül kurusu / pembe tema */
+.wa-center-tile{background:linear-gradient(120deg,#c43d78,#8f3c83)!important;color:#fff!important;border:1px solid #d86a9b!important;box-shadow:0 7px 20px rgba(181,54,112,.20)!important}
+.wa-center-tile small{color:rgba(255,255,255,.82)!important}
+#s-wa-bulk{background:linear-gradient(180deg,#fff7fb 0%,#fdf2f8 100%);border-radius:20px}
+#s-wa-bulk .card{border:1px solid #f2c9dc;box-shadow:0 5px 20px rgba(173,56,112,.08)}
+#s-wa-bulk .section-lbl{color:#a52e68;border-bottom-color:#f3c4d8}
+#s-wa-bulk .lbl{color:#8f3c69}
+#s-wa-bulk input:focus,#s-wa-bulk select:focus,#s-wa-bulk textarea:focus{border-color:#d45b91;box-shadow:0 0 0 3px rgba(212,91,145,.14)}
+#s-wa-bulk .btn-ghost{color:#9b3569;border-color:#edbfd3;background:#fff8fb}
+#s-wa-bulk .btn-ghost:hover{border-color:#cc4e87;background:#fce7f3}
+#s-wa-bulk .btn-purple{background:linear-gradient(135deg,#c0447e,#92366f);box-shadow:0 4px 14px rgba(192,68,126,.24)}
+#s-wa-bulk #wab-count{background:#fce7f3!important;color:#9d285f!important;border:1px solid #f4bfd6}
+#s-wa-bulk #wab-status{color:#8f2858}
+#s-wa-bulk #wab-student-info{background:#fff0f6;border-color:#f6bfd5;color:#8f2858}
 </style>
 </head>
 <body>
@@ -402,7 +417,7 @@ summary::-webkit-details-marker{display:none}
     <button class="tile" onclick="go('s-fiyat')"><svg viewBox="0 0 24 24"><path d="M3 12V4h8l10 10-8 8L3 12z"/><circle cx="7.5" cy="8.5" r="1"/></svg><span>Fiyat Güncelleyici</span></button>
     <button class="tile" onclick="toggleBulkPanel()"><svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg><span>Aylık Toplu Arşiv</span></button>
     <button class="tile" onclick="openArchive()"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v11a1 1 0 001 1h12a1 1 0 001-1V8M10 12h4"/></svg><span>Eski Kursiyer Arşivi</span></button>
-    <button class="tile teal" style="grid-column:1/-1" onclick="go('s-wa-bulk')"><svg viewBox="0 0 24 24"><path d="M21 11.5a8.5 8.5 0 0 1-12.6 7.4L3 20l1.2-5.1A8.5 8.5 0 1 1 21 11.5Z"/><path d="M8 9c1 3 3 5 6 6"/></svg><span>Toplu WhatsApp Merkezi<small>Ödeme · Ders günü/saat · Duyurular · Çoklu alıcı</small></span></button>
+    <button class="tile wa-center-tile" style="grid-column:1/-1" onclick="go('s-wa-bulk')"><svg viewBox="0 0 24 24"><path d="M21 11.5a8.5 8.5 0 0 1-12.6 7.4L3 20l1.2-5.1A8.5 8.5 0 1 1 21 11.5Z"/><path d="M8 9c1 3 3 5 6 6"/></svg><span>Toplu WhatsApp Merkezi<small>Ödeme · Ders günü/saat · Duyurular · Çoklu alıcı</small></span></button>
     <button class="tile" style="grid-column:1/-1" onclick="go('s-sozlesme')"><svg viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 13h7M9 17h5"/></svg><span>Sözleşmeler<small>Profesyonel · Esnek · öğrenciye özel · PDF / WhatsApp</small></span></button>
   </div>
   <div id="bulk-panel" style="display:none;background:#fff;border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:14px;box-shadow:var(--shadow)">
@@ -1077,7 +1092,7 @@ summary::-webkit-details-marker{display:none}
     <select id="wab-kind" onchange="waBulkPreset()" style="margin-bottom:10px"><option value="custom">✍️ Serbest duyuru / özel mesaj</option><option value="payment">💳 Aylık ödeme hatırlatması</option><option value="schedule">🗓️ Ders günü ve saat hatırlatması</option><option value="both" selected>📌 Ödeme + ders programı hatırlatması</option></select>
     <label class="lbl">Öğrenci kartını seç — bilgiler otomatik eklensin</label>
     <select id="wab-student" onchange="waBulkStudentChanged()" style="margin-bottom:10px"><option value="">— Öğrenci seçin —</option></select>
-    <div id="wab-student-info" style="display:none;background:#eef6ff;border:1px solid #bfdbfe;border-radius:10px;padding:10px 12px;margin-bottom:10px;font-size:12px;line-height:1.6;color:#1e3a8a"></div>
+    <div id="wab-student-info" style="display:none;background:#fff0f6;border:1px solid #f6bfd5;border-radius:10px;padding:10px 12px;margin-bottom:10px;font-size:12px;line-height:1.6;color:#8f2858"></div>
     <label class="lbl">Mesaj dili</label><select id="wab-lang" style="margin-bottom:10px"><option value="tr">Türkçe</option><option value="ru">Русский</option><option value="en">English</option></select>
     <label class="lbl">Mesaj metni</label>
     <textarea id="wab-text" rows="6" style="width:100%;padding:11px;border:1px solid var(--border);border-radius:10px;font:600 14px inherit;resize:vertical" placeholder="Mesajınızı yazın. Değişkenler: {ad}, {soyad}, {gun_saat}, {ucret}, {odeme_gunu}"></textarea>
