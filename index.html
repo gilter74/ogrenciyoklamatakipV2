@@ -402,6 +402,7 @@ summary::-webkit-details-marker{display:none}
     <button class="tile" onclick="go('s-fiyat')"><svg viewBox="0 0 24 24"><path d="M3 12V4h8l10 10-8 8L3 12z"/><circle cx="7.5" cy="8.5" r="1"/></svg><span>Fiyat Güncelleyici</span></button>
     <button class="tile" onclick="toggleBulkPanel()"><svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg><span>Aylık Toplu Arşiv</span></button>
     <button class="tile" onclick="openArchive()"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v11a1 1 0 001 1h12a1 1 0 001-1V8M10 12h4"/></svg><span>Eski Kursiyer Arşivi</span></button>
+    <button class="tile teal" style="grid-column:1/-1" onclick="go('s-wa-bulk')"><svg viewBox="0 0 24 24"><path d="M21 11.5a8.5 8.5 0 0 1-12.6 7.4L3 20l1.2-5.1A8.5 8.5 0 1 1 21 11.5Z"/><path d="M8 9c1 3 3 5 6 6"/></svg><span>Toplu WhatsApp Merkezi<small>Ödeme · Ders günü/saat · Duyurular · Çoklu alıcı</small></span></button>
     <button class="tile" style="grid-column:1/-1" onclick="go('s-sozlesme')"><svg viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 13h7M9 17h5"/></svg><span>Sözleşmeler<small>Profesyonel · Esnek · öğrenciye özel · PDF / WhatsApp</small></span></button>
   </div>
   <div id="bulk-panel" style="display:none;background:#fff;border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:14px;box-shadow:var(--shadow)">
@@ -1066,6 +1067,35 @@ summary::-webkit-details-marker{display:none}
   <iframe id="fiyat-frame" title="Fiyat Güncelleyici" style="display:block;width:100%;height:calc(100vh - 70px);border:none;background:#F3F5F4"></iframe>
 </div>
 
+<!-- TOPLU WHATSAPP İLETİŞİM MERKEZİ -->
+<div id="s-wa-bulk" class="screen">
+  <button class="btn-ghost mb14" onclick="go('s-list')">← Geri</button>
+  <div class="card mb14">
+    <div class="section-lbl">📲 Toplu WhatsApp İletişim Merkezi</div>
+    <p style="font-size:12px;color:var(--muted);line-height:1.55;margin-bottom:12px">Öğrencilerin kayıtlı anne, baba ve öğrenci numaralarını seçin. Her alıcı için kişiselleştirilmiş mesaj hazırlanır. WhatsApp sohbetleri sırayla açılır; gönderme işlemini her sohbette siz onaylarsınız.</p>
+    <label class="lbl">Mesaj türü</label>
+    <select id="wab-kind" onchange="waBulkPreset()" style="margin-bottom:10px"><option value="custom">✍️ Serbest duyuru / özel mesaj</option><option value="payment">💳 Aylık ödeme hatırlatması</option><option value="schedule">🗓️ Ders günü ve saat hatırlatması</option><option value="both" selected>📌 Ödeme + ders programı hatırlatması</option></select>
+    <label class="lbl">Öğrenci kartını seç — bilgiler otomatik eklensin</label>
+    <select id="wab-student" onchange="waBulkStudentChanged()" style="margin-bottom:10px"><option value="">— Öğrenci seçin —</option></select>
+    <div id="wab-student-info" style="display:none;background:#eef6ff;border:1px solid #bfdbfe;border-radius:10px;padding:10px 12px;margin-bottom:10px;font-size:12px;line-height:1.6;color:#1e3a8a"></div>
+    <label class="lbl">Mesaj dili</label><select id="wab-lang" style="margin-bottom:10px"><option value="tr">Türkçe</option><option value="ru">Русский</option><option value="en">English</option></select>
+    <label class="lbl">Mesaj metni</label>
+    <textarea id="wab-text" rows="6" style="width:100%;padding:11px;border:1px solid var(--border);border-radius:10px;font:600 14px inherit;resize:vertical" placeholder="Mesajınızı yazın. Değişkenler: {ad}, {soyad}, {gun_saat}, {ucret}, {odeme_gunu}"></textarea>
+    <p style="font-size:11px;color:var(--muted);line-height:1.5;margin-top:6px">Kullanılabilir alanlar: <b>{ad}</b>, <b>{soyad}</b>, <b>{gun_saat}</b>, <b>{ucret}</b>, <b>{odeme_gunu}</b>. Her öğrencinin bilgileri mesaja otomatik yerleştirilir.</p>
+  </div>
+  <div class="card mb14">
+    <div style="display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:10px"><b>Alıcıları seç</b><span id="wab-count" class="badge" style="background:var(--green-l);color:var(--green)">0 seçili</span></div>
+    <input id="wab-search" placeholder="Öğrenci veya telefon ara…" oninput="waBulkRender()" style="margin-bottom:10px">
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px"><button class="btn-ghost btn-sm" onclick="waBulkSelectAll(true)">Tümünü seç</button><button class="btn-ghost btn-sm" onclick="waBulkSelectAll(false)">Seçimi kaldır</button><button class="btn-ghost btn-sm" onclick="waBulkSelectParents()">Anne + baba numaraları</button></div>
+    <div id="wab-list" style="max-height:420px;overflow:auto"></div>
+  </div>
+  <div class="card">
+    <div id="wab-status" style="font-size:13px;color:var(--text2);font-weight:700;margin-bottom:10px">Gönderim sırası hazır değil.</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-wa" onclick="waBulkStart()">📲 Seçilenlerle WhatsApp'ı başlat</button><button class="btn btn-purple" onclick="waBulkNext()">Sonraki alıcı →</button><button class="btn-ghost" onclick="waBulkReset()">Sıfırla</button></div>
+    <p style="font-size:11px;color:var(--muted);line-height:1.5;margin-top:10px">WhatsApp Web/Desktop açılır. Mesaj gönderilmeden önce son kontrol ve gönderme işlemi size aittir. Bir sonraki alıcıya geçmek için “Sonraki alıcı” düğmesine basın.</p>
+  </div>
+</div>
+
 <!-- SÖZLEŞMELER MENÜSÜ -->
 <div id="s-sozlesme" class="screen">
   <button class="btn-ghost mb14" onclick="go('s-list')">← Geri</button>
@@ -1083,6 +1113,7 @@ summary::-webkit-details-marker{display:none}
   <div class="soz-bar">
     <button class="btn-ghost" onclick="sozBack()">← Geri</button>
     <span class="soz-ttl" id="soz-ttl-pro"></span>
+    <select id="soz-lang-pro" aria-label="Sözleşme dili" onchange="sozChangeLang(this.value)" style="width:auto;max-width:145px;padding:8px;font-size:13px"><option value="tr">🇹🇷 Türkçe</option><option value="en">🇬🇧 English</option><option value="ru">🇷🇺 Русский</option></select>
     <button class="btn btn-purple" onclick="sozSaveCur()">💾 Kaydet</button>
     <button class="btn btn-orange" id="soz-reopen-pro" style="display:none" onclick="sozReopen()">🔄 Yeniden Düzenle</button>
     <button class="btn btn-green" onclick="sozWA(sozCur.id,sozCur.type,true)">📤 WhatsApp</button>
@@ -1094,6 +1125,7 @@ summary::-webkit-details-marker{display:none}
   <div class="soz-bar">
     <button class="btn-ghost" onclick="sozBack()">← Geri</button>
     <span class="soz-ttl" id="soz-ttl-esnek"></span>
+    <select id="soz-lang-esnek" aria-label="Sözleşme dili" onchange="sozChangeLang(this.value)" style="width:auto;max-width:145px;padding:8px;font-size:13px"><option value="tr">🇹🇷 Türkçe</option><option value="en">🇬🇧 English</option><option value="ru">🇷🇺 Русский</option></select>
     <button class="btn btn-purple" onclick="sozSaveCur()">💾 Kaydet</button>
     <button class="btn btn-orange" id="soz-reopen-esnek" style="display:none" onclick="sozReopen()">🔄 Yeniden Düzenle</button>
     <button class="btn btn-green" onclick="sozWA(sozCur.id,sozCur.type,true)">📤 WhatsApp</button>
@@ -1462,6 +1494,7 @@ function go(id){
   if(id==='s-fiyat') loadFiyatApp();
   if(id!=='s-reg') sozAfterReg=false;
   if(id==='s-sozlesme') sozRenderMenu();
+  if(id==='s-wa-bulk'){waBulkInitStudents();waBulkRender();}
   if(id==='s-soz-pro'||id==='s-soz-esnek') sozMount();
   if(id==='s-yform') openYForm();
   if(id==='s-week') renderWeek();
@@ -7392,6 +7425,8 @@ function sozMount(){
       const w=fr.contentWindow;
       if(rec&&rec.json&&!opts.fresh)w.__bridge.setState(JSON.parse(rec.json),{unlock:!!opts.unlock});
       else w.__bridge.prefill(sozPrefillData(s));
+      const ls=sozEl('soz-lang-'+c.type);if(ls)ls.value=sozLang;
+      if(sozLang!=='tr')setTimeout(()=>sozTranslateDoc(fr.contentDocument,sozLang),100);
     }catch(e){console.error(e);}
     hideLoad();sozUpdateBar();
   },450);
@@ -7495,6 +7530,7 @@ async function sozBuild(id,type){
     const w=fr.contentWindow;
     w.__bridge.setState(JSON.parse(rec.json),{});
     await sozWait(700);
+    if(sozLang!=='tr')await sozTranslateDoc(fr.contentDocument,sozLang);
     html=w.__bridge.exportHtml();contact=w.__bridge.contact();
   }finally{fr.remove();}
   const blob=await sozHtmlToPdf(html,type==='pro'?794:880);
@@ -7588,5 +7624,116 @@ function loadFiyatApp(){
   }
 }
 </script>
+
+<script>
+/* ── Sözleşme dil seçimi: kaynak Türkçe metin korunur; İngilizce/Rusça makine çevirisi önizleme içindir. ── */
+let sozLang='tr';
+async function sozTranslateDoc(doc,lang){
+  if(!doc)return;
+  const win=doc.defaultView;
+  if(!win.__sozOriginals){
+    win.__sozOriginals=[];
+    const walker=doc.createTreeWalker(doc.body,NodeFilter.SHOW_TEXT);
+    let n;while((n=walker.nextNode()))if(n.nodeValue.trim()&&!['SCRIPT','STYLE','NOSCRIPT'].includes(n.parentElement?.tagName))win.__sozOriginals.push({node:n,text:n.nodeValue});
+    doc.querySelectorAll('input[placeholder],textarea[placeholder],input[aria-label],button').forEach(e=>{
+      ['placeholder','aria-label'].forEach(a=>{if(e.hasAttribute(a)) {e.dataset['sozOrig'+a]=e.getAttribute(a);}});
+      if(e.tagName==='BUTTON')e.dataset.sozOrigButton=e.textContent;
+    });
+  }
+  const originals=win.__sozOriginals;
+  if(lang==='tr'){
+    originals.forEach(x=>{if(x.node&&x.node.isConnected)x.node.nodeValue=x.text;});
+    doc.querySelectorAll('[data-sozorigplaceholder]').forEach(e=>e.setAttribute('placeholder',e.dataset.sozOrigplaceholder));
+    doc.querySelectorAll('[data-sozorigaria-label]').forEach(e=>e.setAttribute('aria-label',e.dataset.sozOrigaria-label));
+    doc.querySelectorAll('[data-sozorigbutton]').forEach(e=>e.textContent=e.dataset.sozOrigButton);
+    return;
+  }
+  const tasks=originals.filter(x=>x.text.trim()).map(async x=>{
+    try{const r=await fetch('https://translate.googleapis.com/translate_a/single?client=gtx&sl=tr&tl='+lang+'&dt=t&q='+encodeURIComponent(x.text));if(!r.ok)throw 0;const j=await r.json();const out=(j[0]||[]).map(z=>z[0]).join('');if(out&&x.node&&x.node.isConnected)x.node.nodeValue=out;}catch(e){}
+  });
+  await Promise.all(tasks);
+  const attrs=[];doc.querySelectorAll('input[placeholder],textarea[placeholder],input[aria-label]').forEach(e=>['placeholder','aria-label'].forEach(a=>{const orig=e.dataset['sozOrig'+a];if(orig)attrs.push((async()=>{try{const r=await fetch('https://translate.googleapis.com/translate_a/single?client=gtx&sl=tr&tl='+lang+'&dt=t&q='+encodeURIComponent(orig));const j=await r.json();e.setAttribute(a,(j[0]||[]).map(z=>z[0]).join('')||orig);}catch(_){}})());}));
+  await Promise.all(attrs);
+}
+async function sozChangeLang(lang){
+  sozLang=lang||'tr';const fr=sozFrame();if(!fr)return;
+  const note=sozEl('soz-lang-note');if(note)note.remove();
+  showLoad(sozLang==='tr'?'Türkçe metin yükleniyor…':'Sözleşme çevriliyor…');
+  try{await sozTranslateDoc(fr.contentDocument,sozLang);}finally{hideLoad();}
+  const holder=sozEl('soz-holder-'+(sozCur&&sozCur.type));
+  if(holder&&!holder.querySelector('.soz-translation-note')){const d=document.createElement('div');d.className='soz-translation-note';d.style.cssText='padding:9px 14px;background:#fff7db;color:#79520a;font-size:12px;font-weight:700;border-bottom:1px solid #f3d477';d.textContent=sozLang==='tr'?'Sözleşme Türkçe gösteriliyor.':'Otomatik çeviri önizlemesidir. Hukuki metinlerde imza öncesi Türkçe asıl metinle karşılaştırın; tereddütte yeminli tercümandan kontrol alın.';holder.insertBefore(d,holder.firstChild);}
+}
+
+/* ── Çoklu alıcı WhatsApp sırası ── */
+let waBulkSelected=new Set(),waBulkQueue=[],waBulkIndex=0;
+function waBulkRecipients(){
+ const out=[];students.forEach(s=>{
+  [['momPhone',s.momName||'Anne','👩'],['dadPhone',s.dadName||'Baba','👨'],['phone','Öğrenci','🎓']].forEach(([k,n,ic])=>{const ph=waPhone(s[k]);if(ph)out.push({key:s.id+'|'+k,id:s.id,student:s,phone:ph,raw:s[k],who:n,icon:ic});});
+ });return out;
+}
+function waBulkRender(){
+ const q=(document.getElementById('wab-search')?.value||'').toLocaleLowerCase('tr');const list=waBulkRecipients().filter(r=>(r.student.name+' '+r.student.surname+' '+r.raw+' '+r.who).toLocaleLowerCase('tr').includes(q));
+ const box=document.getElementById('wab-list');if(!box)return;
+ box.innerHTML=list.map(r=>'<label style="display:flex;gap:9px;align-items:center;padding:9px 5px;border-bottom:1px solid var(--border);font-size:13px"><input type="checkbox" style="width:auto" '+(waBulkSelected.has(r.key)?'checked':'')+' onchange="waBulkToggle(\''+r.key+'\',this.checked)"><span style="min-width:0;flex:1"><b>'+escHtml((r.student.name||'')+' '+(r.student.surname||''))+'</b><br><span style="color:var(--muted)">'+r.icon+' '+escHtml(r.who)+' · '+escHtml(r.raw)+'</span></span></label>').join('')||'<div class="empty">Telefon numarası kayıtlı alıcı bulunamadı.</div>';
+ document.getElementById('wab-count').textContent=waBulkSelected.size+' seçili';
+}
+function escHtml(v){return String(v||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function waBulkToggle(k,on){if(on)waBulkSelected.add(k);else waBulkSelected.delete(k);document.getElementById('wab-count').textContent=waBulkSelected.size+' seçili';}
+function waBulkSelectAll(on){waBulkRecipients().forEach(r=>on?waBulkSelected.add(r.key):waBulkSelected.delete(r.key));waBulkRender();}
+function waBulkSelectParents(){waBulkRecipients().filter(r=>r.key.endsWith('|momPhone')||r.key.endsWith('|dadPhone')).forEach(r=>waBulkSelected.add(r.key));waBulkRender();}
+function waBulkInitStudents(){
+ const sel=document.getElementById('wab-student');if(!sel)return;
+ const keep=sel.value;
+ const sorted=students.slice().sort((a,b)=>(a.name+' '+a.surname).localeCompare(b.name+' '+b.surname,'tr'));
+ sel.innerHTML='<option value="">— Öğrenci seçin —</option>'+sorted.map(s=>'<option value="'+String(s.id).replace(/"/g,'&quot;')+'">'+escHtml((s.name||'')+' '+(s.surname||''))+'</option>').join('');
+ if(keep&&students.some(s=>String(s.id)===keep))sel.value=keep;
+}
+function waBulkCardData(s){
+ const sch=(s.schedule&&s.schedule.length?s.schedule:(s.pendingSchedule||[]));
+ const days={Pzt:'Pazartesi',Sal:'Salı',Çar:'Çarşamba',Per:'Perşembe',Cum:'Cuma',Cmt:'Cumartesi',Paz:'Pazar',0:'Pazartesi',1:'Salı',2:'Çarşamba',3:'Perşembe',4:'Cuma',5:'Cumartesi',6:'Pazar'};
+ const schedule=sch.map(x=>(days[x.day]||x.day||'')+(x.time?' '+x.time:'')).filter(Boolean).join(' · ')||'Belirtilmedi';
+ const mm=(s.program||'').match(/(\d+)\s*dk/i);const mins=mm?mm[1]+' dakika':'Belirtilmedi';
+ const fee=s.fee?(Number(s.fee).toLocaleString('tr-TR')+' TL'):(s.lessonFee?(Number(s.lessonFee).toLocaleString('tr-TR')+' TL / ders'):'Belirtilmedi');
+ const pay=s.payDay?(/[-–]/.test(s.payDay)?'Her ayın '+s.payDay+'. günleri':'Her ayın '+s.payDay+'. günü'):'Her ayın 16–20. günleri';
+ return {schedule,mins,fee,pay,education:s.education||'Belirtilmedi',program:s.program||'Belirtilmedi',pkg:(typeof pkgLabel==='function'&&pkgLabel(s.pkg))||'Belirtilmedi',kdv:s.kdvDahil?'KDV dahil':'KDV hariç'};
+}
+function waBulkBuildForStudent(s){
+ const k=document.getElementById('wab-kind').value;
+ if(k==='custom')return document.getElementById('wab-text').value.trim();
+ const d=waBulkCardData(s),name=(s.name||'')+' '+(s.surname||'');
+ const head='Sayın Velimiz,\n'+name+' öğrencimizin kayıtlı bilgilerini hatırlatmak isteriz.\n\n';
+ const card='🎼 Eğitim: '+d.education+'\n📚 Program: '+d.program+'\n📦 Paket: '+d.pkg+'\n⏱️ Ders süresi: '+d.mins+'\n📅 Ders gün ve saatleri: '+d.schedule+'\n💳 Aylık ücret: '+d.fee+' ('+d.kdv+')\n🗓️ Ödeme zamanı: '+d.pay;
+ if(k==='payment')return head+'💳 Aylık eğitim ücreti: '+d.fee+' ('+d.kdv+')\n🗓️ Ödeme zamanı: '+d.pay+'\n\nİlginiz için teşekkür ederiz.\nRockJazz Müzik ve Silifke Satranç Atölyesi';
+ if(k==='schedule')return head+'🎼 Eğitim: '+d.education+'\n📚 Program: '+d.program+'\n⏱️ Ders süresi: '+d.mins+'\n📅 Ders gün ve saatleri: '+d.schedule+'\n\nDerslerimize zamanında katılımınızı rica ederiz.\nRockJazz Müzik ve Silifke Satranç Atölyesi';
+ return head+card+'\n\nBilgilerde bir değişiklik varsa lütfen bize bildiriniz. Derslerimize zamanında katılımınızı ve ödeme takvimine dikkat etmenizi rica ederiz.\n\nRockJazz Müzik ve Silifke Satranç Atölyesi';
+}
+function waBulkStudentChanged(){
+ const id=document.getElementById('wab-student').value,s=students.find(x=>String(x.id)===String(id));
+ const info=document.getElementById('wab-student-info'),ta=document.getElementById('wab-text');
+ if(!s){if(info)info.style.display='none';return;}
+ const d=waBulkCardData(s);
+ if(info){info.style.display='block';info.innerHTML='<b>📇 '+escHtml(s.name+' '+s.surname)+'</b><br>🎼 '+escHtml(d.education)+' · '+escHtml(d.program)+'<br>📦 '+escHtml(d.pkg)+' · ⏱️ '+escHtml(d.mins)+'<br>📅 '+escHtml(d.schedule)+'<br>💳 '+escHtml(d.fee)+' · 🗓️ '+escHtml(d.pay);}
+ ta.value=waBulkBuildForStudent(s);
+}
+function waBulkPreset(){
+ const k=document.getElementById('wab-kind').value,sel=document.getElementById('wab-student');
+ if(sel&&sel.value){waBulkStudentChanged();return;}
+ const ta=document.getElementById('wab-text');
+ const m={payment:'Sayın Velimiz, öğrencimizin aylık eğitim ödemesini hatırlatmak isteriz.\n💳 Aylık ücret: {ucret}\n🗓️ Ödeme zamanı: {odeme_gunu}\nRockJazz Müzik ve Silifke Satranç Atölyesi',schedule:'Sayın Velimiz, öğrencimizin ders programını hatırlatmak isteriz.\n📅 Ders gün ve saatleri: {gun_saat}\nRockJazz Müzik ve Silifke Satranç Atölyesi',both:'Sayın Velimiz, öğrencimizin ödeme ve ders programı bilgileri:\n🎼 Eğitim: {egitim}\n📚 Program: {program}\n📦 Paket: {paket}\n⏱️ Ders süresi: {sure}\n📅 Ders gün ve saatleri: {gun_saat}\n💳 Aylık ücret: {ucret}\n🗓️ Ödeme zamanı: {odeme_gunu}\nRockJazz Müzik ve Silifke Satranç Atölyesi',custom:''};
+ if(k!=='custom')ta.value=m[k];
+}
+function waBulkMessage(r){
+ const s=r.student,k=document.getElementById('wab-kind').value;
+ if(k!=='custom')return waBulkBuildForStudent(s);
+ let msg=document.getElementById('wab-text').value.trim();
+ const d=waBulkCardData(s),vals={ad:s.name||'',soyad:s.surname||'',gun_saat:d.schedule,ucret:d.fee,odeme_gunu:d.pay,egitim:d.education,program:d.program,paket:d.pkg,sure:d.mins};
+ Object.entries(vals).forEach(([key,v])=>msg=msg.replaceAll('{'+key+'}',v));return msg;
+}
+function waBulkStart(){waBulkQueue=waBulkRecipients().filter(r=>waBulkSelected.has(r.key));waBulkIndex=0;if(!waBulkQueue.length){alert('Önce en az bir alıcı seçin.');return;}waBulkOpenCurrent();}
+async function waBulkOpenCurrent(){if(waBulkIndex>=waBulkQueue.length){document.getElementById('wab-status').textContent='✅ Seçilen tüm alıcıların sohbetleri açıldı. Gönderim durumlarını WhatsApp üzerinden kontrol edin.';return;}const r=waBulkQueue[waBulkIndex];let msg=waBulkMessage(r);const lang=document.getElementById('wab-lang').value;if(lang!=='tr'){try{msg=await trText(msg,lang);}catch(e){alert('Mesaj çevrilemedi. Türkçe metin açılacak.');}}document.getElementById('wab-status').textContent=(waBulkIndex+1)+' / '+waBulkQueue.length+' · '+r.student.name+' '+r.student.surname+' — '+r.who+' ('+r.raw+'). WhatsApp sohbeti açılıyor.';window.open('https://wa.me/'+r.phone+'?text='+encodeURIComponent(msg),'_blank');}
+function waBulkNext(){if(!waBulkQueue.length){waBulkStart();return;}waBulkIndex++;waBulkOpenCurrent();}
+function waBulkReset(){waBulkQueue=[];waBulkIndex=0;document.getElementById('wab-status').textContent='Gönderim sırası sıfırlandı.';}
+</script>
+
 </body>
 </html>
