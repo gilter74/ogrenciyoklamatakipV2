@@ -580,7 +580,8 @@ summary::-webkit-details-marker{display:none}
     </div>
     <div class="mb14"><label class="lbl">Öğrenci Telefonu</label><input id="e-phone" type="tel"></div>
     <div class="mb14"><label class="lbl">🗓️ Başlangıç Ayı</label><input id="e-start" type="month" style="font-weight:700"><div style="font-size:11px;color:var(--muted);font-weight:600;margin-top:4px">Kayıt Tarihi'nden bağımsızdır (ekimde kayıt, kasımda başlangıç olabilir). Başlangıç ayı kayıt ayından sonraysa ödeme/yoklama o aydan başlar, ders saatleri programdan çıkar ve o ay gelince otomatik eklenir. Kayıt ayında başlıyorsa kayıt tarihindeki istisna kuralları geçerlidir.</div></div>
-    <div class="mb14"><label class="lbl">📅 Kayıt Tarihi</label><input id="e-reg" type="date"><div style="font-size:11px;color:var(--muted);font-weight:600;margin-top:4px">Gerçek (ilk) kayıt tarihi — eski öğrenciyse Ekim 2026 öncesi olabilir; kartta “kaç aydır bizimle” bu tarihe göre hesaplanır. Ödeme takvimi ve yoklama, <b>Başlangıç Ayı</b> seçiliyse o aydan, boşsa bu tarihten başlar. Eski öğrencide karışmaması için Başlangıç Ayı’nı Ekim 2026 yapın.</div></div>
+    <div class="mb14"><label class="lbl">🕰️ İlk Kayıt Tarihi <span style="font-weight:600;text-transform:none;letter-spacing:0;font-size:11px;color:var(--dim)">(eski öğrenciyse)</span></label><input id="e-first" type="date"><div style="font-size:11px;color:var(--muted);font-weight:600;margin-top:4px">Ekim 2026 öncesinden gelen öğrencinin gerçek ilk kayıt günü. Yalnızca öğrenci kartındaki “kaç aydır bizimle” hesabında kullanılır; ödeme takvimi ve yoklamayı <b>etkilemez</b>. Yeni öğrenciyse boş bırakın.</div></div>
+    <div class="mb14"><label class="lbl">📅 Kayıt Tarihi</label><input id="e-reg" type="date"><div style="font-size:11px;color:var(--muted);font-weight:600;margin-top:4px">Gerçek kayıt tarihi. Başlangıç ayı kayıt ayıyla aynıysa (ya da boşsa) ödeme takvimi ve yoklama bu tarihe göre başlar.</div></div>
     <div class="mb14">
       <label class="lbl">Eğitim Türü *</label>
       <select id="e-edu" onchange="ce('e-edu','e-err-edu')">
@@ -2511,12 +2512,9 @@ async function saveReg(){
     student.pendingSchedule=d.schedule||[];
     student.schedule=[];
   }
-  // Eski öğrenci: gerçek ilk kayıt tarihi kaydedilir; ödeme/yoklama başlangıç ayı ayrı tutulur (karışmasın)
+  // Eski öğrenci: gerçek ilk kayıt tarihi ayrı alanda tutulur (firstReg); ödeme/yoklama tarihlerine dokunulmaz
   const frVal=((document.getElementById('r-first')||{}).value||'').trim();
-  if(frVal&&frVal<regDate){
-    student.registeredAt=frVal;
-    if(!student.startMonth)student.startMonth=sm||curYM();
-  }
+  if(frVal&&frVal<regDate)student.firstReg=frVal;
   students.push(student);
   await fbSet('students/'+id, student);
   try{await prosOnRegistered(id);}catch(e){}
@@ -2535,6 +2533,7 @@ function fillEdit(){
   keepOpt('e-edu',s.education);
   keepOpt('e-prog',s.program);
   document.getElementById('e-reg').value=s.registeredAt||'';
+  document.getElementById('e-first').value=s.firstReg||'';
   document.getElementById('e-start').value=effStart(s).slice(0,7);
   selPkg('e',s.pkg||'');
   document.getElementById('e-fee').value=s.fee||'';
@@ -2557,12 +2556,16 @@ function fillEdit(){
 async function saveEdit(){
   const d=readForm('e');
   if(!validate(d,'e'))return;
+  const frv0=(document.getElementById('e-first').value||'').trim();
+  if(frv0&&frv0>todays()){showConf('İlk kayıt tarihi bugünden sonra olamaz.','⚠️','Tamam',()=>{});return;}
   showLoad('Güncelleniyor…');
   const i=students.findIndex(x=>x.id===curId);
   const regVal=(document.getElementById('e-reg').value||'').trim();
   if(i>=0){
     students[i]={...students[i],...d};
     if(regVal)students[i].registeredAt=regVal;
+    const frv=(document.getElementById('e-first').value||'').trim();
+    if(frv)students[i].firstReg=frv;else delete students[i].firstReg;
     const st=students[i];
     const smVal=((document.getElementById('e-start')||{}).value||'').trim();
     if(smVal&&smVal>(st.registeredAt||'').slice(0,7))st.startMonth=smVal;else delete st.startMonth;
@@ -7653,15 +7656,17 @@ function tnText(t){
   return p.join(' ');
 }
 function tnInfo(s){
-  const reg=tnDate(s.registeredAt);if(!reg)return null;
+  const rawReg=tnDate(s.registeredAt),fr=tnDate(s.firstReg);
+  const reg=(fr&&(!rawReg||fr<rawReg))?fr:rawReg;if(!reg)return null;
+  const usedFirst=!!(fr&&rawReg&&fr<rawReg);
   const old=reg<PROGRAM_START;
   let end=todays(),endNote='bugüne kadar';
   if(typeof isFrozen==='function'&&isFrozen(s)){end=tnDate(s.frozen.date)||end;endNote='dondurulduğu tarihe ('+tnFmt(end)+') kadar';}
   else if(s._archived&&tnDate(s.deletedAt)){end=tnDate(s.deletedAt);endNote='ayrıldığı tarihe ('+tnFmt(end)+') kadar';}
   const total=tnDiff(reg,end);
-  const ps=typeof effStart==='function'?tnDate(effStart(s)):reg;
+  const ps=typeof effStart==='function'?tnDate(effStart(s)):rawReg;
   const prog=(old&&ps)?tnDiff(ps<PROGRAM_START?PROGRAM_START:ps,end):null;
-  return{reg,old,end,endNote,total,ps,prog};
+  return{reg,rawReg,usedFirst,old,end,endNote,total,ps,prog};
 }
 function renderTenure(){
   const box=document.getElementById('det-tenure');if(!box)return;
@@ -7672,6 +7677,7 @@ function renderTenure(){
   h+='<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">';
   if(i.old)h+=chip('#fff7ed','#9a3412','#fdba74','🕰️ Eski öğrenci — Ekim 2026 öncesinden başlamış')+chip('#f3f4f6','#374151','#d1d5db','İlk kayıt: '+tnFmt(i.reg));
   else h+=chip('#ecfdf5','#15803d','#86efac','🆕 Yeni öğrenci — '+MONTHS[+i.reg.slice(5,7)-1]+' '+i.reg.slice(0,4)+' başladı')+chip('#f3f4f6','#374151','#d1d5db','Kayıt: '+tnFmt(i.reg));
+  if(i.usedFirst)h+=chip('#eef2ff','#3730a3','#c7d2fe','Programa kayıt: '+tnFmt(i.rawReg));
   h+='</div>';
   h+='<div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap">'+
      '<div style="font-size:26px;font-weight:800;color:var(--purple);line-height:1">'+i.total.total+' <span style="font-size:15px;font-weight:700">aydır bizimle</span></div>'+
@@ -7684,7 +7690,41 @@ function renderTenure(){
     if(i.ps&&i.ps<PROGRAM_START)h+='<div style="margin-top:8px;padding:9px 11px;background:#fef2f2;border:1px solid #fecaca;border-radius:10px;font-size:12px;font-weight:600;color:#991b1b;line-height:1.5">⚠ Ödeme takibi Ekim 2026 öncesinden başlıyor; geçmiş aylar “ödenmemiş” görünebilir.'+
        '<button class="btn btn-orange btn-sm" style="margin-top:7px;display:block" onclick="tnSetProgramStart()">💳 Ödeme takibini Ekim 2026’dan başlat</button></div>';
   }
+  // İlk kayıt tarihi girişi (ödeme tarihlerine dokunmaz)
+  h+='<div style="margin-top:12px;border-top:1px dashed var(--border);padding-top:10px">'+
+     '<button class="btn-ghost" style="padding:8px 12px;font-size:13px" onclick="tnToggleEdit()">✏️ '+(s.firstReg?'İlk kayıt tarihini değiştir':'Eski öğrenci mi? İlk kayıt tarihini yaz')+'</button>'+
+     '<div id="tn-edit" style="display:none;margin-top:10px;padding:11px;background:#fafbfd;border:1px solid var(--border);border-radius:10px">'+
+       '<label class="lbl">🕰️ İlk kayıt tarihi</label>'+
+       '<input id="tn-first" type="date" value="'+(s.firstReg||'')+'" max="'+todays()+'" style="font-weight:700;width:100%;box-sizing:border-box">'+
+       '<div style="font-size:11px;color:var(--muted);font-weight:600;margin:8px 0 4px">Günü bilmiyorsanız sadece ayı seçin:</div>'+
+       '<input id="tn-first-m" type="month" max="'+todays().slice(0,7)+'" style="font-weight:700;width:100%;box-sizing:border-box">'+
+       '<div style="font-size:11px;color:var(--dim);font-weight:600;margin-top:8px;line-height:1.5">Bu tarih yalnızca “kaç aydır bizimle” hesabında kullanılır. Ödeme takvimi, yoklama ve kayıt tarihi <b>değişmez</b>.</div>'+
+       '<div style="display:flex;gap:8px;margin-top:10px"><button class="btn btn-purple" style="flex:1;justify-content:center" onclick="tnSaveFirst()">💾 Kaydet</button>'+
+       (s.firstReg?'<button class="btn-del" onclick="tnClearFirst()">Kaldır</button>':'')+'</div>'+
+     '</div></div>';
   box.innerHTML=h;box.style.display='block';
+}
+function tnToggleEdit(){const b=document.getElementById('tn-edit');if(b)b.style.display=b.style.display==='none'?'block':'none';}
+async function tnSaveFirst(){
+  const s=students.find(x=>x.id===curId);if(!s)return;
+  let v=(document.getElementById('tn-first').value||'').trim();
+  const m=(document.getElementById('tn-first-m').value||'').trim();
+  if(!v&&m)v=m+'-01';
+  const bad=t=>showConf(t,'⚠️','Tamam',()=>{});
+  if(!v){bad('İlk kayıt tarihini (veya ayını) seçin.');return;}
+  if(v>todays()){bad('İlk kayıt tarihi bugünden sonra olamaz.');return;}
+  const raw=tnDate(s.registeredAt);
+  if(raw&&v>raw){bad('İlk kayıt tarihi, programdaki kayıt tarihinden ('+tnFmt(raw)+') sonra olamaz.');return;}
+  showLoad('Kaydediliyor…');
+  s.firstReg=v;
+  try{await fbSet('students/'+s.id,s);}catch(e){}
+  hideLoad();renderDetail();
+}
+async function tnClearFirst(){
+  const s=students.find(x=>x.id===curId);if(!s)return;
+  showLoad('Kaydediliyor…');delete s.firstReg;
+  try{await fbSet('students/'+s.id,s);}catch(e){}
+  hideLoad();renderDetail();
 }
 function tnSetProgramStart(){
   const s=students.find(x=>x.id===curId);if(!s)return;
