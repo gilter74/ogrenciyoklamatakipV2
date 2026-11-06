@@ -400,10 +400,6 @@ summary::-webkit-details-marker{display:none}
   <div class="tile-grid" style="margin-top:10px">
     <button class="tile primary" onclick="go('s-daily')"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg><span>Günlük Yoklama<small>Bugünün derslerini tek dokunuşla işaretle</small></span></button>
     <button class="tile orange" onclick="go('s-yform')"><svg viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4h6v3H9zM9 12h6M9 16h6"/></svg><span>Yoklama Formu</span></button>
-    <button class="tile teal pros-bar" style="grid-column:1/-1" onclick="go('s-pros')">
-      <span style="display:flex;align-items:center;gap:10px;width:100%;min-width:0"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M9 15l2 2 4-4"/></svg><b style="font-weight:700">Ön Görüşme</b><span id="pros-count" style="display:none;background:rgba(255,255,255,.22);border-radius:10px;padding:1px 8px;font-size:12px;font-weight:700"></span><small style="margin-left:auto;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Randevu · Hatırlatma · Deneme dersi</small></span>
-      <span id="pros-line" style="display:none;width:100%;border-top:1px solid rgba(255,255,255,.3);padding-top:5px"></span>
-    </button>
   </div>
   <div id="tel-remind"></div>
   <div id="dup-name-warn" style="display:none"></div>
@@ -414,6 +410,10 @@ summary::-webkit-details-marker{display:none}
     <div style="font-weight:700;font-size:14px;color:var(--text);margin-bottom:10px" id="today-sched-title">📅 Bugün Dersi Olanlar</div>
     <div id="today-sched-list"></div>
   </div>
+    <button class="tile teal pros-bar" style="width:100%;margin-bottom:14px" onclick="go('s-pros')">
+    <span style="display:flex;align-items:center;gap:10px;width:100%;min-width:0"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M9 15l2 2 4-4"/></svg><b style="font-weight:700">Ön Görüşme</b><span id="pros-count" style="display:none;background:rgba(255,255,255,.22);border-radius:10px;padding:1px 8px;font-size:12px;font-weight:700"></span><small style="margin-left:auto;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Randevu · Hatırlatma · Deneme dersi</small></span>
+    <span id="pros-line" style="display:none;width:100%;border-top:1px solid rgba(255,255,255,.3);padding-top:5px"></span>
+  </button>
   <div id="late-banner"></div>
   <div class="tile-grid" style="align-items:start">
     <button class="tile" onclick="go('s-week')"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg><span>Haftalık Program</span></button>
