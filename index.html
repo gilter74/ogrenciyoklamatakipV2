@@ -267,7 +267,7 @@ input:focus,select:focus{box-shadow:0 0 0 3px rgba(47,63,115,.12)}
 .kpi{flex:1;background:#fff;border:1px solid var(--border);border-radius:12px;padding:10px 12px;box-shadow:var(--shadow)}
 .kpi .v{font-size:20px;font-weight:700;color:var(--text);line-height:1.1}
 .kpi .k{font-size:11px;font-weight:500;color:var(--muted);margin-top:3px}
-.tile-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;margin-bottom:14px}
+.tile-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;margin-bottom:14px;align-items:start}
 .tile-grid .tile{min-width:0}
 .tile{display:flex;flex-direction:column;align-items:flex-start;gap:10px;background:#fff;border:1px solid var(--border);border-radius:12px;padding:14px;cursor:pointer;box-shadow:var(--shadow);font-size:14px;font-weight:600;color:var(--text);text-align:left;transition:border-color .15s,background .15s}
 .tile:hover{border-color:var(--purple);background:#fafbfd}
@@ -284,6 +284,9 @@ input:focus,select:focus{box-shadow:0 0 0 3px rgba(47,63,115,.12)}
 .tile.teal:hover{background:#0f766e}
 .tile.teal svg{stroke:#fff}
 .tile.teal small{color:rgba(255,255,255,.8)}
+.tile.pros-bar{padding:10px 14px;gap:6px}
+@media(max-width:520px){.tile.pros-bar small{display:none}}
+.tile.pros-bar svg{width:20px;height:20px}
 
 /* öğrenci kartı sekmeleri */
 .dt-nav{display:flex;gap:4px;background:#fff;border:1px solid var(--border);border-radius:11px;padding:4px;margin-bottom:12px;box-shadow:var(--shadow);position:sticky;top:6px;z-index:30;overflow-x:auto}
@@ -397,6 +400,10 @@ summary::-webkit-details-marker{display:none}
   <div class="tile-grid" style="margin-top:10px">
     <button class="tile primary" onclick="go('s-daily')"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg><span>Günlük Yoklama<small>Bugünün derslerini tek dokunuşla işaretle</small></span></button>
     <button class="tile orange" onclick="go('s-yform')"><svg viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4h6v3H9zM9 12h6M9 16h6"/></svg><span>Yoklama Formu</span></button>
+    <button class="tile teal pros-bar" style="grid-column:1/-1" onclick="go('s-pros')">
+      <span style="display:flex;align-items:center;gap:10px;width:100%;min-width:0"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M9 15l2 2 4-4"/></svg><b style="font-weight:700">Ön Görüşme</b><span id="pros-count" style="display:none;background:rgba(255,255,255,.22);border-radius:10px;padding:1px 8px;font-size:12px;font-weight:700"></span><small style="margin-left:auto;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Randevu · Hatırlatma · Deneme dersi</small></span>
+      <span id="pros-line" style="display:none;width:100%;border-top:1px solid rgba(255,255,255,.3);padding-top:5px"></span>
+    </button>
   </div>
   <div id="tel-remind"></div>
   <div id="dup-name-warn" style="display:none"></div>
@@ -408,8 +415,7 @@ summary::-webkit-details-marker{display:none}
     <div id="today-sched-list"></div>
   </div>
   <div id="late-banner"></div>
-  <div class="tile-grid">
-    <button class="tile teal" onclick="go('s-pros')"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M9 15l2 2 4-4"/></svg><span style="min-width:0;flex:1">Ön Görüşme<small>Randevu · Hatırlatma · Deneme dersi</small><span id="pros-line" style="display:none;margin-top:6px;border-top:1px solid rgba(255,255,255,.35);padding-top:5px"></span></span></button>
+  <div class="tile-grid" style="align-items:start">
     <button class="tile" onclick="go('s-week')"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg><span>Haftalık Program</span></button>
     <button class="tile" onclick="go('s-hw')"><svg viewBox="0 0 24 24"><path d="M5 4h11l3 3v13H5z"/><path d="M8 11h8M8 15h8M8 7h4"/></svg><span>Ödev Takibi<small>Haftalık · Aylık · Özet</small></span></button>
     <button class="tile" onclick="go('s-veli-share')"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6M16 5a3 3 0 010 6M18 14c1.8.8 3 2.6 3 5"/></svg><span>Veli Paylaşımı</span></button>
@@ -5633,15 +5639,24 @@ function prosLineText(p){
   const k=prosKindTxt(p);
   return day+', saat '+p.time+' — bir '+(k?k+' ':'')+'görüşmen var';
 }
+function prosRowParts(p){
+  const t=todays(),d=ydDateObj(p.date),dsh=['Pzt','Sal','Çar','Per','Cum','Cmt','Paz'][(d.getDay()+6)%7];
+  const diff=Math.round((d-ydDateObj(t))/864e5);
+  const day=diff<=0?'Bugün':diff===1?'Yarın '+dsh:telDShort(p.date)+' '+dsh;
+  const br=String(p.interest||'').replace(/^[^\p{L}]+/u,'').trim();
+  return{when:day+' '+p.time,br:br,name:p.name||''};
+}
 function prosLineHtml(){
   const up=prosReady?prosUpcoming():[];
   if(!up.length)return '';
-  const row=p=>'<div style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:#fff;line-height:1.3;padding:2px 2px;text-align:left"><span>'+(prosKindTxt(p)==='satranç'?'♟':'🎹')+'</span><span style="min-width:0">'+hwEsc(prosLineText(p))+' <span style="color:rgba(255,255,255,.85);font-weight:600">· '+hwEsc(p.name)+'</span></span></div>';
-  return up.slice(0,3).map(row).join('')+(up.length>3?'<div style="font-size:12px;font-weight:700;color:rgba(255,255,255,.85);padding:0 2px">+ '+(up.length-3)+' görüşme daha</div>':'');
+  const MAX=4;
+  const row=p=>{const r=prosRowParts(p);return '<div style="display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;color:#fff;line-height:1.35;padding:1px 0;text-align:left;min-width:0"><span>'+(prosKindTxt(p)==='satranç'?'♟':'🎹')+'</span><span style="white-space:nowrap">'+hwEsc(r.when)+'</span><span style="color:rgba(255,255,255,.88);font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">· '+(r.br?hwEsc(r.br)+' · ':'')+hwEsc(r.name)+'</span></div>';};
+  return '<span style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));column-gap:16px">'+up.slice(0,MAX).map(row).join('')+'</span>'+(up.length>MAX?'<span style="display:block;font-size:12px;font-weight:700;color:rgba(255,255,255,.85);padding-top:2px">+ '+(up.length-MAX)+' görüşme daha</span>':'');
 }
 function prosLineRender(){
   const el=document.getElementById('pros-line');if(!el)return;
   const h=prosLineHtml();el.innerHTML=h;el.style.display=h?'block':'none';
+  const c=document.getElementById('pros-count');if(c){const n=prosReady?prosUpcoming().length:0;c.textContent=n+' randevu';c.style.display=n?'inline-block':'none';}
 }
 function prosPeriodicCheck(){
   const up=prosUpcoming();if(!up.length)return;
