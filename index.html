@@ -428,21 +428,25 @@ summary::-webkit-details-marker{display:none}
     <button class="tile" onclick="openArchive()"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v11a1 1 0 001 1h12a1 1 0 001-1V8M10 12h4"/></svg><span>Eski Kursiyer Arşivi</span></button>
     <button class="tile teal" style="grid-column:1/-1" onclick="go('s-wa-bulk')"><svg viewBox="0 0 24 24"><path d="M21 11.5a8.5 8.5 0 0 1-12.6 7.4L3 20l1.2-5.1A8.5 8.5 0 1 1 21 11.5Z"/><path d="M8 9c1 3 3 5 6 6"/></svg><span>Toplu WhatsApp Merkezi<small>Ödeme · Ders günü/saat · Duyurular · Çoklu alıcı</small></span></button>
     <button class="tile program-rules-tile" style="grid-column:1/-1" onclick="go('s-program-rules')"><svg viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 13h7M9 17h5"/></svg><span>📘 Program Kuralları<small>Türkçe · Русский · Veliye gönder · WhatsApp grubunda paylaş</small></span></button>
-    <section id="home-iban-card" style="grid-column:1/-1;background:#fff;border:1px solid #cbd5e1;border-radius:15px;padding:15px;box-shadow:var(--shadow);margin-top:2px">
-      <div style="font-weight:800;font-size:15px;color:var(--text);margin-bottom:5px">🏦 Öğrenci IBAN ve Ödeme Mesajları</div>
-      <div style="font-size:11px;color:var(--muted);margin-bottom:12px">IBAN bilgisini veya ödeme hatırlatmasını düzenleyip kopyalayabilir ya da WhatsApp üzerinden paylaşabilirsiniz.</div>
-      <label for="home-iban-kind" style="display:block;font-size:12px;font-weight:700;margin-bottom:6px;color:var(--text)">Gönderilecek metni seçin</label>
-      <select id="home-iban-kind" onchange="homeIbanLoad()" style="width:100%;padding:11px;border:1px solid var(--border);border-radius:9px;background:#f8fafc;font:600 13px 'Inter',system-ui,sans-serif;margin-bottom:9px">
-        <option value="iban">Yalnızca IBAN numarası</option>
-        <option value="normal">Ödeme bilgilendirmesi</option>
-        <option value="late">Gecikmiş ödeme hatırlatması</option>
-      </select>
-      <textarea id="home-iban-text" oninput="homeIbanSave()" rows="4" style="width:100%;box-sizing:border-box;resize:vertical;padding:12px;border:1px solid var(--border);border-radius:10px;background:#fbfdff;color:var(--text);font:600 13px/1.6 'Inter',system-ui,sans-serif"></textarea>
-      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:9px">
-        <button class="btn btn-purple" onclick="homeIbanCopy()" style="flex:1;justify-content:center">📋 Metni Kopyala</button>
-        <button class="btn btn-green" onclick="homeIbanWhatsApp()" style="flex:1;justify-content:center">🟢 WhatsApp'ta Paylaş</button>
+    <section id="home-iban-card" style="grid-column:1/-1;background:#fff;border:1px solid #cbd5e1;border-radius:12px;box-shadow:var(--shadow);margin-top:2px;overflow:hidden">
+      <button id="home-iban-toggle" type="button" aria-expanded="false" aria-controls="home-iban-content" onclick="toggleHomeIbanPanel()" style="width:100%;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 13px;border:0;background:#f8fafc;color:var(--text);font:800 13px 'Inter',system-ui,sans-serif;text-align:left;cursor:pointer">
+        <span>🏦 Öğrenci IBAN ve Ödeme Mesajları</span><span id="home-iban-chevron" style="font-size:17px;line-height:1">＋</span>
+      </button>
+      <div id="home-iban-content" style="display:none;padding:13px;border-top:1px solid #e2e8f0">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:12px">IBAN bilgisini veya ödeme hatırlatmasını düzenleyip kopyalayabilir ya da WhatsApp üzerinden paylaşabilirsiniz.</div>
+        <label for="home-iban-kind" style="display:block;font-size:12px;font-weight:700;margin-bottom:6px;color:var(--text)">Gönderilecek metni seçin</label>
+        <select id="home-iban-kind" onchange="homeIbanLoad()" style="width:100%;padding:11px;border:1px solid var(--border);border-radius:9px;background:#f8fafc;font:600 13px 'Inter',system-ui,sans-serif;margin-bottom:9px">
+          <option value="iban">Yalnızca IBAN numarası</option>
+          <option value="normal">Ödeme bilgilendirmesi</option>
+          <option value="late">Gecikmiş ödeme hatırlatması</option>
+        </select>
+        <textarea id="home-iban-text" oninput="homeIbanSave()" rows="4" style="width:100%;box-sizing:border-box;resize:vertical;padding:12px;border:1px solid var(--border);border-radius:10px;background:#fbfdff;color:var(--text);font:600 13px/1.6 'Inter',system-ui,sans-serif"></textarea>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:9px">
+          <button class="btn btn-purple" onclick="homeIbanCopy()" style="flex:1;justify-content:center">📋 Metni Kopyala</button>
+          <button class="btn btn-green" onclick="homeIbanWhatsApp()" style="flex:1;justify-content:center">🟢 WhatsApp'ta Paylaş</button>
+        </div>
+        <div id="home-iban-status" aria-live="polite" style="font-size:11px;color:#15803d;font-weight:700;min-height:16px;margin-top:7px"></div>
       </div>
-      <div id="home-iban-status" aria-live="polite" style="font-size:11px;color:#15803d;font-weight:700;min-height:16px;margin-top:7px"></div>
     </section>
     <button class="tile" style="grid-column:1/-1" onclick="go('s-sozlesme')"><svg viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 13h7M9 17h5"/></svg><span>Sözleşmeler<small>Profesyonel · Esnek · öğrenciye özel · PDF / WhatsApp</small></span></button>
   </div>
@@ -7827,6 +7831,15 @@ const HOME_IBAN_DEFAULTS={
   normal:'Değerli velimiz ve öğrencimiz, ödemelerinizi aşağıda belirtilen öğrenci hesabına yapabilirsiniz. Ödeme açıklamasına öğrencinin adını ve soyadını yazmanızı rica ederiz. Teşekkür ederiz.\n\nÖğrenci IBAN: TR66 0001 0002 0952 9934 9150 42\nHesap sahibi: Celalettin Gökşin İLTER\nBanka: Ziraat Bankası',
   late:'Değerli velimiz, dönem ödemesinin henüz yapılmadığı görülmektedir. Gecikmiş ödemenizi aşağıda belirtilen öğrenci hesabına en kısa sürede yapmanızı rica ederiz. Anlayışınız ve iş birliğiniz için teşekkür ederiz.\n\nÖğrenci IBAN: TR66 0001 0002 0952 9934 9150 42\nHesap sahibi: Celalettin Gökşin İLTER\nBanka: Ziraat Bankası'
 };
+function toggleHomeIbanPanel(){
+  const panel=document.getElementById('home-iban-content'),btn=document.getElementById('home-iban-toggle'),chev=document.getElementById('home-iban-chevron');
+  if(!panel||!btn)return;
+  const opening=panel.style.display==='none'||!panel.style.display;
+  panel.style.display=opening?'block':'none';
+  btn.setAttribute('aria-expanded',opening?'true':'false');
+  if(chev)chev.textContent=opening?'−':'＋';
+  if(opening)homeIbanLoad();
+}
 function homeIbanLoad(){
   const kind=document.getElementById('home-iban-kind')?.value||'iban',ta=document.getElementById('home-iban-text');if(!ta)return;
   let saved=null;try{saved=JSON.parse(localStorage.getItem('rockjazzHomeIbanTexts_v1')||'null')}catch(e){}
