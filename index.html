@@ -376,6 +376,14 @@ summary::-webkit-details-marker{display:none}
 #s-program-rules .pr-status{font-size:12px;font-weight:700;color:#166534;min-height:18px;margin-top:7px}
 @media(max-width:600px){#s-program-rules .pr-grid{grid-template-columns:1fr}#s-program-rules .pr-textarea{min-height:390px}#s-program-rules .pr-hero{padding:15px}#s-program-rules .pr-actions .pr-btn{flex:1 1 100%}}
 
+
+/* Ana sayfa kisa yol renkleri */
+.tile-whatsapp-green{background:#25D366!important;border-color:#25D366!important;color:#fff!important}
+.tile-whatsapp-green small{color:rgba(255,255,255,.92)!important}
+.tile-whatsapp-green svg{stroke:#fff!important}
+.tile-prospect-pink{background:#ec4899!important;border-color:#ec4899!important;color:#fff!important}
+.tile-prospect-pink small{color:rgba(255,255,255,.94)!important}
+.tile-prospect-pink svg{stroke:#fff!important}
 </style>
 </head>
 <body>
@@ -418,7 +426,7 @@ summary::-webkit-details-marker{display:none}
   </div>
   <div id="late-banner"></div>
   <div class="tile-grid">
-    <button class="tile teal" onclick="go('s-pros')"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M9 15l2 2 4-4"/></svg><span style="min-width:0;flex:1">Ön Görüşme<small>Randevu · Hatırlatma · Deneme dersi</small><span id="pros-line" style="display:none;margin-top:6px;border-top:1px solid rgba(255,255,255,.35);padding-top:5px"></span></span></button>
+    <button class="tile teal tile-prospect-pink" onclick="go('s-pros')"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M9 15l2 2 4-4"/></svg><span style="min-width:0;flex:1">Ön Görüşme<small>Randevu · Hatırlatma · Deneme dersi</small><span id="pros-line" style="display:none;margin-top:6px;border-top:1px solid rgba(255,255,255,.35);padding-top:5px"></span></span></button>
     <button class="tile" onclick="go('s-week')"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg><span>Haftalık Program</span></button>
     <button class="tile" onclick="go('s-hw')"><svg viewBox="0 0 24 24"><path d="M5 4h11l3 3v13H5z"/><path d="M8 11h8M8 15h8M8 7h4"/></svg><span>Ödev Takibi<small>Haftalık · Aylık · Özet</small></span></button>
     <button class="tile" onclick="go('s-veli-share')"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6M16 5a3 3 0 010 6M18 14c1.8.8 3 2.6 3 5"/></svg><span>Veli Paylaşımı</span></button>
@@ -426,7 +434,7 @@ summary::-webkit-details-marker{display:none}
     <button class="tile" onclick="go('s-fiyat')"><svg viewBox="0 0 24 24"><path d="M3 12V4h8l10 10-8 8L3 12z"/><circle cx="7.5" cy="8.5" r="1"/></svg><span>Fiyat Güncelleyici</span></button>
     <button class="tile" onclick="toggleBulkPanel()"><svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg><span>Aylık Toplu Arşiv</span></button>
     <button class="tile" onclick="openArchive()"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v11a1 1 0 001 1h12a1 1 0 001-1V8M10 12h4"/></svg><span>Eski Kursiyer Arşivi</span></button>
-    <button class="tile teal" style="grid-column:1/-1" onclick="go('s-wa-bulk')"><svg viewBox="0 0 24 24"><path d="M21 11.5a8.5 8.5 0 0 1-12.6 7.4L3 20l1.2-5.1A8.5 8.5 0 1 1 21 11.5Z"/><path d="M8 9c1 3 3 5 6 6"/></svg><span>Toplu WhatsApp Merkezi<small>Ödeme · Ders günü/saat · Duyurular · Çoklu alıcı</small></span></button>
+    <button class="tile teal tile-whatsapp-green" style="grid-column:1/-1" onclick="go('s-wa-bulk')"><svg viewBox="0 0 24 24"><path d="M21 11.5a8.5 8.5 0 0 1-12.6 7.4L3 20l1.2-5.1A8.5 8.5 0 1 1 21 11.5Z"/><path d="M8 9c1 3 3 5 6 6"/></svg><span>Toplu WhatsApp Merkezi<small>Ödeme · Ders günü/saat · Duyurular · Çoklu alıcı</small></span></button>
     <button class="tile program-rules-tile" style="grid-column:1/-1" onclick="go('s-program-rules')"><svg viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 13h7M9 17h5"/></svg><span>📘 Program Kuralları<small>Türkçe · Русский · Veliye gönder · WhatsApp grubunda paylaş</small></span></button>
     <section id="home-iban-card" style="grid-column:1/-1;background:#fff;border:1px solid #cbd5e1;border-radius:12px;box-shadow:var(--shadow);margin-top:2px;overflow:hidden">
       <button id="home-iban-toggle" type="button" aria-expanded="false" aria-controls="home-iban-content" onclick="toggleHomeIbanPanel()" style="width:100%;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 13px;border:0;background:#f8fafc;color:var(--text);font:800 13px 'Inter',system-ui,sans-serif;text-align:left;cursor:pointer">
