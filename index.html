@@ -267,6 +267,14 @@ input:focus,select:focus{box-shadow:0 0 0 3px rgba(47,63,115,.12)}
 .kpi{flex:1;background:#fff;border:1px solid var(--border);border-radius:12px;padding:10px 12px;box-shadow:var(--shadow)}
 .kpi .v{font-size:20px;font-weight:700;color:var(--text);line-height:1.1}
 .kpi .k{font-size:11px;font-weight:500;color:var(--muted);margin-top:3px}
+.nopt-grp{border:1px solid var(--border);border-radius:12px;margin-bottom:8px;background:#fff;overflow:hidden}
+.nopt-grp>summary{cursor:pointer;padding:9px 12px;font-size:13px;font-weight:800;color:var(--text);list-style:none;display:flex;align-items:center;gap:8px}
+.nopt-grp>summary::-webkit-details-marker{display:none}
+.nopt-grp>summary .nopt-n{margin-left:auto;font-size:11px;font-weight:700;color:var(--muted)}
+.nopt-grp.mus>summary{background:#eef2ff;color:#3730a3}.nopt-grp.chs>summary{background:#fff7ed;color:#9a3412}
+.nopt-it{display:flex;gap:9px;align-items:flex-start;padding:7px 12px;border-top:1px solid #f1f5f9;font-size:12.5px;font-weight:600;color:var(--text2);line-height:1.4;cursor:pointer}
+.nopt-it input{margin-top:2px;flex:none;width:16px;height:16px;accent-color:#4f46e5}
+.nopt-it.on{background:#f5f3ff}
 .tile-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;margin-bottom:14px}
 .tile-grid .tile{min-width:0}
 .tile{display:flex;flex-direction:column;align-items:flex-start;gap:10px;background:#fff;border:1px solid var(--border);border-radius:12px;padding:14px;cursor:pointer;box-shadow:var(--shadow);font-size:14px;font-weight:600;color:var(--text);text-align:left;transition:border-color .15s,background .15s}
@@ -767,6 +775,7 @@ summary::-webkit-details-marker{display:none}
     </div>
     <div class="mb14"><label class="lbl">Bu Haftanın Ödevi</label><textarea id="n-hw" rows="2" placeholder="Örn: Sayfa 12-14 tekrar, gam çalışması…" style="width:100%;padding:11px 14px;border-radius:10px;border:1px solid var(--border);font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;font-size:14px;font-weight:600;color:var(--text);resize:vertical;outline:none"></textarea></div>
     <div class="mb14"><label class="lbl">Öğretmen Notu</label><textarea id="n-grade" rows="2" placeholder="Örn: Bu ay çok iyi ilerledi…" style="width:100%;padding:11px 14px;border-radius:10px;border:1px solid var(--border);font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;font-size:14px;font-weight:600;color:var(--text);resize:vertical;outline:none"></textarea></div>
+    <div id="note-opts" class="mb14" style="margin-top:-4px"></div>
     <button class="btn btn-purple btn-sm" onclick="saveNotes()">💾 Kaydet</button>
     <p style="font-size:11px;color:var(--muted);font-weight:600;margin-top:8px;line-height:1.5">Kaydettiğiniz ödev/not, kaydetme saatiyle arşive girer; aynı gün tekrar kaydederseniz sadece en son kaydedilen görünür. Gün bitince bu alan boşalır.</p>
     <div style="margin-top:16px;padding-top:14px;border-top:1px dashed var(--border)">
@@ -2724,6 +2733,7 @@ function renderDetail(){
     </div>`;
   document.getElementById('n-hw').value=notesData.homework||'';
   document.getElementById('n-grade').value=notesData.grade||'';
+  noteOptsRender();
   renderHwArchive();
   lvlInit();
   fillHwRecipients();
@@ -2882,6 +2892,103 @@ async function saveDiscount(){
   showConf('İndirim ayarları kaydedildi!','✅','Tamam',()=>{});
 }
 
+/* ── Öğretmen notu hazır seçenekleri (Müzik / Satranç ayrı) ── */
+const NOTE_OPTS={
+ mus:{t:'🎹 Müzik',c:'mus',items:[
+  'Metronom ile çalışın.',
+  'Nota okuma egzersizleri yapın.',
+  'Akor geçişlerine çalışın.',
+  'Şarkıları anlayıncaya ve öğreninceye kadar dinleyin.',
+  'Çalışmalarınızı günlük 20 dk x 2 defa olacak şekilde haftanın en az 5 günü yapmaya çalışın.',
+  'Günlük 20 dk x 2 defa çalışmalarınızın en az 3 gününü +10 dakika arttırarak yapın.',
+  'Arpej çalışmaya özen gösterin.',
+  'Şarkılardan çok etütlere daha çok zaman ayırın.',
+  'Çalışma videolarınızı düzenli gönderin.',
+  'Çalışmalarınızı cumartesi hariç haftanın 6 günü saat 22.00\'ye kadar gönderebilirsiniz.',
+  'Derslere geç kalıyorsunuz, geç kalmayın.',
+  'Kitabınızla gelin.']},
+ chs:{t:'♟ Satranç',c:'chs',items:[
+  'Satranç için verilen ödevleri ve programları düzenli yapın; programlardaki görevleri yerine getirmediğiniz için ilerlemeniz çok yavaş oluyor.',
+  'Satranç programlarındaki haftalık bulmacalar çözülmüyor ve oyunlar oynanmıyor.',
+  'Satrançta ilerlemek için günlük en az 2 oyun oynamayı ve analiz için linkleri satranç bulmacaları programına girmeyi unutmayın.',
+  'Benimle satranç oynamak için satranç bulmacaları programı üzerinden zaman zaman istek gönderin.']}
+};
+function noteOptLine(t){return '• '+t;}
+let noteCustom={mus:[],chs:[]},noteCustomLoaded=false;
+function noteAllItems(k){return NOTE_OPTS[k].items.concat(noteCustom[k]||[]);}
+async function noteCustomLoad(){
+  if(noteCustomLoaded)return;
+  try{const v=await fbGet('settings/noteOpts');
+    if(v){['mus','chs'].forEach(k=>{noteCustom[k]=Object.values(v[k]||{}).filter(x=>typeof x==='string'&&x.trim());});}
+    noteCustomLoaded=true;
+  }catch(e){}
+}
+async function noteCustomSave(){try{await fbSet('settings/noteOpts',{mus:noteCustom.mus,chs:noteCustom.chs});}catch(e){}}
+function noteOptsBuild(){
+  const box=document.getElementById('note-opts');if(!box)return;
+  const openSet=new Set([...box.querySelectorAll('details[open]')].map(d=>d.dataset.g));
+  box.innerHTML='<div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:6px">Hazır not seçenekleri — işaretleyince Öğretmen Notu\'na eklenir, işareti kaldırınca silinir. Kendi cümleni en alttaki kutudan ekleyebilirsin.</div>'+
+    Object.keys(NOTE_OPTS).map(k=>{const g=NOTE_OPTS[k],base=g.items.length;
+      const items=noteAllItems(k).map((t,i)=>'<label class="nopt-it"><input type="checkbox" data-g="'+k+'" data-i="'+i+'" onchange="noteOptToggle(this)"><span style="flex:1">'+(i+1)+'. '+hwEsc(t)+'</span>'+(i>=base?'<button type="button" title="Bu seçeneği sil" onclick="event.preventDefault();event.stopPropagation();noteCustomDel(\''+k+'\','+(i-base)+')" style="border:0;background:none;color:#dc2626;font-size:15px;font-weight:800;cursor:pointer;padding:0 4px">✕</button>':'')+'</label>').join('');
+      return '<details class="nopt-grp '+g.c+'" data-g="'+k+'"'+(openSet.has(k)?' open':'')+'><summary>'+g.t+'<span class="nopt-n" id="nopt-n-'+k+'"></span></summary>'+items+
+        '<div style="display:flex;gap:6px;padding:9px 12px;border-top:1px solid #f1f5f9;background:#fafafa"><input type="text" id="nopt-new-'+k+'" placeholder="+ Yeni '+(k==='mus'?'müzik':'satranç')+' seçeneği yaz…" maxlength="300" style="flex:1;min-width:0;padding:8px 10px;border-radius:9px;border:1px solid var(--border);font-size:13px;font-weight:600;font-family:inherit" onkeydown="if(event.key===\'Enter\'){event.preventDefault();noteCustomAdd(\''+k+'\')}"><button type="button" class="btn btn-purple btn-sm" onclick="noteCustomAdd(\''+k+'\')">Ekle</button></div></details>';}).join('');
+  noteOptsSync(true);
+}
+async function noteOptsRender(){
+  noteOptsBuild();
+  if(!noteCustomLoaded){await noteCustomLoad();if(noteCustomLoaded)noteOptsBuild();}
+}
+async function noteCustomAdd(k){
+  const inp=document.getElementById('nopt-new-'+k);if(!inp)return;
+  const t=inp.value.trim().replace(/\s+/g,' ');if(!t)return;
+  if(noteAllItems(k).some(x=>x.toLowerCase()===t.toLowerCase())){inp.value='';return;}
+  noteCustom[k].push(t);inp.value='';
+  noteOptsBuild();
+  // eklenen seçeneği hemen not alanına da işaretle
+  const cbs=[...document.querySelectorAll('#note-opts input[data-g="'+k+'"]')];
+  const cb=cbs[cbs.length-1];if(cb){cb.checked=true;noteOptToggle(cb);}
+  const d=document.querySelector('#note-opts details[data-g="'+k+'"]');if(d)d.open=true;
+  await noteCustomSave();
+}
+function noteCustomDel(k,i){
+  const t=noteCustom[k][i];if(t==null)return;
+  showConf('Bu seçenek silinsin mi?\n\n'+t,'🗑️','Sil',async()=>{
+    const ta=document.getElementById('n-grade');
+    noteCustom[k].splice(i,1);
+    noteOptsBuild();
+    await noteCustomSave();
+  });
+}
+function noteOptToggle(cb){
+  const ta=document.getElementById('n-grade');if(!ta)return;
+  const line=noteOptLine(noteAllItems(cb.dataset.g)[+cb.dataset.i]);
+  let lines=ta.value.split('\n');
+  if(cb.checked){
+    if(!lines.some(l=>l.trim()===line)){
+      const cur=ta.value.replace(/\s+$/,'');
+      ta.value=(cur?cur+'\n':'')+line;
+    }
+  }else{
+    lines=lines.filter(l=>l.trim()!==line);
+    ta.value=lines.join('\n').replace(/^\n+|\n+$/g,'');
+  }
+  ta.rows=Math.min(12,Math.max(2,ta.value.split('\n').length+1));
+  try{ta.dispatchEvent(new Event('input',{bubbles:true}));}catch(e){}
+  noteOptsSync(true);
+}
+function noteOptsSync(skipGrow){
+  const ta=document.getElementById('n-grade');if(!ta)return;
+  const have=new Set(ta.value.split('\n').map(l=>l.trim()));
+  Object.keys(NOTE_OPTS).forEach(k=>{
+    let n=0;const all=noteAllItems(k);
+    document.querySelectorAll('#note-opts input[data-g="'+k+'"]').forEach(cb=>{
+      const on=have.has(noteOptLine(all[+cb.dataset.i]));
+      cb.checked=on;cb.closest('.nopt-it').classList.toggle('on',on);if(on)n++;});
+    const c=document.getElementById('nopt-n-'+k);if(c)c.textContent=n?n+' seçili':'';
+  });
+  if(!skipGrow)ta.rows=Math.min(12,Math.max(2,ta.value.split('\n').length+1));
+}
+document.addEventListener('input',e=>{if(e.target&&e.target.id==='n-grade')noteOptsSync(true);});
 async function saveNotes(){
   await persistNotes();
   showConf('Ödev ve not kaydedildi!','✅','Tamam',()=>{});
@@ -2965,7 +3072,7 @@ function deleteHwLog(k){
     }
     if(l.date===todays()){
       notesData={};await fbDel('notes/'+curId);
-      document.getElementById('n-hw').value='';document.getElementById('n-grade').value='';
+      document.getElementById('n-hw').value='';document.getElementById('n-grade').value='';try{noteOptsSync();}catch(e){}
     }
     setSyncing(false);
     renderHwArchive();
