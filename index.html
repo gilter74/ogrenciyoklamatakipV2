@@ -269,7 +269,7 @@ input:focus,select:focus{box-shadow:0 0 0 3px rgba(47,63,115,.12)}
 .mini-w:active{transform:scale(.97)}
 .mini-w.mw-day{background:#2e3a6b}.mini-w.mw-form{background:#f97316}
 .wf-bar{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:6px;align-items:center}
-.wf-b{min-width:34px;height:32px;padding:0 9px;border:1px solid var(--border);border-radius:8px;background:#fff;color:var(--text);font:700 14px 'Inter',system-ui,sans-serif;cursor:pointer}
+.wf-b{min-width:34px;height:32px;padding:0 9px;flex:none;border:1px solid var(--border);border-radius:8px;background:#fff;color:var(--text);font:700 14px 'Inter',system-ui,sans-serif;cursor:pointer}
 .wf-b:active{transform:scale(.95)}
 .wf-emo{width:100%}.wf-emo>summary{list-style:none;display:inline-block;cursor:pointer}.wf-emo>summary::-webkit-details-marker{display:none}
 .wf-grid{display:flex;flex-wrap:wrap;gap:2px;padding:7px;margin-top:6px;border:1px solid var(--border);border-radius:10px;background:#fff;max-height:260px;overflow:auto}
@@ -8070,21 +8070,26 @@ function wcTr(id){const m=wcFind(id);if(!m)return;const lg=wcLang[id]||'tr';cons
 /* ═══ Mesaj biçimlendirme çubuğu (WhatsApp: *kalın* _italik_ ~üstü çizili~ ```sabit```) + emoji ═══ */
 const WF_EMO={"Ödeme / İş": ["💳", "🏦", "💰", "💵", "💶", "💴", "💸", "🧾", "💼", "🏷️", "📊", "📈", "📉", "🧮", "🔐", "🔑", "📦", "🛒", "🏢", "🏠", "🧑\u200d🏫", "👨\u200d🏫", "👩\u200d🏫", "🎓", "📜", "🖊️", "✍️", "📋", "📎", "📁", "🗂️", "🔗"], "Onay / Uyarı": ["✅", "☑️", "✔️", "❌", "❎", "❗", "❕", "❓", "❔", "‼️", "⁉️", "⚠️", "🚫", "⛔", "🔔", "🔕", "📢", "📣", "🆗", "🆕", "🆓", "🔜", "🔝", "ℹ️", "💡", "⭐", "🌟", "✨", "💯", "🔥", "⚡"], "Tarih / Saat": ["📅", "📆", "🗓️", "⏰", "⏳", "⌛", "🕐", "🕑", "🕒", "🕓", "🕔", "🕕", "🕖", "🕗", "🕘", "🕙", "🕚", "🕛", "🕧", "⏱️", "⏲️", "🔔", "📍", "📌", "📒", "📝"], "Müzik": ["🎹", "🎸", "🎤", "🎼", "🎵", "🎶", "🥁", "🎻", "🎺", "🎷", "🪕", "🪗", "🎧", "🎙️", "📻", "🎚️", "🎛️", "🎬", "🎭", "🎨", "🪘", "🎪"], "Satranç / Oyun": ["♟️", "♞", "♛", "♜", "♝", "♚", "🏆", "🥇", "🥈", "🥉", "🏅", "🎖️", "🎯", "🎲", "🧩", "🧠", "🎮", "🕹️", "💪", "🚀", "👑"], "Eğitim": ["📚", "📖", "📗", "📘", "📙", "📕", "📓", "📔", "📝", "✏️", "🖍️", "📐", "📏", "🔍", "🔎", "🗒️", "🧑\u200d🎓", "🎒", "🏫", "📓"], "İletişim": ["📲", "📱", "📞", "☎️", "📩", "📨", "✉️", "📧", "💬", "🗨️", "💭", "🌐", "📹", "🎥", "📷", "🖥️", "💻", "📤", "📥", "🔊", "🔈"], "Yüz / El": ["😊", "🙂", "😀", "😃", "😄", "😁", "😉", "😍", "🥰", "😘", "😎", "🤗", "🤩", "😇", "🙃", "😌", "😅", "😂", "🤔", "😴", "😢", "😮", "👍", "👎", "👏", "🙌", "🙏", "🤝", "👋", "✌️", "🤞", "👌", "👉", "👈", "👆", "👇", "💪", "🤲"], "Kalp / Renk": ["❤️", "🧡", "💛", "💚", "💙", "💜", "🖤", "💔", "❣️", "💕", "💖", "💗", "💝", "🔴", "🔵", "⚫", "⚪", "🔶", "🔷", "🔺", "🔻", "🔸", "🔹", "⬛", "⬜", "🔲", "🔳", "◼️", "◻️", "▪️", "▫️"], "Doğa / Diğer": ["☀️", "🌤️", "⛅", "🌧️", "❄️", "🌈", "🌙", "🌸", "🌺", "🌻", "🌷", "🌹", "🍀", "🌳", "🌍", "🎉", "🎊", "🎁", "🎂", "🎈", "🎄", "🕌", "☕", "🍎", "🍰", "🚗", "🚌", "✈️", "➡️", "⬅️", "⬆️", "⬇️", "▶️", "◀️", "🔄", "➕", "➖", "✖️", "➗"]};
 function wfBar(id){
-  return '<div class="wf-bar">'+
-   '<button type="button" class="wf-b" title="Kalın" onmousedown="event.preventDefault()" onclick="wfWrap(\''+id+'\',\'*\')"><b>B</b></button>'+
-   '<button type="button" class="wf-b" title="İtalik" onmousedown="event.preventDefault()" onclick="wfWrap(\''+id+'\',\'_\')"><i>I</i></button>'+
-   '<button type="button" class="wf-b" title="Üstü çizili" onmousedown="event.preventDefault()" onclick="wfWrap(\''+id+'\',\'~\')"><s>S</s></button>'+
-   '<button type="button" class="wf-b" title="Sabit aralıklı (ince ayar)" onmousedown="event.preventDefault()" onclick="wfWrap(\''+id+'\',\'```\')" style="font-family:ui-monospace,Menlo,monospace;font-size:12px">{ }</button>'+
-      '<details class="wf-emo"><summary><span class="wf-b" style="display:inline-flex;align-items:center;height:32px"><span style="color:#dc2626;font-weight:900">A</span>&nbsp;Yazı rengi</span></summary><div class="wf-grid">'+
-   WF_TC.map(c=>'<button type="button" title="'+c+'" onmousedown="event.preventDefault()" onclick="wfColor(\''+id+'\',\'c\',\''+c+'\')" style="background:'+c+';width:30px;height:30px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px #cbd5e1;margin:3px"></button>').join('')+
-   '<label class="wf-b" style="display:inline-flex;align-items:center;gap:4px;height:30px" onmousedown="event.preventDefault()">Özel <input type="color" value="#dc2626" onchange="wfColor(\''+id+'\',\'c\',this.value)" style="width:26px;height:22px;border:0;padding:0;background:none"></label></div></details>'+
-   '<details class="wf-emo"><summary><span class="wf-b" style="display:inline-flex;align-items:center;height:32px"><span style="background:#fef08a;padding:0 4px;border-radius:3px;font-weight:900">A</span>&nbsp;Dolgu rengi</span></summary><div class="wf-grid">'+
-   WF_FC.map(c=>'<button type="button" title="'+c+'" onmousedown="event.preventDefault()" onclick="wfColor(\''+id+'\',\'f\',\''+c+'\')" style="background:'+c+';width:30px;height:30px;border-radius:6px;border:2px solid #fff;box-shadow:0 0 0 1px #cbd5e1;margin:3px"></button>').join('')+
-   '<label class="wf-b" style="display:inline-flex;align-items:center;gap:4px;height:30px" onmousedown="event.preventDefault()">Özel <input type="color" value="#fef08a" onchange="wfColor(\''+id+'\',\'f\',this.value)" style="width:26px;height:22px;border:0;padding:0;background:none"></label></div></details>'+
-   '<button type="button" class="wf-b" title="Renkleri kaldır (seçili yazıdan, seçim yoksa tümünden)" onmousedown="event.preventDefault()" onclick="wfClear(\''+id+'\')" style="font-size:12px">⌫ Renk sil</button>'+
-'<button type="button" class="wf-b" title="Satır başı madde" onmousedown="event.preventDefault()" onclick="wfBullet(\''+id+'\')">• Liste</button>'+
-   '<details class="wf-emo"><summary><span class="wf-b" style="display:inline-flex;align-items:center;height:32px">😊 Emoji</span></summary><div class="wf-grid">'+
-   Object.keys(WF_EMO).map(k=>'<div style="width:100%;font:800 10px Inter,system-ui,sans-serif;color:#64748b;margin:5px 0 1px">'+k+'</div>'+WF_EMO[k].map(e=>'<button type="button" onmousedown="event.preventDefault()" onclick="wfEmoji(\''+id+'\',\''+e+'\')">'+e+'</button>').join('')).join('')+'</div></details></div>';
+  const bt=(t,f,x)=>'<button type="button" class="wf-b" title="'+t+'" onmousedown="event.preventDefault()" onclick="'+f+'" '+(x||'')+'>';
+  const sw=(k,arr,rad)=>arr.map(c=>'<button type="button" title="'+c+'" onmousedown="event.preventDefault()" onclick="wfColor(\''+id+'\',\''+k+'\',\''+c+'\')" style="background:'+c+';width:30px;height:30px;border-radius:'+rad+';border:2px solid #fff;box-shadow:0 0 0 1px #cbd5e1;margin:3px"></button>').join('');
+  const cu=(k,def)=>'<label class="wf-b" style="display:inline-flex;align-items:center;gap:4px;height:30px" onmousedown="event.preventDefault()">Özel <input type="color" value="'+def+'" onchange="wfColor(\''+id+'\',\''+k+'\',this.value)" style="width:26px;height:22px;border:0;padding:0;background:none"></label>';
+  return '<div class="wf-bar" data-bar="'+id+'" style="flex-wrap:nowrap;overflow-x:auto;padding-bottom:3px">'+
+   bt('Kalın',"wfWrap('"+id+"','*')")+'<b>B</b></button>'+
+   bt('İtalik',"wfWrap('"+id+"','_')")+'<i>I</i></button>'+
+   bt('Üstü çizili',"wfWrap('"+id+"','~')")+'<s>S</s></button>'+
+   bt('Sabit aralıklı',"wfWrap('"+id+"','```')",'style="font-family:ui-monospace,Menlo,monospace;font-size:12px"')+'{ }</button>'+
+   bt('Madde işareti',"wfBullet('"+id+"')")+'•</button>'+
+   bt('Yazı rengi',"wfPanel('"+id+"','tc')")+'<span style="color:#dc2626;font-weight:900">A</span></button>'+
+   bt('Dolgu rengi',"wfPanel('"+id+"','fc')")+'<span style="background:#fef08a;padding:0 5px;border-radius:3px;font-weight:900">A</span></button>'+
+   bt('Renkleri sil (seçili yazıdan; seçim yoksa tümünden)',"wfClear('"+id+"')")+'⌫</button>'+
+   bt('Emoji',"wfPanel('"+id+"','emo')")+'😊</button></div>'+
+   '<div class="wf-grid wf-pn" data-pn="'+id+'" data-k="tc" style="display:none"><div style="width:100%;font:800 10px Inter,system-ui,sans-serif;color:#64748b">Yazı rengi</div>'+sw('c',WF_TC,'50%')+cu('c','#dc2626')+'</div>'+
+   '<div class="wf-grid wf-pn" data-pn="'+id+'" data-k="fc" style="display:none"><div style="width:100%;font:800 10px Inter,system-ui,sans-serif;color:#64748b">Dolgu rengi</div>'+sw('f',WF_FC,'6px')+cu('f','#fef08a')+'</div>'+
+   '<div class="wf-grid wf-pn" data-pn="'+id+'" data-k="emo" style="display:none">'+
+   Object.keys(WF_EMO).map(k=>'<div style="width:100%;font:800 10px Inter,system-ui,sans-serif;color:#64748b;margin:5px 0 1px">'+k+'</div>'+WF_EMO[k].map(e=>'<button type="button" onmousedown="event.preventDefault()" onclick="wfEmoji(\''+id+'\',\''+e+'\')">'+e+'</button>').join('')).join('')+'</div>';
+}
+function wfPanel(id,k){
+  document.querySelectorAll('.wf-pn[data-pn="'+id+'"]').forEach(d=>{d.style.display=(d.dataset.k===k&&d.style.display==='none')?'flex':'none';});
 }
 function wfFire(ta){try{ta.dispatchEvent(new Event('input',{bubbles:true}));}catch(e){}wfPrev(ta.id);}
 function wfWrap(id,m){
