@@ -472,7 +472,7 @@ summary::-webkit-details-marker{display:none}
         <details id="wc-box" ontoggle="if(this.open)wcInit()" style="margin-top:14px;border:1px solid #bbf7d0;border-radius:12px;background:#f0fdf4;overflow:hidden">
           <summary style="cursor:pointer;padding:11px 13px;font:800 13px 'Inter',system-ui,sans-serif;color:#166534;list-style:none">💬 WhatsApp Özel Mesajlar <span style="font-weight:600;font-size:11px;color:#15803d">· kendi başlıkların, mesajların · TR / EN / RU</span></summary>
           <div style="padding:12px;border-top:1px solid #bbf7d0;background:#fff">
-            <div style="font-size:11px;color:var(--muted);margin-bottom:10px;line-height:1.5">En fazla <b>3 başlık</b>, her başlıkta en fazla <b>10 mesaj</b>. Başlık adlarını sen belirlersin. İngilizce ve Rusça çeviri isteğe bağlıdır; yazdığın dilde gönderirsin.</div>
+            <div style="font-size:11px;color:var(--muted);margin-bottom:10px;line-height:1.5">En fazla <b>5 başlık</b>, her başlıkta en fazla <b>10 mesaj</b>. Başlık adlarını sen belirlersin. İngilizce ve Rusça çeviri isteğe bağlıdır; yazdığın dilde gönderirsin.</div>
             <div id="wc-body"></div>
             <div id="wc-status" aria-live="polite" style="font-size:11px;color:#15803d;font-weight:700;min-height:16px;margin-top:8px"></div>
           </div>
@@ -7957,7 +7957,7 @@ function prSendGroup(){const msg=prCurrentText();if(!msg){alert('Gönderilecek m
 
 
 /* ═══ WhatsApp Özel Mesajlar (3 başlık × 10 mesaj, TR/EN/RU) — Firebase: settings/waCustom ═══ */
-const WC_MAXS=3,WC_MAXM=10,WC_LK='rockjazzWaCustom_v1',WC_L={tr:'Türkçe',en:'English',ru:'Русский'},WC_G={en:'en',ru:'ru'};
+const WC_MAXS=5,WC_MAXM=10,WC_LK='rockjazzWaCustom_v1',WC_L={tr:'Türkçe',en:'English',ru:'Русский'},WC_G={en:'en',ru:'ru'};
 let wc={s:[]},wcSel=0,wcOpen=null,wcLang={},wcLoaded=false,wcTimer=null;
 function wcId(){return 'w'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
 function wcNorm(v){
