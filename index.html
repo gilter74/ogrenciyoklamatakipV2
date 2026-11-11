@@ -268,6 +268,15 @@ input:focus,select:focus{box-shadow:0 0 0 3px rgba(47,63,115,.12)}
 .mini-w svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
 .mini-w:active{transform:scale(.97)}
 .mini-w.mw-day{background:#2e3a6b}.mini-w.mw-form{background:#f97316}
+.wf-bar{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:6px;align-items:center}
+.wf-b{min-width:34px;height:32px;padding:0 9px;border:1px solid var(--border);border-radius:8px;background:#fff;color:var(--text);font:700 14px 'Inter',system-ui,sans-serif;cursor:pointer}
+.wf-b:active{transform:scale(.95)}
+.wf-emo{width:100%}.wf-emo>summary{list-style:none;display:inline-block;cursor:pointer}.wf-emo>summary::-webkit-details-marker{display:none}
+.wf-grid{display:flex;flex-wrap:wrap;gap:2px;padding:7px;margin-top:6px;border:1px solid var(--border);border-radius:10px;background:#fff;max-height:150px;overflow:auto}
+.wf-grid button{border:0;background:none;font-size:22px;line-height:1;padding:5px;cursor:pointer;border-radius:7px}
+.wf-grid button:hover{background:#f1f5f9}
+.wf-prev{margin-top:6px;padding:9px 11px;border-radius:10px;background:#dcf8c6;color:#111;font:500 13px/1.5 'Inter',system-ui,sans-serif;white-space:pre-wrap;word-break:break-word;min-height:20px}
+.wf-prev code{font-family:ui-monospace,Menlo,monospace;background:rgba(0,0,0,.07);padding:0 3px;border-radius:3px}
 .mini-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:-4px 0 14px}
 .mini-t{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;padding:9px 4px;border-radius:12px;border:1px solid var(--border);background:#fff;box-shadow:var(--shadow);cursor:pointer;font:800 11px/1.25 'Inter',system-ui,sans-serif;color:var(--text);text-align:center}
 .mini-t svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
@@ -1147,10 +1156,13 @@ summary::-webkit-details-marker{display:none}
           <option value="normal">Ödeme bilgilendirmesi</option>
           <option value="late">Gecikmiş ödeme hatırlatması</option>
         </select>
-        <textarea id="home-iban-text" oninput="homeIbanSave()" rows="4" style="width:100%;box-sizing:border-box;resize:vertical;padding:12px;border:1px solid var(--border);border-radius:10px;background:#fbfdff;color:var(--text);font:600 13px/1.6 'Inter',system-ui,sans-serif"></textarea>
+        <div id="home-iban-bar"></div>
+        <textarea id="home-iban-text" oninput="homeIbanSave();wfPrev('home-iban-text')" rows="4" style="width:100%;box-sizing:border-box;resize:vertical;padding:12px;border:1px solid var(--border);border-radius:10px;background:#fbfdff;color:var(--text);font:600 13px/1.6 'Inter',system-ui,sans-serif"></textarea>
+        <div class="wf-prev" id="home-iban-text-pv"></div>
         <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:9px">
           <button class="btn btn-purple" onclick="homeIbanCopy()" style="flex:1;justify-content:center">📋 Metni Kopyala</button>
           <button class="btn btn-green" onclick="homeIbanWhatsApp()" style="flex:1;justify-content:center">🟢 WhatsApp'ta Paylaş</button>
+          <button class="btn btn-ghost" onclick="wfImage('home-iban-text','home-iban-status')" style="flex:1 1 100%;justify-content:center">🖼️ Renkli Resim Olarak Gönder</button>
         </div>
         <div id="home-iban-status" aria-live="polite" style="font-size:11px;color:#15803d;font-weight:700;min-height:16px;margin-top:7px"></div>
         <details id="wc-box" ontoggle="if(this.open)wcInit()" style="margin-top:14px;border:1px solid #bbf7d0;border-radius:12px;background:#f0fdf4;overflow:hidden">
@@ -8022,10 +8034,10 @@ function wcRender(){
         r+='<div style="padding:10px 11px;border-top:1px solid #f1f5f9">'+
           '<input class="wc-in" value="'+hwEsc(m.t)+'" maxlength="60" placeholder="Mesaj başlığı (sadece senin görmen için)" oninput="wcField(\''+m.id+'\',\'t\',this.value)" style="margin-bottom:8px">'+
           '<div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap">'+['tr','en','ru'].map(l=>'<button type="button" class="wc-chip lang'+(l===lg?' on':'')+(m[l].trim()?' has':'')+'" onclick="wcLangSet(\''+m.id+'\',\''+l+'\')">'+WC_L[l]+'</button>').join('')+'</div>'+
-          '<textarea class="wc-in" id="wc-ta-'+m.id+'" rows="5" placeholder="'+(lg==='tr'?'Mesaj metnini yaz…':(lg==='en'?'İsteğe bağlı: İngilizce çeviri…':'İsteğe bağlı: Rusça çeviri…'))+'" oninput="wcField(\''+m.id+'\',\''+lg+'\',this.value)" style="resize:vertical;line-height:1.55">'+hwEsc(m[lg])+'</textarea>'+
+          wfBar('wc-ta-'+m.id)+'<textarea class="wc-in" id="wc-ta-'+m.id+'" rows="5" placeholder="'+(lg==='tr'?'Mesaj metnini yaz…':(lg==='en'?'İsteğe bağlı: İngilizce çeviri…':'İsteğe bağlı: Rusça çeviri…'))+'" oninput="wcField(\''+m.id+'\',\''+lg+'\',this.value);wfPrev(\'wc-ta-'+m.id+'\')" style="resize:vertical;line-height:1.55">'+hwEsc(m[lg])+'</textarea>'+'<div class="wf-prev" id="wc-ta-'+m.id+'-pv">'+(wfHtml(m[lg])||'<span style="opacity:.5">Önizleme (WhatsApp’ta böyle görünür)</span>')+'</div>'+
           '<div style="display:flex;flex-wrap:wrap;gap:7px;margin-top:8px">'+
           '<button type="button" class="btn btn-purple btn-sm" onclick="wcCopy(\''+m.id+'\')">📋 Kopyala</button>'+
-          '<button type="button" class="btn btn-green btn-sm" onclick="wcWA(\''+m.id+'\')">🟢 WhatsApp</button>'+
+          '<button type="button" class="btn btn-green btn-sm" onclick="wcWA(\''+m.id+'\')">🟢 WhatsApp</button>'+'<button type="button" class="btn btn-ghost btn-sm" onclick="wfImage(\'wc-ta-'+m.id+'\',\'wc-status\')">🖼️ Renkli resim</button>'+
           (lg!=='tr'?'<button type="button" class="btn btn-ghost btn-sm" onclick="wcTr(\''+m.id+'\')">🌐 Çeviri yardımı</button>':'')+
           '<button type="button" class="btn btn-ghost btn-sm" onclick="wcDelMsg(\''+m.id+'\')" style="margin-left:auto;color:#dc2626">🗑 Sil</button></div></div>';
       }
@@ -8046,7 +8058,7 @@ function wcDelMsg(id){const sc=wcCur();if(!sc)return;const m=wcFind(id);
 function wcToggle(id){wcOpen=(wcOpen===id)?null:id;wcRender();}
 function wcLangSet(id,l){wcLang[id]=l;wcRender();}
 function wcField(id,f,v){const m=wcFind(id);if(!m)return;m[f]=v;wcSave();}
-function wcText(id){const m=wcFind(id);if(!m)return '';return (m[wcLang[id]||'tr']||'').trim();}
+function wcText(id){const m=wcFind(id);if(!m)return '';return wfStrip(m[wcLang[id]||'tr']||'').trim();}
 async function wcCopy(id){const t=wcText(id);if(!t){wcSt('Bu dilde henüz metin yok.');return;}
   try{await navigator.clipboard.writeText(t);}catch(e){window.prompt('Metni kopyalayın:',t);}wcSt('✓ Metin kopyalandı.');}
 function wcWA(id){const t=wcText(id);if(!t){wcSt('Bu dilde henüz metin yok.');return;}
@@ -8055,6 +8067,104 @@ function wcTr(id){const m=wcFind(id);if(!m)return;const lg=wcLang[id]||'tr';cons
   if(!src){wcSt('Önce Türkçe metni yaz; sonra çeviri sayfası açılır.');return;}
   window.open('https://translate.google.com/?sl=tr&tl='+WC_G[lg]+'&op=translate&text='+encodeURIComponent(src),'_blank');
   wcSt('Çeviriyi kopyalayıp buraya yapıştır, kontrol edip düzelt.');}
+/* ═══ Mesaj biçimlendirme çubuğu (WhatsApp: *kalın* _italik_ ~üstü çizili~ ```sabit```) + emoji ═══ */
+const WF_EMO=['💳','🏦','💰','💵','🧾','✅','☑️','❌','❗','‼️','⚠️','📌','📍','📅','🗓️','⏰','⏳','🕒','🎹','🎸','🎤','🎼','🎵','🎶','🥁','🎻','♟️','♞','♛','🏆','📚','📖','📝','✏️','📲','📞','☎️','📩','🔔','📢','🙏','😊','🙂','👍','👏','🤝','🌟','⭐','🔥','🎉','🎁','➡️','👉','▶️','🔴','🔵','⚫','⚪','🔶','🔷','🔺','🔻','🔸','🔹','❤️','🧡','💛','💚','💙','💜','🖤','⬛','⬜','🔲','🔳'];
+function wfBar(id){
+  return '<div class="wf-bar">'+
+   '<button type="button" class="wf-b" title="Kalın" onmousedown="event.preventDefault()" onclick="wfWrap(\''+id+'\',\'*\')"><b>B</b></button>'+
+   '<button type="button" class="wf-b" title="İtalik" onmousedown="event.preventDefault()" onclick="wfWrap(\''+id+'\',\'_\')"><i>I</i></button>'+
+   '<button type="button" class="wf-b" title="Üstü çizili" onmousedown="event.preventDefault()" onclick="wfWrap(\''+id+'\',\'~\')"><s>S</s></button>'+
+   '<button type="button" class="wf-b" title="Sabit aralıklı (ince ayar)" onmousedown="event.preventDefault()" onclick="wfWrap(\''+id+'\',\'```\')" style="font-family:ui-monospace,Menlo,monospace;font-size:12px">{ }</button>'+
+      '<details class="wf-emo"><summary><span class="wf-b" style="display:inline-flex;align-items:center;height:32px"><span style="color:#dc2626;font-weight:900">A</span>&nbsp;Yazı rengi</span></summary><div class="wf-grid">'+
+   WF_TC.map(c=>'<button type="button" title="'+c+'" onmousedown="event.preventDefault()" onclick="wfColor(\''+id+'\',\'c\',\''+c+'\')" style="background:'+c+';width:30px;height:30px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px #cbd5e1;margin:3px"></button>').join('')+
+   '<label class="wf-b" style="display:inline-flex;align-items:center;gap:4px;height:30px" onmousedown="event.preventDefault()">Özel <input type="color" value="#dc2626" onchange="wfColor(\''+id+'\',\'c\',this.value)" style="width:26px;height:22px;border:0;padding:0;background:none"></label></div></details>'+
+   '<details class="wf-emo"><summary><span class="wf-b" style="display:inline-flex;align-items:center;height:32px"><span style="background:#fef08a;padding:0 4px;border-radius:3px;font-weight:900">A</span>&nbsp;Dolgu rengi</span></summary><div class="wf-grid">'+
+   WF_FC.map(c=>'<button type="button" title="'+c+'" onmousedown="event.preventDefault()" onclick="wfColor(\''+id+'\',\'f\',\''+c+'\')" style="background:'+c+';width:30px;height:30px;border-radius:6px;border:2px solid #fff;box-shadow:0 0 0 1px #cbd5e1;margin:3px"></button>').join('')+
+   '<label class="wf-b" style="display:inline-flex;align-items:center;gap:4px;height:30px" onmousedown="event.preventDefault()">Özel <input type="color" value="#fef08a" onchange="wfColor(\''+id+'\',\'f\',this.value)" style="width:26px;height:22px;border:0;padding:0;background:none"></label></div></details>'+
+   '<button type="button" class="wf-b" title="Renkleri kaldır (seçili yazıdan, seçim yoksa tümünden)" onmousedown="event.preventDefault()" onclick="wfClear(\''+id+'\')" style="font-size:12px">⌫ Renk sil</button>'+
+'<button type="button" class="wf-b" title="Satır başı madde" onmousedown="event.preventDefault()" onclick="wfBullet(\''+id+'\')">• Liste</button>'+
+   '<details class="wf-emo"><summary><span class="wf-b" style="display:inline-flex;align-items:center;height:32px">😊 Emoji</span></summary><div class="wf-grid">'+
+   WF_EMO.map(e=>'<button type="button" onmousedown="event.preventDefault()" onclick="wfEmoji(\''+id+'\',\''+e+'\')">'+e+'</button>').join('')+'</div></details></div>';
+}
+function wfFire(ta){try{ta.dispatchEvent(new Event('input',{bubbles:true}));}catch(e){}wfPrev(ta.id);}
+function wfWrap(id,m){
+  const ta=document.getElementById(id);if(!ta)return;
+  let a=ta.selectionStart,b=ta.selectionEnd,v=ta.value;
+  if(a===b){ta.value=v.slice(0,a)+m+m+v.slice(b);ta.focus();ta.selectionStart=ta.selectionEnd=a+m.length;wfFire(ta);return;}
+  let sel=v.slice(a,b);const lead=sel.match(/^\s*/)[0].length,trail=sel.match(/\s*$/)[0].length;
+  a+=lead;b-=trail;sel=v.slice(a,b);if(!sel)return;
+  if(sel.startsWith(m)&&sel.endsWith(m)&&sel.length>=2*m.length){
+    const inner=sel.slice(m.length,sel.length-m.length);ta.value=v.slice(0,a)+inner+v.slice(b);ta.focus();ta.selectionStart=a;ta.selectionEnd=a+inner.length;
+  }else if(a>=m.length&&v.slice(a-m.length,a)===m&&v.slice(b,b+m.length)===m){
+    ta.value=v.slice(0,a-m.length)+sel+v.slice(b+m.length);ta.focus();ta.selectionStart=a-m.length;ta.selectionEnd=b-m.length;
+  }else{ta.value=v.slice(0,a)+m+sel+m+v.slice(b);ta.focus();ta.selectionStart=a;ta.selectionEnd=b+2*m.length;}
+  wfFire(ta);
+}
+function wfBullet(id){
+  const ta=document.getElementById(id);if(!ta)return;
+  const v=ta.value,a=ta.selectionStart,b=ta.selectionEnd;
+  const ls=v.lastIndexOf('\n',a-1)+1;let le=v.indexOf('\n',b);if(le<0)le=v.length;
+  const blk=v.slice(ls,le).split('\n');
+  const all=blk.every(l=>l.startsWith('• '));
+  const out=blk.map(l=>all?l.slice(2):(l.startsWith('• ')?l:'• '+l)).join('\n');
+  ta.value=v.slice(0,ls)+out+v.slice(le);ta.focus();ta.selectionStart=ls;ta.selectionEnd=ls+out.length;wfFire(ta);
+}
+function wfEmoji(id,e){
+  const ta=document.getElementById(id);if(!ta)return;
+  const a=ta.selectionStart,b=ta.selectionEnd,v=ta.value;
+  ta.value=v.slice(0,a)+e+v.slice(b);ta.focus();ta.selectionStart=ta.selectionEnd=a+e.length;wfFire(ta);
+}
+const WF_TC=['#dc2626','#ea580c','#ca8a04','#16a34a','#2563eb','#7c3aed','#db2777','#111827','#6b7280'];
+const WF_FC=['#fecaca','#fed7aa','#fef08a','#bbf7d0','#bfdbfe','#ddd6fe','#fbcfe8','#e5e7eb','#ffffff'];
+const WF_TAG=/\{([cf]):(#[0-9a-fA-F]{6})\|([^{}]*)\}/g;
+function wfStrip(t){let v=String(t),n=0;while(WF_TAG.test(v)&&n++<20){WF_TAG.lastIndex=0;v=v.replace(WF_TAG,'$3');}WF_TAG.lastIndex=0;return v;}
+function wfHtml(t){
+  let h=String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  h=h.replace(/```([\s\S]+?)```/g,'<code>$1</code>');
+  h=h.replace(/(^|[\s(|])\*([^\s*](?:[^*\n]*?[^\s*])?)\*(?=$|[\s).,!?:;}])/gm,'$1<b>$2</b>');
+  h=h.replace(/(^|[\s(|])_([^\s_](?:[^_\n]*?[^\s_])?)_(?=$|[\s).,!?:;}])/gm,'$1<i>$2</i>');
+  h=h.replace(/(^|[\s(|])~([^\s~](?:[^~\n]*?[^\s~])?)~(?=$|[\s).,!?:;}])/gm,'$1<s>$2</s>');
+  let n=0;while(WF_TAG.test(h)&&n++<20){WF_TAG.lastIndex=0;
+    h=h.replace(WF_TAG,(m,k,c,x)=>k==='c'?'<span style="color:'+c+'">'+x+'</span>':'<span style="background:'+c+';border-radius:3px;padding:0 2px">'+x+'</span>');}
+  WF_TAG.lastIndex=0;
+  return h;
+}
+function wfColor(id,kind,hex){
+  const ta=document.getElementById(id);if(!ta)return;
+  const a=ta.selectionStart,b=ta.selectionEnd,v=ta.value,sel=v.slice(a,b);
+  const open='{'+kind+':'+hex+'|';
+  if(a===b){ta.value=v.slice(0,a)+open+'}'+v.slice(b);ta.focus();ta.selectionStart=ta.selectionEnd=a+open.length;}
+  else{ta.value=v.slice(0,a)+open+sel+'}'+v.slice(b);ta.focus();ta.selectionStart=a;ta.selectionEnd=b+open.length+1;}
+  wfFire(ta);
+}
+function wfClear(id){
+  const ta=document.getElementById(id);if(!ta)return;
+  const a=ta.selectionStart,b=ta.selectionEnd,v=ta.value;
+  if(a===b){ta.value=wfStrip(v);}else{ta.value=v.slice(0,a)+wfStrip(v.slice(a,b))+v.slice(b);}
+  ta.focus();wfFire(ta);
+}
+async function wfImage(id,st){
+  const ta=document.getElementById(id);const msg=ta?ta.value.trim():'';
+  const say=t=>{const e=document.getElementById(st);if(e)e.textContent=t;};
+  if(!msg){say('Önce mesajı yaz.');return;}
+  say('Resim hazırlanıyor…');
+  try{
+    await sozLoadLibs();
+    const box=document.createElement('div');
+    box.style.cssText='position:fixed;left:-9999px;top:0;width:640px;box-sizing:border-box;padding:28px 30px;background:#ffffff;color:#111;font:500 24px/1.55 Inter,system-ui,Arial,sans-serif;white-space:pre-wrap;word-break:break-word';
+    box.innerHTML=wfHtml(msg);document.body.appendChild(box);
+    const canvas=await html2canvas(box,{scale:2,backgroundColor:'#ffffff',logging:false});
+    document.body.removeChild(box);
+    const blob=await new Promise(r=>canvas.toBlob(r,'image/png'));
+    const file=new File([blob],'mesaj.png',{type:'image/png'});
+    if(navigator.canShare&&navigator.canShare({files:[file]})){
+      try{await navigator.share({files:[file]});say('✓ Paylaşım penceresi açıldı; WhatsApp’ı seç.');return;}catch(e){if(e&&e.name==='AbortError'){say('');return;}}
+    }
+    const u=URL.createObjectURL(blob),l=document.createElement('a');l.href=u;l.download='mesaj.png';document.body.appendChild(l);l.click();l.remove();setTimeout(()=>URL.revokeObjectURL(u),4000);
+    say('✓ Resim indirildi; WhatsApp’ta ataç (📎) ile gönderebilirsin.');
+  }catch(e){say('⚠️ Resim hazırlanamadı: '+(e&&e.message||e));}
+}
+function wfPrev(id){const ta=document.getElementById(id),pv=document.getElementById(id+'-pv');if(ta&&pv)pv.innerHTML=wfHtml(ta.value)||'<span style="opacity:.5">Önizleme (WhatsApp’ta böyle görünür)</span>';}
 const HOME_IBAN_DEFAULTS={
   iban:'TR66 0001 0002 0952 9934 9150 42',
   normal:'Değerli velimiz ve öğrencimiz, ödemelerinizi aşağıda belirtilen öğrenci hesabına yapabilirsiniz. Ödeme açıklamasına öğrencinin adını ve soyadını yazmanızı rica ederiz. Teşekkür ederiz.\n\nÖğrenci IBAN: TR66 0001 0002 0952 9934 9150 42\nHesap sahibi: Celalettin Gökşin İLTER\nBanka: Ziraat Bankası',
@@ -8073,6 +8183,7 @@ function homeIbanLoad(){
   const kind=document.getElementById('home-iban-kind')?.value||'iban',ta=document.getElementById('home-iban-text');if(!ta)return;
   let saved=null;try{saved=JSON.parse(localStorage.getItem('rockjazzHomeIbanTexts_v1')||'null')}catch(e){}
   ta.value=(saved&&typeof saved[kind]==='string')?saved[kind]:HOME_IBAN_DEFAULTS[kind];
+  const bar=document.getElementById('home-iban-bar');if(bar&&!bar.dataset.b){bar.dataset.b='1';bar.innerHTML=wfBar('home-iban-text');}wfPrev('home-iban-text');
   const st=document.getElementById('home-iban-status');if(st)st.textContent='';
 }
 function homeIbanSave(){
@@ -8082,12 +8193,12 @@ function homeIbanSave(){
   const st=document.getElementById('home-iban-status');if(st)st.textContent='✓ Düzenleme bu tarayıcıya kaydedildi.';
 }
 async function homeIbanCopy(){
-  const msg=(document.getElementById('home-iban-text')?.value||'').trim();if(!msg)return;
+  const msg=wfStrip(document.getElementById('home-iban-text')?.value||'').trim();if(!msg)return;
   try{await navigator.clipboard.writeText(msg)}catch(e){window.prompt('Metni kopyalayın:',msg)}
   const st=document.getElementById('home-iban-status');if(st)st.textContent='✓ Metin kopyalandı.';
 }
 function homeIbanWhatsApp(){
-  const msg=(document.getElementById('home-iban-text')?.value||'').trim();if(!msg)return;
+  const msg=wfStrip(document.getElementById('home-iban-text')?.value||'').trim();if(!msg)return;
   window.open('https://wa.me/?text='+encodeURIComponent(msg),'_blank');
   const st=document.getElementById('home-iban-status');if(st)st.textContent='WhatsApp açıldı. Kişiyi veya grubu seçip gönderimi onaylayın.';
 }
