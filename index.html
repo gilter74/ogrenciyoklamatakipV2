@@ -273,7 +273,7 @@ input:focus,select:focus{box-shadow:0 0 0 3px rgba(47,63,115,.12)}
 .mini-t svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .mini-t:active{transform:scale(.97)}
 .mini-t.mt-wa{background:#22c55e;border-color:#16a34a;color:#fff}
-.mini-t.mt-iban{background:#facc15;border-color:#eab308;color:#422006}
+.mini-t.mt-iban{background:#F95A61;border-color:#e0434a;color:#fff}
 .mini-t.mt-soz{background:#fff;color:#1e293b}
 .mini-t.mt-rul{background:#dbeafe;border-color:#93c5fd;color:#1e40af}
 .kpi-row{display:flex;gap:8px;margin-bottom:14px}
@@ -1135,11 +1135,11 @@ summary::-webkit-details-marker{display:none}
 <!-- TOPLU WHATSAPP İLETİŞİM MERKEZİ -->
 <div id="s-iban" class="screen">
   <button class="btn-ghost mb14" onclick="go('s-list')">← Geri</button>
-    <section id="home-iban-card" style="background:#fef9c3;border:2px solid #eab308;border-radius:12px;box-shadow:var(--shadow);overflow:hidden">
-      <button id="home-iban-toggle" type="button" aria-expanded="false" aria-controls="home-iban-content" style="width:100%;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 13px;border:0;background:#facc15;color:#422006;font:800 14px 'Inter',system-ui,sans-serif;text-align:left;cursor:pointer">
+    <section id="home-iban-card" style="background:#fee2e3;border:2px solid #F95A61;border-radius:12px;box-shadow:var(--shadow);overflow:hidden">
+      <button id="home-iban-toggle" type="button" aria-expanded="false" aria-controls="home-iban-content" style="width:100%;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 13px;border:0;background:#F95A61;color:#fff;font:800 14px 'Inter',system-ui,sans-serif;text-align:left;cursor:pointer">
         <span>🏦 Öğrenci IBAN ve Ödeme Mesajları</span>
       </button>
-      <div id="home-iban-content" style="display:none;padding:13px;border-top:2px solid #eab308;background:#fef08a">
+      <div id="home-iban-content" style="display:none;padding:13px;border-top:2px solid #F95A61;background:#fecdd0">
         <div style="font-size:11px;color:var(--muted);margin-bottom:12px">IBAN bilgisini veya ödeme hatırlatmasını düzenleyip kopyalayabilir ya da WhatsApp üzerinden paylaşabilirsiniz.</div>
         <label for="home-iban-kind" style="display:block;font-size:12px;font-weight:700;margin-bottom:6px;color:var(--text)">Gönderilecek metni seçin</label>
         <select id="home-iban-kind" onchange="homeIbanLoad()" style="width:100%;padding:11px;border:1px solid var(--border);border-radius:9px;background:#f8fafc;font:600 13px 'Inter',system-ui,sans-serif;margin-bottom:9px">
