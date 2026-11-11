@@ -275,7 +275,7 @@ input:focus,select:focus{box-shadow:0 0 0 3px rgba(47,63,115,.12)}
 .wf-grid{display:flex;flex-wrap:wrap;gap:2px;padding:7px;margin-top:6px;border:1px solid var(--border);border-radius:10px;background:#fff;max-height:260px;overflow:auto}
 .wf-grid button{border:0;background:none;font-size:22px;line-height:1;padding:5px;cursor:pointer;border-radius:7px}
 .wf-grid button:hover{background:#f1f5f9}
-.wf-prev{margin-top:6px;padding:9px 11px;border-radius:10px;background:#dcf8c6;color:#111;font:500 13px/1.5 'Inter',system-ui,sans-serif;white-space:pre-wrap;word-break:break-word;min-height:20px}
+.wf-prev{margin-top:6px;padding:8px 11px;border-radius:10px;background:#dcf8c6;color:#111;font:500 13px/1.4 'Inter',system-ui,sans-serif;white-space:pre-wrap;word-break:break-word;min-height:20px}
 .wf-prev code{font-family:ui-monospace,Menlo,monospace;background:rgba(0,0,0,.07);padding:0 3px;border-radius:3px}
 .mini-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:-4px 0 14px}
 .mini-t{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;padding:9px 4px;border-radius:12px;border:1px solid var(--border);background:#fff;box-shadow:var(--shadow);cursor:pointer;font:800 11px/1.25 'Inter',system-ui,sans-serif;color:var(--text);text-align:center}
@@ -8058,7 +8058,7 @@ function wcDelMsg(id){const sc=wcCur();if(!sc)return;const m=wcFind(id);
 function wcToggle(id){wcOpen=(wcOpen===id)?null:id;wcRender();}
 function wcLangSet(id,l){wcLang[id]=l;wcRender();}
 function wcField(id,f,v){const m=wcFind(id);if(!m)return;m[f]=v;wcSave();}
-function wcText(id){const m=wcFind(id);if(!m)return '';return wfStrip(m[wcLang[id]||'tr']||'').trim();}
+function wcText(id){const m=wcFind(id);if(!m)return '';return wfClean(wfStrip(m[wcLang[id]||'tr']||''));}
 async function wcCopy(id){const t=wcText(id);if(!t){wcSt('Bu dilde henüz metin yok.');return;}
   try{await navigator.clipboard.writeText(t);}catch(e){window.prompt('Metni kopyalayın:',t);}wcSt('✓ Metin kopyalandı.');}
 function wcWA(id){const t=wcText(id);if(!t){wcSt('Bu dilde henüz metin yok.');return;}
@@ -8082,7 +8082,7 @@ function wfBar(id){
    bt('Yazı rengi',"wfPanel('"+id+"','tc')")+'<span style="color:#dc2626;font-weight:900">A</span></button>'+
    bt('Dolgu rengi',"wfPanel('"+id+"','fc')")+'<span style="background:#fef08a;padding:0 5px;border-radius:3px;font-weight:900">A</span></button>'+
    bt('Renkleri sil (seçili yazıdan; seçim yoksa tümünden)',"wfClear('"+id+"')")+'⌫</button>'+
-   bt('Emoji',"wfPanel('"+id+"','emo')")+'😊</button></div>'+
+   bt('Emoji',"wfPanel('"+id+"','emo')")+'😊</button>'+bt('Düzenle: fazla boşlukları ve boş satırları temizle',"wfTidy('"+id+"')")+'🧹</button></div>'+
    '<div class="wf-grid wf-pn" data-pn="'+id+'" data-k="tc" style="display:none"><div style="width:100%;font:800 10px Inter,system-ui,sans-serif;color:#64748b">Yazı rengi</div>'+sw('c',WF_TC,'50%')+cu('c','#dc2626')+'</div>'+
    '<div class="wf-grid wf-pn" data-pn="'+id+'" data-k="fc" style="display:none"><div style="width:100%;font:800 10px Inter,system-ui,sans-serif;color:#64748b">Dolgu rengi</div>'+sw('f',WF_FC,'6px')+cu('f','#fef08a')+'</div>'+
    '<div class="wf-grid wf-pn" data-pn="'+id+'" data-k="emo" style="display:none">'+
@@ -8123,6 +8123,10 @@ const WF_TC=['#dc2626','#ea580c','#ca8a04','#16a34a','#2563eb','#7c3aed','#db277
 const WF_FC=['#fecaca','#fed7aa','#fef08a','#bbf7d0','#bfdbfe','#ddd6fe','#fbcfe8','#e5e7eb','#ffffff'];
 const WF_TAG=/\{([cf]):(#[0-9a-fA-F]{6})\|([^{}]*)\}/g;
 function wfStrip(t){let v=String(t),n=0;while(WF_TAG.test(v)&&n++<20){WF_TAG.lastIndex=0;v=v.replace(WF_TAG,'$3');}WF_TAG.lastIndex=0;return v;}
+function wfClean(t){
+  return String(t).replace(/\r/g,'').replace(/ /g,' ').split('\n').map(l=>l.replace(/[ \t]+$/,'').replace(/^([ \t]*)(\S.*)$/,(m,i,r)=>i.replace(/\t/g,' ').slice(0,4)+r.replace(/[ \t]{2,}/g,' '))).join('\n').replace(/\n{3,}/g,'\n\n').replace(/^\s+|\s+$/g,'');
+}
+function wfTidy(id){const ta=document.getElementById(id);if(!ta)return;ta.value=wfClean(ta.value);wfFire(ta);}
 function wfHtml(t){
   let h=String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   h=h.replace(/```([\s\S]+?)```/g,'<code>$1</code>');
@@ -8149,14 +8153,14 @@ function wfClear(id){
   ta.focus();wfFire(ta);
 }
 async function wfImage(id,st){
-  const ta=document.getElementById(id);const msg=ta?ta.value.trim():'';
+  const ta=document.getElementById(id);const msg=ta?wfClean(ta.value):'';
   const say=t=>{const e=document.getElementById(st);if(e)e.textContent=t;};
   if(!msg){say('Önce mesajı yaz.');return;}
   say('Resim hazırlanıyor…');
   try{
     await sozLoadLibs();
     const box=document.createElement('div');
-    box.style.cssText='position:fixed;left:-9999px;top:0;width:640px;box-sizing:border-box;padding:28px 30px;background:#ffffff;color:#111;font:500 24px/1.55 Inter,system-ui,Arial,sans-serif;white-space:pre-wrap;word-break:break-word';
+    box.style.cssText='position:fixed;left:-9999px;top:0;width:640px;box-sizing:border-box;padding:28px 30px;background:#ffffff;color:#111;font:500 24px/1.4 Inter,system-ui,Arial,sans-serif;white-space:pre-wrap;word-break:break-word';
     box.innerHTML=wfHtml(msg);document.body.appendChild(box);
     const canvas=await html2canvas(box,{scale:2,backgroundColor:'#ffffff',logging:false});
     document.body.removeChild(box);
@@ -8169,7 +8173,7 @@ async function wfImage(id,st){
     say('✓ Resim indirildi; WhatsApp’ta ataç (📎) ile gönderebilirsin.');
   }catch(e){say('⚠️ Resim hazırlanamadı: '+(e&&e.message||e));}
 }
-function wfPrev(id){const ta=document.getElementById(id),pv=document.getElementById(id+'-pv');if(ta&&pv)pv.innerHTML=wfHtml(ta.value)||'<span style="opacity:.5">Önizleme (WhatsApp’ta böyle görünür)</span>';}
+function wfPrev(id){const ta=document.getElementById(id),pv=document.getElementById(id+'-pv');if(ta&&pv)pv.innerHTML=wfHtml(wfClean(ta.value))||'<span style="opacity:.5">Önizleme (WhatsApp’ta böyle görünür)</span>';}
 const HOME_IBAN_DEFAULTS={
   iban:'TR66 0001 0002 0952 9934 9150 42',
   normal:'Değerli velimiz ve öğrencimiz, ödemelerinizi aşağıda belirtilen öğrenci hesabına yapabilirsiniz. Ödeme açıklamasına öğrencinin adını ve soyadını yazmanızı rica ederiz. Teşekkür ederiz.\n\nÖğrenci IBAN: TR66 0001 0002 0952 9934 9150 42\nHesap sahibi: Celalettin Gökşin İLTER\nBanka: Ziraat Bankası',
@@ -8198,12 +8202,12 @@ function homeIbanSave(){
   const st=document.getElementById('home-iban-status');if(st)st.textContent='✓ Düzenleme bu tarayıcıya kaydedildi.';
 }
 async function homeIbanCopy(){
-  const msg=wfStrip(document.getElementById('home-iban-text')?.value||'').trim();if(!msg)return;
+  const msg=wfClean(wfStrip(document.getElementById('home-iban-text')?.value||''));if(!msg)return;
   try{await navigator.clipboard.writeText(msg)}catch(e){window.prompt('Metni kopyalayın:',msg)}
   const st=document.getElementById('home-iban-status');if(st)st.textContent='✓ Metin kopyalandı.';
 }
 function homeIbanWhatsApp(){
-  const msg=wfStrip(document.getElementById('home-iban-text')?.value||'').trim();if(!msg)return;
+  const msg=wfClean(wfStrip(document.getElementById('home-iban-text')?.value||''));if(!msg)return;
   window.open('https://wa.me/?text='+encodeURIComponent(msg),'_blank');
   const st=document.getElementById('home-iban-status');if(st)st.textContent='WhatsApp açıldı. Kişiyi veya grubu seçip gönderimi onaylayın.';
 }
