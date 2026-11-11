@@ -267,6 +267,13 @@ input:focus,select:focus{box-shadow:0 0 0 3px rgba(47,63,115,.12)}
 .kpi{flex:1;background:#fff;border:1px solid var(--border);border-radius:12px;padding:10px 12px;box-shadow:var(--shadow)}
 .kpi .v{font-size:20px;font-weight:700;color:var(--text);line-height:1.1}
 .kpi .k{font-size:11px;font-weight:500;color:var(--muted);margin-top:3px}
+.wc-chip{border:1px solid #86efac;background:#fff;color:#166534;border-radius:999px;padding:6px 12px;font:700 12px 'Inter',system-ui,sans-serif;cursor:pointer}
+.wc-chip.on{background:#16a34a;color:#fff;border-color:#16a34a}
+.wc-chip.lang{padding:4px 11px}.wc-chip.lang.has::after{content:' ●';font-size:9px;color:#22c55e}.wc-chip.lang.on.has::after{color:#fff}
+.wc-m{border:1px solid var(--border);border-radius:11px;margin-bottom:7px;background:#fff;overflow:hidden}
+.wc-mh{width:100%;display:flex;gap:8px;align-items:center;padding:9px 11px;border:0;background:#f8fafc;font:700 13px 'Inter',system-ui,sans-serif;color:var(--text);text-align:left;cursor:pointer}
+.wc-mh small{margin-left:auto;font-size:10px;color:var(--muted);font-weight:700;white-space:nowrap}
+.wc-in{width:100%;box-sizing:border-box;padding:9px 11px;border:1px solid var(--border);border-radius:9px;font:600 13px 'Inter',system-ui,sans-serif;color:var(--text);background:#fbfdff}
 .nopt-grp{border:1px solid var(--border);border-radius:12px;margin-bottom:8px;background:#fff;overflow:hidden}
 .nopt-grp>summary{cursor:pointer;padding:9px 12px;font-size:13px;font-weight:800;color:var(--text);list-style:none;display:flex;align-items:center;gap:8px}
 .nopt-grp>summary::-webkit-details-marker{display:none}
@@ -462,6 +469,14 @@ summary::-webkit-details-marker{display:none}
           <button class="btn btn-green" onclick="homeIbanWhatsApp()" style="flex:1;justify-content:center">🟢 WhatsApp'ta Paylaş</button>
         </div>
         <div id="home-iban-status" aria-live="polite" style="font-size:11px;color:#15803d;font-weight:700;min-height:16px;margin-top:7px"></div>
+        <details id="wc-box" ontoggle="if(this.open)wcInit()" style="margin-top:14px;border:1px solid #bbf7d0;border-radius:12px;background:#f0fdf4;overflow:hidden">
+          <summary style="cursor:pointer;padding:11px 13px;font:800 13px 'Inter',system-ui,sans-serif;color:#166534;list-style:none">💬 WhatsApp Özel Mesajlar <span style="font-weight:600;font-size:11px;color:#15803d">· kendi başlıkların, mesajların · TR / EN / RU</span></summary>
+          <div style="padding:12px;border-top:1px solid #bbf7d0;background:#fff">
+            <div style="font-size:11px;color:var(--muted);margin-bottom:10px;line-height:1.5">En fazla <b>3 başlık</b>, her başlıkta en fazla <b>10 mesaj</b>. Başlık adlarını sen belirlersin. İngilizce ve Rusça çeviri isteğe bağlıdır; yazdığın dilde gönderirsin.</div>
+            <div id="wc-body"></div>
+            <div id="wc-status" aria-live="polite" style="font-size:11px;color:#15803d;font-weight:700;min-height:16px;margin-top:8px"></div>
+          </div>
+        </details>
       </div>
     </section>
     <button class="tile" style="grid-column:1/-1" onclick="go('s-sozlesme')"><svg viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 13h7M9 17h5"/></svg><span>Sözleşmeler<small>Profesyonel · Esnek · öğrenciye özel · PDF / WhatsApp</small></span></button>
@@ -7941,6 +7956,84 @@ function prSendPerson(){const key=document.getElementById('pr-contact')?.value||
 function prSendGroup(){const msg=prCurrentText();if(!msg){alert('Gönderilecek metin boş.');return;}window.open('https://wa.me/?text='+encodeURIComponent(msg),'_blank');const st=document.getElementById('pr-send-status');if(st)st.textContent='WhatsApp paylaşım ekranı açıldı. İlgili grubu seçip gönderimi onaylayın.';}
 
 
+/* ═══ WhatsApp Özel Mesajlar (3 başlık × 10 mesaj, TR/EN/RU) — Firebase: settings/waCustom ═══ */
+const WC_MAXS=3,WC_MAXM=10,WC_LK='rockjazzWaCustom_v1',WC_L={tr:'Türkçe',en:'English',ru:'Русский'},WC_G={en:'en',ru:'ru'};
+let wc={s:[]},wcSel=0,wcOpen=null,wcLang={},wcLoaded=false,wcTimer=null;
+function wcId(){return 'w'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
+function wcNorm(v){
+  const arr=Object.values((v&&v.s)||{}).slice(0,WC_MAXS);
+  return {s:arr.map(x=>({id:x.id||wcId(),n:String(x.n||''),m:Object.values(x.m||{}).slice(0,WC_MAXM).map(y=>({id:y.id||wcId(),t:String(y.t||''),tr:String(y.tr||''),en:String(y.en||''),ru:String(y.ru||'')}))}))};
+}
+function wcSt(t){const e=document.getElementById('wc-status');if(e)e.textContent=t||'';}
+async function wcInit(){
+  if(!wcLoaded){
+    let v=null,ok=false;
+    try{v=await fbGet('settings/waCustom');ok=true;}catch(e){}
+    if(!ok||!v){try{const l=JSON.parse(localStorage.getItem(WC_LK)||'null');if(l)v=l;}catch(e){}}
+    wc=wcNorm(v);wcLoaded=true;
+  }
+  wcRender();
+}
+function wcSave(now){
+  clearTimeout(wcTimer);
+  const go_=async()=>{
+    try{localStorage.setItem(WC_LK,JSON.stringify(wc));}catch(e){}
+    try{await fbSet('settings/waCustom',wc);wcSt('✓ Kaydedildi.');}catch(e){wcSt('⚠️ Sunucuya kaydedilemedi; bu tarayıcıda saklandı.');}
+  };
+  if(now)go_();else wcTimer=setTimeout(go_,700);
+}
+function wcCur(){return wc.s[wcSel]||null;}
+function wcFind(id){const sc=wcCur();return sc?sc.m.find(x=>x.id===id):null;}
+function wcRender(){
+  const b=document.getElementById('wc-body');if(!b)return;
+  if(wcSel>=wc.s.length)wcSel=Math.max(0,wc.s.length-1);
+  let h='<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">'+
+    wc.s.map((x,i)=>'<button type="button" class="wc-chip'+(i===wcSel?' on':'')+'" onclick="wcPick('+i+')">'+hwEsc(x.n||('Başlık '+(i+1)))+' <small style="opacity:.8">('+x.m.length+')</small></button>').join('')+
+    (wc.s.length<WC_MAXS?'<button type="button" class="wc-chip" style="border-style:dashed" onclick="wcAddSec()">+ Başlık ekle ('+wc.s.length+'/'+WC_MAXS+')</button>':'')+'</div>';
+  const sc=wcCur();
+  if(!sc){h+='<div style="font-size:12px;color:var(--muted);padding:8px 2px">Henüz başlık yok. “+ Başlık ekle” ile ilk başlığını oluştur (örn: Ders Programı, Duyurular, Hatırlatmalar).</div>';}
+  else{
+    h+='<div style="display:flex;gap:6px;margin-bottom:9px"><input class="wc-in" id="wc-sec-name" value="'+hwEsc(sc.n)+'" maxlength="40" placeholder="Başlık adı yaz…" oninput="wcSecName(this.value)" style="flex:1;min-width:0;font-weight:800"><button type="button" class="btn btn-ghost btn-sm" onclick="wcDelSec()" title="Başlığı sil">🗑</button></div>';
+    h+=sc.m.map(m=>{
+      const open=wcOpen===m.id,lg=wcLang[m.id]||'tr';
+      let r='<div class="wc-m"><button type="button" class="wc-mh" onclick="wcToggle(\''+m.id+'\')"><span>'+(open?'▾':'▸')+'</span><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+hwEsc(m.t||'(adsız mesaj)')+'</span><small>'+['tr','en','ru'].filter(l=>m[l].trim()).map(l=>l.toUpperCase()).join(' · ')+'</small></button>';
+      if(open){
+        r+='<div style="padding:10px 11px;border-top:1px solid #f1f5f9">'+
+          '<input class="wc-in" value="'+hwEsc(m.t)+'" maxlength="60" placeholder="Mesaj başlığı (sadece senin görmen için)" oninput="wcField(\''+m.id+'\',\'t\',this.value)" style="margin-bottom:8px">'+
+          '<div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap">'+['tr','en','ru'].map(l=>'<button type="button" class="wc-chip lang'+(l===lg?' on':'')+(m[l].trim()?' has':'')+'" onclick="wcLangSet(\''+m.id+'\',\''+l+'\')">'+WC_L[l]+'</button>').join('')+'</div>'+
+          '<textarea class="wc-in" id="wc-ta-'+m.id+'" rows="5" placeholder="'+(lg==='tr'?'Mesaj metnini yaz…':(lg==='en'?'İsteğe bağlı: İngilizce çeviri…':'İsteğe bağlı: Rusça çeviri…'))+'" oninput="wcField(\''+m.id+'\',\''+lg+'\',this.value)" style="resize:vertical;line-height:1.55">'+hwEsc(m[lg])+'</textarea>'+
+          '<div style="display:flex;flex-wrap:wrap;gap:7px;margin-top:8px">'+
+          '<button type="button" class="btn btn-purple btn-sm" onclick="wcCopy(\''+m.id+'\')">📋 Kopyala</button>'+
+          '<button type="button" class="btn btn-green btn-sm" onclick="wcWA(\''+m.id+'\')">🟢 WhatsApp</button>'+
+          (lg!=='tr'?'<button type="button" class="btn btn-ghost btn-sm" onclick="wcTr(\''+m.id+'\')">🌐 Çeviri yardımı</button>':'')+
+          '<button type="button" class="btn btn-ghost btn-sm" onclick="wcDelMsg(\''+m.id+'\')" style="margin-left:auto;color:#dc2626">🗑 Sil</button></div></div>';
+      }
+      return r+'</div>';
+    }).join('');
+    h+=sc.m.length<WC_MAXM?'<button type="button" class="btn btn-ghost btn-sm" style="width:100%;justify-content:center;border-style:dashed" onclick="wcAddMsg()">+ Mesaj ekle ('+sc.m.length+'/'+WC_MAXM+')</button>':'<div style="font-size:11px;color:var(--muted);text-align:center">Bu başlıkta en fazla '+WC_MAXM+' mesaj olabilir.</div>';
+  }
+  b.innerHTML=h;
+}
+function wcPick(i){wcSel=i;wcOpen=null;wcRender();}
+function wcAddSec(){if(wc.s.length>=WC_MAXS)return;wc.s.push({id:wcId(),n:'',m:[]});wcSel=wc.s.length-1;wcOpen=null;wcRender();wcSave(true);setTimeout(()=>{const e=document.getElementById('wc-sec-name');if(e)e.focus();},50);}
+function wcSecName(v){const sc=wcCur();if(!sc)return;sc.n=v;wcSave();}
+function wcDelSec(){const sc=wcCur();if(!sc)return;
+  showConf('“'+(sc.n||'Başlık')+'” başlığı ve içindeki '+sc.m.length+' mesaj silinsin mi?','🗑️','Sil',()=>{wc.s.splice(wcSel,1);wcSel=0;wcOpen=null;wcRender();wcSave(true);});}
+function wcAddMsg(){const sc=wcCur();if(!sc||sc.m.length>=WC_MAXM)return;const m={id:wcId(),t:'',tr:'',en:'',ru:''};sc.m.push(m);wcOpen=m.id;wcLang[m.id]='tr';wcRender();wcSave(true);setTimeout(()=>{const e=document.getElementById('wc-ta-'+m.id);if(e)e.focus();},50);}
+function wcDelMsg(id){const sc=wcCur();if(!sc)return;const m=wcFind(id);
+  showConf('“'+((m&&m.t)||'Mesaj')+'” silinsin mi?','🗑️','Sil',()=>{sc.m=sc.m.filter(x=>x.id!==id);wcOpen=null;wcRender();wcSave(true);});}
+function wcToggle(id){wcOpen=(wcOpen===id)?null:id;wcRender();}
+function wcLangSet(id,l){wcLang[id]=l;wcRender();}
+function wcField(id,f,v){const m=wcFind(id);if(!m)return;m[f]=v;wcSave();}
+function wcText(id){const m=wcFind(id);if(!m)return '';return (m[wcLang[id]||'tr']||'').trim();}
+async function wcCopy(id){const t=wcText(id);if(!t){wcSt('Bu dilde henüz metin yok.');return;}
+  try{await navigator.clipboard.writeText(t);}catch(e){window.prompt('Metni kopyalayın:',t);}wcSt('✓ Metin kopyalandı.');}
+function wcWA(id){const t=wcText(id);if(!t){wcSt('Bu dilde henüz metin yok.');return;}
+  window.open('https://wa.me/?text='+encodeURIComponent(t),'_blank');wcSt('WhatsApp açıldı. Kişiyi veya grubu seçip gönderimi onaylayın.');}
+function wcTr(id){const m=wcFind(id);if(!m)return;const lg=wcLang[id]||'tr';const src=(m.tr||'').trim();
+  if(!src){wcSt('Önce Türkçe metni yaz; sonra çeviri sayfası açılır.');return;}
+  window.open('https://translate.google.com/?sl=tr&tl='+WC_G[lg]+'&op=translate&text='+encodeURIComponent(src),'_blank');
+  wcSt('Çeviriyi kopyalayıp buraya yapıştır, kontrol edip düzelt.');}
 const HOME_IBAN_DEFAULTS={
   iban:'TR66 0001 0002 0952 9934 9150 42',
   normal:'Değerli velimiz ve öğrencimiz, ödemelerinizi aşağıda belirtilen öğrenci hesabına yapabilirsiniz. Ödeme açıklamasına öğrencinin adını ve soyadını yazmanızı rica ederiz. Teşekkür ederiz.\n\nÖğrenci IBAN: TR66 0001 0002 0952 9934 9150 42\nHesap sahibi: Celalettin Gökşin İLTER\nBanka: Ziraat Bankası',
