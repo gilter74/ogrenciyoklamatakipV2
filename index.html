@@ -1433,7 +1433,7 @@ summary::-webkit-details-marker{display:none}
       <div><label class="pr-label" for="pr-kind">📄 GÖNDERİLECEK İÇERİK</label><select id="pr-kind" class="pr-select" onchange="prLoadCurrent()"><option value="full">8 Temel Program Kuralı — Tam Metin</option><option value="short">WhatsApp İçin Kısa Duyuru</option></select></div>
     </div>
     <div style="margin-top:13px"><label class="pr-label" for="pr-content">✍️ METNİ DÜZENLE</label><textarea id="pr-content" class="pr-textarea" spellcheck="true" oninput="prOnEdit()"></textarea>
-      <div class="pr-note">Metni göndermeden önce istediğiniz gibi değiştirebilirsiniz. Düzenlemeler bu cihazın/tarayıcının hafızasına otomatik kaydedilir. Farklı bir cihazda otomatik görünmez.</div>
+      <div class="pr-note">Türkçe metinde yaptığınız değişiklikler yazmayı bıraktıktan yaklaşık 1 saniye sonra Rusçaya otomatik çevrilir ve bu tarayıcıya kaydedilir. Çeviri için internet bağlantısı gerekir. Düzenlemeler farklı cihazlara otomatik aktarılmaz.</div>
       <div class="pr-status" id="pr-status" aria-live="polite"></div>
       <div class="pr-actions"><button class="pr-btn copy" onclick="prCopy()">📋 Metni Kopyala</button><button class="pr-btn save" onclick="prSave()">💾 Değişiklikleri Kaydet</button><button class="pr-btn" style="background:#f1f5f9;color:#334155;border:1px solid #cbd5e1" onclick="prReset()">↩️ Varsayılan Metne Dön</button></div>
     </div>
@@ -7979,7 +7979,38 @@ function prPersistState(){try{localStorage.setItem('rockjazzProgramRules_v1',JSO
 function prCapture(){const ta=document.getElementById('pr-content');if(!ta)return;const lang=document.getElementById('pr-lang')?.value||'tr',kind=document.getElementById('pr-kind')?.value||'full';if(!prTexts)prTexts=prLoadState()||JSON.parse(JSON.stringify(PR_DEFAULTS));prTexts[lang]=prTexts[lang]||{};prTexts[lang][kind]=ta.value;prCurrentKey=lang+'|'+kind;prPersistState();}
 function prInit(){prTexts=prLoadState()||JSON.parse(JSON.stringify(PR_DEFAULTS));const sel=document.getElementById('pr-student');if(sel){const keep=sel.value;const sorted=(students||[]).slice().sort((a,b)=>((a.name||'')+' '+(a.surname||'')).localeCompare((b.name||'')+' '+(b.surname||''),'tr'));sel.innerHTML='<option value="">— Öğrenci seçin —</option>'+sorted.map(s=>'<option value="'+String(s.id).replace(/"/g,'&quot;')+'">'+escHtml((s.name||'')+' '+(s.surname||''))+'</option>').join('');if(keep&&sorted.some(s=>String(s.id)===keep))sel.value=keep;}prLoadCurrent();prFillContacts();}
 function prLoadCurrent(){if(!prTexts)prTexts=prLoadState()||JSON.parse(JSON.stringify(PR_DEFAULTS));const ta=document.getElementById('pr-content');if(!ta)return;const lang=document.getElementById('pr-lang').value,kind=document.getElementById('pr-kind').value,key=lang+'|'+kind;prTexts[lang]=prTexts[lang]||{};if(typeof prTexts[lang][kind]!=='string')prTexts[lang][kind]=PR_DEFAULTS[lang][kind];ta.value=prTexts[lang][kind];ta.classList.toggle('short',kind==='short');prCurrentKey=key;const st=document.getElementById('pr-status');if(st)st.textContent='';}
-function prOnEdit(){prCapture();const st=document.getElementById('pr-status');if(st)st.textContent='✓ Düzenleme otomatik kaydedildi.';}
+let prTranslateTimer=null,prTranslateSeq=0;
+function prOnEdit(){
+  prCapture();
+  const lang=document.getElementById('pr-lang')?.value||'tr';
+  const kind=document.getElementById('pr-kind')?.value||'full';
+  const st=document.getElementById('pr-status');
+  if(lang!=='tr'){if(st)st.textContent='✓ Rusça metin düzenlemesi otomatik kaydedildi.';return;}
+  if(prTranslateTimer)clearTimeout(prTranslateTimer);
+  const seq=++prTranslateSeq;
+  if(st)st.textContent='💾 Türkçe kaydedildi. Yazmayı bitirdiğinizde Rusça çeviri otomatik güncellenecek…';
+  prTranslateTimer=setTimeout(()=>prAutoTranslate(kind,seq),1100);
+}
+async function prAutoTranslate(kind,seq){
+  const src=(prTexts?.tr?.[kind]||'').trim();
+  const st=document.getElementById('pr-status');
+  if(!src)return;
+  try{
+    if(st)st.textContent='🌐 Rusça çeviri hazırlanıyor…';
+    const translated=await trText(src,'ru');
+    if(seq!==prTranslateSeq)return;
+    // Kullanıcı çeviri sürerken Türkçe metni değiştirdiyse eski sonucu kaydetme.
+    if((prTexts?.tr?.[kind]||'').trim()!==src)return;
+    prTexts.ru=prTexts.ru||{};
+    prTexts.ru[kind]=translated;
+    prPersistState();
+    if(st)st.textContent='✓ Rusça çeviri güncellendi ve otomatik kaydedildi. Rusça sekmesine geçtiğinizde yeni metni göreceksiniz.';
+  }catch(e){
+    if(seq!==prTranslateSeq)return;
+    if(st)st.textContent='⚠️ Türkçe kaydedildi ancak Rusça otomatik çevrilemedi. İnternet/çeviri servisini kontrol edip tekrar deneyin.';
+    console.error('Program kuralları Rusça çeviri hatası:',e);
+  }
+}
 function prSave(){prCapture();const st=document.getElementById('pr-status');if(st)st.textContent='✓ Metin bu tarayıcıya kaydedildi.';}
 function prReset(){const lang=document.getElementById('pr-lang').value,kind=document.getElementById('pr-kind').value;if(!confirm('Seçili dil ve metin türü varsayılan içeriğe döndürülsün mü?'))return;if(!prTexts)prTexts=prLoadState()||JSON.parse(JSON.stringify(PR_DEFAULTS));prTexts[lang][kind]=PR_DEFAULTS[lang][kind];prPersistState();document.getElementById('pr-content').value=PR_DEFAULTS[lang][kind];document.getElementById('pr-content').classList.toggle('short',kind==='short');const st=document.getElementById('pr-status');if(st)st.textContent='Varsayılan metin geri yüklendi.';}
 function prCurrentText(){prCapture();return(document.getElementById('pr-content')?.value||'').trim();}
