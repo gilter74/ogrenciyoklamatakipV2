@@ -96,7 +96,7 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
 #yf-table .yf-cell{width:100%;min-height:var(--yf-rowh,72px);padding:7px;font-size:15px;line-height:1.35;font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;font-weight:600;color:var(--text);white-space:pre-wrap;word-break:break-word;outline:none;cursor:text}
 #yf-table .yf-cell:focus{background:#fff;box-shadow:inset 0 0 0 2px var(--purple)}
 .yf-satranc{color:#ea580c;font-weight:700}
-.yf-paid-student{background:#fce4e4!important;color:#222!important;font-weight:700!important;padding:1px 4px;border-radius:3px;box-decoration-break:clone;-webkit-box-decoration-break:clone}
+.yf-paid-student{background:#feecec!important;color:#7f1d1d!important;font-weight:800!important;padding:1px 4px;border-radius:3px;box-decoration-break:clone;-webkit-box-decoration-break:clone}
 .yf-toolbar{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:8px 10px;margin-top:10px;position:sticky;top:0;z-index:20}
 .yf-tb-lbl{font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.5px}
 .yf-tb-btn{border:1px solid var(--border);background:#fff;border-radius:9px;padding:6px 12px;font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;font-weight:700;font-size:13px;cursor:pointer;color:var(--text)}
@@ -2017,10 +2017,8 @@ function yfPlainText(html){
 }
 function yfHasTags(html){ return /<[a-z][\s\S]*>/i.test(html||''); }
 function yfCellDisplayHTML(text){
-  // Ödeme vurgusu her çizimde sıfırdan hesaplanır. Eski otomatik etiketler
-  // (ör. daha önce yanlışlıkla kırmızıya boyanan isimler) hiçbir zaman korunmaz.
-  // Metni tek parça değerlendirerek isim/tutarın farklı HTML etiketlerine
-  // bölünmesinden kaynaklanan hatalı eşleşmeleri de önler.
+  // Vurgular kaydedilen HTML'den değil, hücrenin gerçek metninden hesaplanır.
+  // Böylece ödeme rakamı silinince kırmızı dolgu da mutlaka kalkar.
   const plain=yfPlainText(text||'').replace(/\u00a0/g,' ');
   return yfHighlight(plain);
 }
@@ -2241,30 +2239,43 @@ function yfEscRe(s){ return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'); }
 function yfHighlight(text){
   const escaped=(text||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   const chessNames=yfChessNames();
-  // Satranç öğrencilerinin turuncu görünümü korunur.
-  let html=chessNames.length
-    ? escaped.replace(new RegExp('('+chessNames.map(yfEscRe).join('|')+')','gi'),'<span class="yf-satranc">$1</span>')
-    : escaped;
 
-  // Sadece kayıtlı müzik öğrencileri ödeme kontrolüne alınır.
+  // Önce yalnızca müzik öğrencilerinin adlarını çıkar.
+  // Yoklama hücrelerinde çoğunlukla yalnızca ad (ZEHRA3950+++ gibi)
+  // kullanıldığı için hem ad hem ad-soyad biçimini tanıyoruz.
   const musicNames=[];
+  const chessFirstNames=new Set(chessNames.map(n=>normName(n)));
   students.forEach(st=>{
     if(!st || !st.name) return;
     if(st.education && String(st.education).includes('Satranç')) return;
-    const full=(String(st.name).trim()+' '+String(st.surname||'').trim()).trim().replace(/\s+/g,' ');
-    if(full) musicNames.push(full);
+
+    const first=String(st.name).trim().replace(/\s+/g,' ');
+    const surname=String(st.surname||'').trim().replace(/\s+/g,' ');
+    if(first && !chessFirstNames.has(normName(first))) musicNames.push(first);
+    const full=(first+' '+surname).trim();
+    if(full && full!==first) musicNames.push(full);
   });
 
-  // En uzun isimden başla; adın ardından boşluk olsun/olmasın tutar aranır.
+  // Ödeme tutarı aynı satırda ve doğrudan ismin ardından gelmeli.
+  // [ \\t] özellikle kullanılır: \\s kullanılmadığı için eşleşme
+  // bir sonraki satırdaki saate/tutara taşamaz.
+  let html=escaped;
+  const amount=String.raw`[ \t]*(?:₺[ \t]*)?\d+(?:[.,]\d+)*(?:[ \t]*(?:₺|TL))?[-+]*`;
   [...new Set(musicNames)].sort((a,b)=>b.length-a.length).forEach(name=>{
     const re=new RegExp(
       '(^|[^A-Za-zÇĞİÖŞÜçğıöşü])('+
       yfEscRe(name)+
-      ')(\\s*(?:₺\\s*)?\\d+(?:[.,]\\d{3})*(?:[.,]\\d{1,2})?\\s*(?:₺|TL)?)(?![A-Za-zÇĞİÖŞÜçğıöşü])',
+      ')('+amount+')(?![A-Za-zÇĞİÖŞÜçğıöşü])',
       'gi'
     );
     html=html.replace(re,'$1<span class="yf-paid-student">$2$3</span>');
   });
+
+  // Satranç isimlerini en son uygula; mevcut turuncu görünüm korunur.
+  if(chessNames.length){
+    const chessRe=new RegExp('('+chessNames.map(yfEscRe).join('|')+')','gi');
+    html=html.replace(chessRe,'<span class="yf-satranc">$1</span>');
+  }
   return html;
 }
 const YF_NAME_STOP_PREFIX=['EKİM','EKIM','BAŞLA','BASLA','SATRAN','YAŞ','OKU','GRUP'];
@@ -2385,8 +2396,6 @@ function yfCellInput(el,r,c){
   yfSaveTimer=setTimeout(yfSave,500);
 }
 function yfCellBlur(el,r,c){
-  // Otomatik ödeme vurgusu veri olarak saklanmaz; her seferinde yalnızca
-  // hücrede gerçekten sayı varsa yeniden oluşturulur. Sayı silinince dolgu kalkar.
   yfData.rows[r][c]=yfPlainText(el.innerHTML).replace(/\u00a0/g,' ');
   yfSave();
   yfRenderCell(r,c);
