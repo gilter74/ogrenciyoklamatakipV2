@@ -272,7 +272,7 @@ input:focus,select:focus{box-shadow:0 0 0 3px rgba(47,63,115,.12)}
 .wf-b{min-width:34px;height:32px;padding:0 9px;border:1px solid var(--border);border-radius:8px;background:#fff;color:var(--text);font:700 14px 'Inter',system-ui,sans-serif;cursor:pointer}
 .wf-b:active{transform:scale(.95)}
 .wf-emo{width:100%}.wf-emo>summary{list-style:none;display:inline-block;cursor:pointer}.wf-emo>summary::-webkit-details-marker{display:none}
-.wf-grid{display:flex;flex-wrap:wrap;gap:2px;padding:7px;margin-top:6px;border:1px solid var(--border);border-radius:10px;background:#fff;max-height:150px;overflow:auto}
+.wf-grid{display:flex;flex-wrap:wrap;gap:2px;padding:7px;margin-top:6px;border:1px solid var(--border);border-radius:10px;background:#fff;max-height:260px;overflow:auto}
 .wf-grid button{border:0;background:none;font-size:22px;line-height:1;padding:5px;cursor:pointer;border-radius:7px}
 .wf-grid button:hover{background:#f1f5f9}
 .wf-prev{margin-top:6px;padding:9px 11px;border-radius:10px;background:#dcf8c6;color:#111;font:500 13px/1.5 'Inter',system-ui,sans-serif;white-space:pre-wrap;word-break:break-word;min-height:20px}
@@ -8068,7 +8068,7 @@ function wcTr(id){const m=wcFind(id);if(!m)return;const lg=wcLang[id]||'tr';cons
   window.open('https://translate.google.com/?sl=tr&tl='+WC_G[lg]+'&op=translate&text='+encodeURIComponent(src),'_blank');
   wcSt('Çeviriyi kopyalayıp buraya yapıştır, kontrol edip düzelt.');}
 /* ═══ Mesaj biçimlendirme çubuğu (WhatsApp: *kalın* _italik_ ~üstü çizili~ ```sabit```) + emoji ═══ */
-const WF_EMO=['💳','🏦','💰','💵','🧾','✅','☑️','❌','❗','‼️','⚠️','📌','📍','📅','🗓️','⏰','⏳','🕒','🎹','🎸','🎤','🎼','🎵','🎶','🥁','🎻','♟️','♞','♛','🏆','📚','📖','📝','✏️','📲','📞','☎️','📩','🔔','📢','🙏','😊','🙂','👍','👏','🤝','🌟','⭐','🔥','🎉','🎁','➡️','👉','▶️','🔴','🔵','⚫','⚪','🔶','🔷','🔺','🔻','🔸','🔹','❤️','🧡','💛','💚','💙','💜','🖤','⬛','⬜','🔲','🔳'];
+const WF_EMO={"Ödeme / İş": ["💳", "🏦", "💰", "💵", "💶", "💴", "💸", "🧾", "💼", "🏷️", "📊", "📈", "📉", "🧮", "🔐", "🔑", "📦", "🛒", "🏢", "🏠", "🧑\u200d🏫", "👨\u200d🏫", "👩\u200d🏫", "🎓", "📜", "🖊️", "✍️", "📋", "📎", "📁", "🗂️", "🔗"], "Onay / Uyarı": ["✅", "☑️", "✔️", "❌", "❎", "❗", "❕", "❓", "❔", "‼️", "⁉️", "⚠️", "🚫", "⛔", "🔔", "🔕", "📢", "📣", "🆗", "🆕", "🆓", "🔜", "🔝", "ℹ️", "💡", "⭐", "🌟", "✨", "💯", "🔥", "⚡"], "Tarih / Saat": ["📅", "📆", "🗓️", "⏰", "⏳", "⌛", "🕐", "🕑", "🕒", "🕓", "🕔", "🕕", "🕖", "🕗", "🕘", "🕙", "🕚", "🕛", "🕧", "⏱️", "⏲️", "🔔", "📍", "📌", "📒", "📝"], "Müzik": ["🎹", "🎸", "🎤", "🎼", "🎵", "🎶", "🥁", "🎻", "🎺", "🎷", "🪕", "🪗", "🎧", "🎙️", "📻", "🎚️", "🎛️", "🎬", "🎭", "🎨", "🪘", "🎪"], "Satranç / Oyun": ["♟️", "♞", "♛", "♜", "♝", "♚", "🏆", "🥇", "🥈", "🥉", "🏅", "🎖️", "🎯", "🎲", "🧩", "🧠", "🎮", "🕹️", "💪", "🚀", "👑"], "Eğitim": ["📚", "📖", "📗", "📘", "📙", "📕", "📓", "📔", "📝", "✏️", "🖍️", "📐", "📏", "🔍", "🔎", "🗒️", "🧑\u200d🎓", "🎒", "🏫", "📓"], "İletişim": ["📲", "📱", "📞", "☎️", "📩", "📨", "✉️", "📧", "💬", "🗨️", "💭", "🌐", "📹", "🎥", "📷", "🖥️", "💻", "📤", "📥", "🔊", "🔈"], "Yüz / El": ["😊", "🙂", "😀", "😃", "😄", "😁", "😉", "😍", "🥰", "😘", "😎", "🤗", "🤩", "😇", "🙃", "😌", "😅", "😂", "🤔", "😴", "😢", "😮", "👍", "👎", "👏", "🙌", "🙏", "🤝", "👋", "✌️", "🤞", "👌", "👉", "👈", "👆", "👇", "💪", "🤲"], "Kalp / Renk": ["❤️", "🧡", "💛", "💚", "💙", "💜", "🖤", "💔", "❣️", "💕", "💖", "💗", "💝", "🔴", "🔵", "⚫", "⚪", "🔶", "🔷", "🔺", "🔻", "🔸", "🔹", "⬛", "⬜", "🔲", "🔳", "◼️", "◻️", "▪️", "▫️"], "Doğa / Diğer": ["☀️", "🌤️", "⛅", "🌧️", "❄️", "🌈", "🌙", "🌸", "🌺", "🌻", "🌷", "🌹", "🍀", "🌳", "🌍", "🎉", "🎊", "🎁", "🎂", "🎈", "🎄", "🕌", "☕", "🍎", "🍰", "🚗", "🚌", "✈️", "➡️", "⬅️", "⬆️", "⬇️", "▶️", "◀️", "🔄", "➕", "➖", "✖️", "➗"]};
 function wfBar(id){
   return '<div class="wf-bar">'+
    '<button type="button" class="wf-b" title="Kalın" onmousedown="event.preventDefault()" onclick="wfWrap(\''+id+'\',\'*\')"><b>B</b></button>'+
@@ -8084,7 +8084,7 @@ function wfBar(id){
    '<button type="button" class="wf-b" title="Renkleri kaldır (seçili yazıdan, seçim yoksa tümünden)" onmousedown="event.preventDefault()" onclick="wfClear(\''+id+'\')" style="font-size:12px">⌫ Renk sil</button>'+
 '<button type="button" class="wf-b" title="Satır başı madde" onmousedown="event.preventDefault()" onclick="wfBullet(\''+id+'\')">• Liste</button>'+
    '<details class="wf-emo"><summary><span class="wf-b" style="display:inline-flex;align-items:center;height:32px">😊 Emoji</span></summary><div class="wf-grid">'+
-   WF_EMO.map(e=>'<button type="button" onmousedown="event.preventDefault()" onclick="wfEmoji(\''+id+'\',\''+e+'\')">'+e+'</button>').join('')+'</div></details></div>';
+   Object.keys(WF_EMO).map(k=>'<div style="width:100%;font:800 10px Inter,system-ui,sans-serif;color:#64748b;margin:5px 0 1px">'+k+'</div>'+WF_EMO[k].map(e=>'<button type="button" onmousedown="event.preventDefault()" onclick="wfEmoji(\''+id+'\',\''+e+'\')">'+e+'</button>').join('')).join('')+'</div></details></div>';
 }
 function wfFire(ta){try{ta.dispatchEvent(new Event('input',{bubbles:true}));}catch(e){}wfPrev(ta.id);}
 function wfWrap(id,m){
