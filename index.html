@@ -8038,8 +8038,8 @@ function wcRender(){
           '<div style="display:flex;flex-wrap:wrap;gap:7px;margin-top:8px">'+
           '<button type="button" class="btn btn-purple btn-sm" onclick="wcCopy(\''+m.id+'\')">📋 Kopyala</button>'+
           '<button type="button" class="btn btn-green btn-sm" onclick="wcWA(\''+m.id+'\')">🟢 WhatsApp</button>'+'<button type="button" class="btn btn-ghost btn-sm" onclick="wfImage(\'wc-ta-'+m.id+'\',\'wc-status\')">🖼️ Renkli resim</button>'+
-          (lg!=='tr'?'<button type="button" class="btn btn-ghost btn-sm" onclick="wcTr(\''+m.id+'\')">🌐 Çeviri yardımı</button>':'')+
-          '<button type="button" class="btn btn-ghost btn-sm" onclick="wcDelMsg(\''+m.id+'\')" style="margin-left:auto;color:#dc2626">🗑 Sil</button></div></div>';
+          (lg==='tr'?'<button type="button" class="btn btn-purple btn-sm" onclick="wcAuto(\''+m.id+'\',[\'en\',\'ru\'])">🌐 EN + RU otomatik çevir</button>':'<button type="button" class="btn btn-purple btn-sm" onclick="wcAuto(\''+m.id+'\',[\''+lg+'\'])">🌐 Türkçeden otomatik çevir</button>')+
+          (lg!=='tr'?'<button type="button" class="btn btn-ghost btn-sm" onclick="wcTr(\''+m.id+'\')" title="Google Çeviri sayfasında aç">🌐 Çeviri yardımı</button>':'')+'<button type="button" class="btn btn-ghost btn-sm" onclick="wcDelMsg(\''+m.id+'\')" style="margin-left:auto;color:#dc2626">🗑 Sil</button></div></div>';
       }
       return r+'</div>';
     }).join('');
@@ -8063,6 +8063,46 @@ async function wcCopy(id){const t=wcText(id);if(!t){wcSt('Bu dilde henüz metin 
   try{await navigator.clipboard.writeText(t);}catch(e){window.prompt('Metni kopyalayın:',t);}wcSt('✓ Metin kopyalandı.');}
 function wcWA(id){const t=wcText(id);if(!t){wcSt('Bu dilde henüz metin yok.');return;}
   window.open('https://wa.me/?text='+encodeURIComponent(t),'_blank');wcSt('WhatsApp açıldı. Kişiyi veya grubu seçip gönderimi onaylayın.');}
+/* ═══ Otomatik çeviri (TR → EN / RU) ═══ */
+async function wfTrFetch(text,tl){
+  // 1) Google çeviri uç noktası
+  try{
+    const r=await fetch('https://translate.googleapis.com/translate_a/single?client=gtx&sl=tr&tl='+tl+'&dt=t&q='+encodeURIComponent(text));
+    if(r.ok){const d=await r.json();const out=(d[0]||[]).map(x=>x[0]||'').join('');if(out.trim())return out;}
+  }catch(e){}
+  // 2) MyMemory (satır satır, 450 karakter parçalar)
+  const lines=text.split('\n'),res=[];
+  for(const ln of lines){
+    if(!ln.trim()){res.push('');continue;}
+    const r=await fetch('https://api.mymemory.translated.net/get?q='+encodeURIComponent(ln.slice(0,480))+'&langpair=tr|'+tl);
+    if(!r.ok)throw new Error('çeviri servisi yanıt vermedi');
+    const d=await r.json();const t=d&&d.responseData&&d.responseData.translatedText;
+    if(!t)throw new Error('boş çeviri');res.push(t);
+  }
+  return res.join('\n');
+}
+async function wfTranslate(text,tl){
+  const bullets=text.split('\n').map(l=>{const m=l.match(/^(\s*[•\-]\s+)/);return m?m[1]:'';});
+  const plain=text.split('\n').map((l,i)=>l.slice(bullets[i].length)).join('\n');
+  let out=await wfTrFetch(plain,tl);
+  const ol=out.split('\n');
+  return ol.map((l,i)=>(bullets[i]||'')+l).join('\n').replace(/\*\s+([^*\n]+?)\s+\*/g,'*$1*').replace(/_\s+([^_\n]+?)\s+_/g,'_$1_');
+}
+async function wcAuto(id,langs){
+  const m=wcFind(id);if(!m)return;
+  const src=wfClean(wfStrip(m.tr||''));
+  if(!src){wcSt('Önce Türkçe metni yaz; sonra çevir.');return;}
+  const run=async()=>{
+    wcSt('🌐 Çevriliyor…');
+    try{
+      for(const l of langs){m[l]=await wfTranslate(src,l);}
+      wcLang[id]=langs[0];wcRender();wcSave(true);
+      const ok='✓ Çeviri hazır ('+langs.map(x=>x.toUpperCase()).join(' + ')+'). Göndermeden önce bir kez oku, gerekirse düzelt.';wcSt(ok);setTimeout(()=>wcSt(ok),600);
+    }catch(e){wcSt('⚠️ Çeviri servisine ulaşılamadı (internet bağlantısı?). “Çeviri yardımı” ile Google Çeviri sayfasından da yapabilirsin.');}
+  };
+  const have=langs.some(l=>(m[l]||'').trim());
+  if(have)showConf('Mevcut '+langs.map(x=>x.toUpperCase()).join(' + ')+' metni, yeni çeviriyle değiştirilsin mi?','🌐','Çevir',run);else run();
+}
 function wcTr(id){const m=wcFind(id);if(!m)return;const lg=wcLang[id]||'tr';const src=(m.tr||'').trim();
   if(!src){wcSt('Önce Türkçe metni yaz; sonra çeviri sayfası açılır.');return;}
   window.open('https://translate.google.com/?sl=tr&tl='+WC_G[lg]+'&op=translate&text='+encodeURIComponent(src),'_blank');
