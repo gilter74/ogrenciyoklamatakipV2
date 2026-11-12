@@ -468,7 +468,7 @@ summary::-webkit-details-marker{display:none}
     <div style="font-weight:700;font-size:14px;color:var(--text);margin-bottom:10px" id="today-sched-title">📅 Bugün Dersi Olanlar</div>
     <div id="today-sched-list"></div>
   </div>
-  <div id="late-banner"></div>
+  <div id="late-banner"><button onclick="go('s-chronic')" style="width:100%;display:flex;align-items:center;gap:8px;padding:10px 13px;margin:0 0 12px;border-radius:12px;border:2px solid #7c3aed;background:#f5f3ff;color:#5b21b6;font:800 13px 'Inter',system-ui,sans-serif;cursor:pointer;text-align:left"><span>🟣</span><span style="flex:1">Geç Ödeyenler · Kısıtlama Ayarları</span><span>›</span></button></div>
   <div class="tile-grid">
     <button class="tile teal tile-prospect-pink" onclick="go('s-pros')"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M9 15l2 2 4-4"/></svg><span style="min-width:0;flex:1">Ön Görüşme<small>Randevu · Hatırlatma · Deneme dersi</small><span id="pros-line" style="display:none;margin-top:6px;border-top:1px solid rgba(255,255,255,.35);padding-top:5px"></span></span></button>
     <button class="tile" onclick="go('s-week')"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg><span>Haftalık Program</span></button>
@@ -4242,7 +4242,7 @@ function lateWaUrl(st){return 'https://wa.me/'+waPhone(st.momPhone||st.dadPhone|
 // Ana ekranda ince çubuk → Geç Ödeyenler sekmesine gider
 function renderLateBanner(){
   const box=document.getElementById('late-banner');
-  if(box){let c=0;try{c=lrActiveCount();}catch(e){}box.innerHTML=c?'<button onclick="go(\'s-chronic\')" style="width:100%;display:flex;align-items:center;gap:8px;padding:10px 13px;margin:0 0 12px;border-radius:12px;border:2px solid #dc2626;background:#fef2f2;color:#991b1b;font:800 13px \'Inter\',system-ui,sans-serif;cursor:pointer;text-align:left"><span>🚫</span><span style="flex:1">Geciken ödeme: <b>'+c+'</b> öğrencide ek hizmet kısıtlaması aktif</span><span>›</span></button>':'';}
+  if(box){let c=0;try{c=lrActiveCount();}catch(e){}box.innerHTML=c?'<button onclick="go(\'s-chronic\')" style="width:100%;display:flex;align-items:center;gap:8px;padding:10px 13px;margin:0 0 12px;border-radius:12px;border:2px solid #dc2626;background:#fef2f2;color:#991b1b;font:800 13px \'Inter\',system-ui,sans-serif;cursor:pointer;text-align:left"><span>🚫</span><span style="flex:1">Geciken ödeme: <b>'+c+'</b> öğrencide ek hizmet kısıtlaması aktif</span><span>›</span></button>':'<button onclick="go(\'s-chronic\')" style="width:100%;display:flex;align-items:center;gap:8px;padding:10px 13px;margin:0 0 12px;border-radius:12px;border:2px solid #7c3aed;background:#f5f3ff;color:#5b21b6;font:800 13px \'Inter\',system-ui,sans-serif;cursor:pointer;text-align:left"><span>🟣</span><span style="flex:1">Geç Ödeyenler · Kısıtlama Ayarları</span><span>›</span></button>';}
   const a=document.querySelector('.screen.active');
   if(a&&a.id==='s-chronic')renderChronic();
 }
