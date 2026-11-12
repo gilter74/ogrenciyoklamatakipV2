@@ -95,8 +95,8 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
 #yf-table td.yf-forced-clear .yf-paidbtn{background:#bbf7d0;color:#14532d}
 #yf-table .yf-cell{width:100%;min-height:var(--yf-rowh,72px);padding:7px;font-size:15px;line-height:1.35;font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;font-weight:600;color:var(--text);white-space:pre-wrap;word-break:break-word;outline:none;cursor:text}
 #yf-table .yf-cell:focus{background:#fff;box-shadow:inset 0 0 0 2px var(--purple)}
+.yf-due{background:#fecaca;border-radius:3px;padding:0 2px;box-decoration-break:clone;-webkit-box-decoration-break:clone}
 .yf-satranc{color:#ea580c;font-weight:700}
-.yf-paid-student{background:#fce4e4!important;color:#222!important;font-weight:700!important;padding:1px 4px;border-radius:3px;box-decoration-break:clone;-webkit-box-decoration-break:clone}
 .yf-toolbar{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:8px 10px;margin-top:10px;position:sticky;top:0;z-index:20}
 .yf-tb-lbl{font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.5px}
 .yf-tb-btn{border:1px solid var(--border);background:#fff;border-radius:9px;padding:6px 12px;font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;font-weight:700;font-size:13px;cursor:pointer;color:var(--text)}
@@ -737,6 +737,7 @@ summary::-webkit-details-marker{display:none}
 <div id="s-detail" class="screen">
   <button class="btn-ghost mb14" onclick="go('s-list')">← Geri</button>
   <div class="card mb12" id="det-hdr"></div>
+  <div id="det-late"></div>
   <div class="overdue" id="overdue-box"></div>
   <div class="dt-nav" id="dt-nav">
     <button class="dt-btn on" id="dtb-cal" onclick="dtShow('cal')">Takvim</button>
@@ -783,8 +784,8 @@ summary::-webkit-details-marker{display:none}
     <div class="section-lbl">📚 Ödev &amp; Not</div>
     <div id="hw-restrict-box" style="display:none;background:#fef2f2;border:3px solid #dc2626;border-radius:14px;padding:18px 14px;margin-bottom:14px;text-align:center">
       <div style="font-size:22px;font-weight:900;color:#b91c1c;line-height:1.3;letter-spacing:.2px">⛔ ÖDEME GECİKMESİ<br>KISITLAMA ALTINDA</div>
-      <div style="font-size:15px;font-weight:800;color:#991b1b;margin-top:8px;line-height:1.5">Ayın 21'inden itibaren ödeme yapılmadığı için ödeme yapılana kadar ödev/not WhatsApp'tan gönderilmeyecek ve ekstra destekler durdurulacaktır. Ödev ve notu yazıp kaydedebilirsiniz.</div>
-      <div style="font-size:12px;font-weight:700;color:#b91c1c;margin-top:6px">Ödeme kaydı girildiğinde kısıtlama otomatik kalkar.</div>
+      <div id="hw-restrict-sub" style="font-size:15px;font-weight:800;color:#991b1b;margin-top:8px;line-height:1.5">Ödeme gecikmesi nedeniyle ek hizmetler kısıtlanmıştır.</div>
+      <div style="font-size:12px;font-weight:700;color:#b91c1c;margin-top:6px">Ödeme yapılınca yeni süre birikmez; biriken süre dolunca otomatik açılır.</div>
     </div>
     <div class="mb14"><label class="lbl">Bu Haftanın Ödevi</label><textarea id="n-hw" rows="2" placeholder="Örn: Sayfa 12-14 tekrar, gam çalışması…" style="width:100%;padding:11px 14px;border-radius:10px;border:1px solid var(--border);font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;font-size:14px;font-weight:600;color:var(--text);resize:vertical;outline:none"></textarea></div>
     <div class="mb14"><label class="lbl">Öğretmen Notu</label><textarea id="n-grade" rows="2" placeholder="Örn: Bu ay çok iyi ilerledi…" style="width:100%;padding:11px 14px;border-radius:10px;border:1px solid var(--border);font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;font-size:14px;font-weight:600;color:var(--text);resize:vertical;outline:none"></textarea></div>
@@ -1434,9 +1435,10 @@ summary::-webkit-details-marker{display:none}
       <div><label class="pr-label" for="pr-kind">📄 GÖNDERİLECEK İÇERİK</label><select id="pr-kind" class="pr-select" onchange="prLoadCurrent()"><option value="full">8 Temel Program Kuralı — Tam Metin</option><option value="short">WhatsApp İçin Kısa Duyuru</option></select></div>
     </div>
     <div style="margin-top:13px"><label class="pr-label" for="pr-content">✍️ METNİ DÜZENLE</label><textarea id="pr-content" class="pr-textarea" spellcheck="true" oninput="prOnEdit()"></textarea>
-      <div class="pr-note">Türkçe metinde yaptığınız değişiklikler yazmayı bıraktıktan yaklaşık 1 saniye sonra Rusçaya otomatik çevrilir ve bu tarayıcıya kaydedilir. Çeviri için internet bağlantısı gerekir. Düzenlemeler farklı cihazlara otomatik aktarılmaz.</div>
+      <div class="pr-note">Metni göndermeden önce istediğiniz gibi değiştirebilirsiniz. Düzenlemeler otomatik kaydedilir ve <b>tüm cihazlarda</b> (telefon, bilgisayar) aynı görünür. <span id="pr-sync" style="font-weight:800;color:#15803d"></span></div>
+      <label style="display:flex;gap:8px;align-items:flex-start;font-size:12px;font-weight:700;color:#1e40af;margin:8px 0 2px;cursor:pointer"><input type="checkbox" id="pr-auto" checked onchange="prAutoSave()" style="margin-top:2px;width:16px;height:16px"><span>Türkçe metni değiştirince Rusçası otomatik çevrilsin (yazmayı bıraktıktan 2 sn sonra)</span></label>
       <div class="pr-status" id="pr-status" aria-live="polite"></div>
-      <div class="pr-actions"><button class="pr-btn copy" onclick="prCopy()">📋 Metni Kopyala</button><button class="pr-btn save" onclick="prSave()">💾 Değişiklikleri Kaydet</button><button class="pr-btn" style="background:#f1f5f9;color:#334155;border:1px solid #cbd5e1" onclick="prReset()">↩️ Varsayılan Metne Dön</button></div>
+      <div class="pr-actions"><button class="pr-btn copy" onclick="prCopy()">📋 Metni Kopyala</button><button class="pr-btn save" onclick="prSave()">💾 Değişiklikleri Kaydet</button><button class="pr-btn" style="background:#0ea5e9;color:#fff" onclick="prTranslateRu(null,false)">🌐 Türkçeden Rusçaya Çevir</button><button class="pr-btn" style="background:#f1f5f9;color:#334155;border:1px solid #cbd5e1" onclick="prReset()">↩️ Varsayılan Metne Dön</button></div>
     </div>
   </div>
   <div class="pr-card">
@@ -2016,20 +2018,48 @@ function yfPlainText(html){
   return div.textContent||'';
 }
 function yfHasTags(html){ return /<[a-z][\s\S]*>/i.test(html||''); }
+function yfStripDue(html){
+  if(!/yf-due/.test(html||''))return html;
+  const d=document.createElement('div');d.innerHTML=html;
+  d.querySelectorAll('span.yf-due').forEach(sp=>{while(sp.firstChild)sp.parentNode.insertBefore(sp.firstChild,sp);sp.remove();});
+  d.normalize();return d.innerHTML;
+}
+// İsmin AYNI satırında tutar (3-6 haneli rakam) varsa: ISIM3950+++  /  ISIM 3950 TL  → açık kırmızı dolgu.
+// Alt satırdaki rakam üstteki ismi etkilemez; rakam silinince (hücreden çıkınca) dolgu kalkar.
+function yfDecorateDue(html){
+  const root=document.createElement('div');root.innerHTML=yfStripDue(html||'');
+  const segs=[];let txt='';
+  const it=document.createNodeIterator(root,NodeFilter.SHOW_ALL);let n;
+  while((n=it.nextNode())){
+    if(n.nodeType===3){segs.push({node:n,off:txt.length,len:n.data.length});txt+=n.data;}
+    else if(n.nodeType===1){const t=n.tagName;if(t==='BR')txt+='\n';else if((t==='DIV'||t==='P')&&n!==root&&txt&&!txt.endsWith('\n'))txt+='\n';}
+  }
+  const re=/([A-ZÇĞİÖŞÜ]{2,})[  \t]*(?<![:\d])(\d{3,6})(?![:\d])(?:[+\-−–]+|[  ]*(?:TL|₺)(?![A-Za-zÇĞİÖŞÜçğıöşü]))?/g;
+  const hits=[];let m;
+  while((m=re.exec(txt))){
+    const w=m[1];
+    if(YF_NAME_STOP_EXACT.includes(w)||YF_NAME_STOP_PREFIX.some(p=>w.startsWith(p)))continue;
+    hits.push([m.index,m.index+m[0].length]);
+  }
+  if(!hits.length)return root.innerHTML;
+  const find=(p,isEnd)=>{const q=isEnd?p-1:p;for(const sg of segs){if(q>=sg.off&&q<sg.off+sg.len)return{node:sg.node,o:(isEnd?p:p)-sg.off};}return null;};
+  for(let i=hits.length-1;i>=0;i--){
+    const s0=find(hits[i][0],false),e0=find(hits[i][1],true);if(!s0||!e0)continue;
+    try{const r=document.createRange();r.setStart(s0.node,s0.o);r.setEnd(e0.node,e0.o);
+      const sp=document.createElement('span');sp.className='yf-due';sp.appendChild(r.extractContents());r.insertNode(sp);}catch(e){}
+  }
+  root.querySelectorAll('span:empty').forEach(e=>e.remove());
+  return root.innerHTML;
+}
 function yfCellDisplayHTML(text){
-  // Ödeme vurgusu her çizimde sıfırdan hesaplanır. Eski otomatik etiketler
-  // (ör. daha önce yanlışlıkla kırmızıya boyanan isimler) hiçbir zaman korunmaz.
-  // Metni tek parça değerlendirerek isim/tutarın farklı HTML etiketlerine
-  // bölünmesinden kaynaklanan hatalı eşleşmeleri de önler.
-  const plain=yfPlainText(text||'').replace(/\u00a0/g,' ');
-  return yfHighlight(plain);
+  return yfDecorateDue(yfHasTags(text)?text:yfHighlight(text));
 }
 function yfSyncActiveCell(){
   if(!yfActiveEl)return;
   const td=yfActiveEl.closest('td');
   if(!td)return;
   const r=parseInt(td.getAttribute('data-r'),10), c=parseInt(td.getAttribute('data-c'),10);
-  yfData.rows[r][c]=yfActiveEl.innerHTML;
+  yfData.rows[r][c]=yfStripDue(yfActiveEl.innerHTML);
   clearTimeout(yfSaveTimer);
   yfSaveTimer=setTimeout(yfSave,500);
 }
@@ -2239,37 +2269,11 @@ function yfChessNames(){
 }
 function yfEscRe(s){ return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'); }
 function yfHighlight(text){
-  const raw=String(text||'').replace(/\u00a0/g,' ');
-  const escaped=raw.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-  const chessNames=yfChessNames();
-  const chessSet=new Set(chessNames.map(n=>normName(n)));
-
-  // Hücredeki büyük harfli adları doğrudan yakala.
-  // Böylece öğrenci listesinde ad-soyad farklı yazılsa bile ödeme dolgusu uygulanır.
-  const candidates=yfDetectNames(raw)
-    .filter(name=>!chessSet.has(normName(name)))
-    .sort((a,b)=>b.length-a.length);
-
-  // Tutar mutlaka ismin aynı satırında ve hemen yanında olmalı.
-  // Satır atlamasını önlemek için yalnızca yatay boşluk kullanılır.
-  const amount=String.raw`[ \t]*(?:₺[ \t]*)?\d+(?:[.,]\d+)*(?:[ \t]*(?:₺|TL))?[-+]*`;
-  let html=escaped;
-  candidates.forEach(name=>{
-    const re=new RegExp(
-      '(^|[^A-Za-zÇĞİÖŞÜçğıöşü])('+
-      yfEscRe(name)+
-      ')('+amount+')(?![A-Za-zÇĞİÖŞÜçğıöşü])',
-      'g'
-    );
-    html=html.replace(re,'$1<span class="yf-paid-student">$2$3</span>');
-  });
-
-  // Satranç isimlerinin mevcut turuncu vurgusu korunur.
-  if(chessNames.length){
-    const chessRe=new RegExp('('+chessNames.map(yfEscRe).join('|')+')','gi');
-    html=html.replace(chessRe,'<span class="yf-satranc">$1</span>');
-  }
-  return html;
+  const escaped=(text||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const names=yfChessNames();
+  if(!names.length)return escaped;
+  const re=new RegExp('('+names.map(yfEscRe).join('|')+')','gi');
+  return escaped.replace(re,'<span class="yf-satranc">$1</span>');
 }
 const YF_NAME_STOP_PREFIX=['EKİM','EKIM','BAŞLA','BASLA','SATRAN','YAŞ','OKU','GRUP'];
 const YF_NAME_STOP_EXACT=['DR','AI','YZ'];
@@ -2384,14 +2388,12 @@ function table_yfTd(r,c){
 }
 function yfCellInput(el,r,c){
   yfActiveEl=el;
-  yfData.rows[r][c]=el.innerHTML;
+  yfData.rows[r][c]=yfStripDue(el.innerHTML);
   clearTimeout(yfSaveTimer);
   yfSaveTimer=setTimeout(yfSave,500);
 }
 function yfCellBlur(el,r,c){
-  // Otomatik ödeme vurgusu veri olarak saklanmaz; her seferinde yalnızca
-  // hücrede gerçekten sayı varsa yeniden oluşturulur. Sayı silinince dolgu kalkar.
-  yfData.rows[r][c]=yfPlainText(el.innerHTML).replace(/\u00a0/g,' ');
+  yfData.rows[r][c]=yfStripDue(el.innerHTML);
   yfSave();
   yfRenderCell(r,c);
 }
@@ -3275,7 +3277,7 @@ async function hwPreviewTr(){
   await hwMsgReady(true);
 }
 async function hwMsgReady(forPreview){
-  if(payRestriction(students.find(x=>x.id===curId),payData)){restrictBlockMsg();return null;}
+  if(payRestriction(students.find(x=>x.id===curId),payData,'hw')){restrictBlockMsg();return null;}
   const hw=document.getElementById('n-hw').value.trim();
   const gr=document.getElementById('n-grade').value.trim();
   const repChk=document.getElementById('wa-hw-rep')&&document.getElementById('wa-hw-rep').checked;
@@ -3939,33 +3941,82 @@ function startRecWatch(){
 // ödev/not bildirimi gönderilmez; veli bağlantısında ödev/not gizlenir.
 const RESTRICT_START='2026-11-01';
 const RESTRICT_DAY=20;
-function payRestriction(s,pays){
+/* ═══ GECİKEN ÖDEME → EK HİZMET KISITLAMASI (otomatik hesap) ═══
+   Son ödeme günü ayın 20'si. 21'inden itibaren gecikilen HER takvim günü = LR gün başına (varsayılan 7) günlük ek hizmet kısıtı.
+   Ödeme tamamlanınca yeni süre birikmez; biriken süre silinmez (açılış tarihi korunur). Ayarlar: settings/lateRestrict · muaf: lateRestrictExempt/<id> */
+const LR_DEF={on:true,per:7,svc:{hw:true,sum:true,rep:true,parent:true,video:true,chess:true,track:true,feedback:true}};
+const LR_SVC=[
+  ['hw','📝 Ödev / öğretmen notu paylaşımı (WhatsApp, kopyalama)',true],
+  ['sum','🗓️ Aylık özetlerin gönderilmesi / kopyalanması',true],
+  ['rep','📊 Raporların gönderilmesi / kopyalanması',true],
+  ['parent','🔗 Veli bağlantısında ödev / not görünürlüğü',true],
+  ['video','🎬 Çalışma videolarının incelenmesi',false],
+  ['chess','♟ Satranç oyun analizleri',false],
+  ['track','📈 Bireysel gelişim takibi',false],
+  ['feedback','💬 Özel geri bildirimler',false]
+];
+let lrCfg=JSON.parse(JSON.stringify(LR_DEF)),lrExempt={},lrLast=null,lrSynced={},lrSyncT=null,lrPanelOpen=false;
+function lrAdd(ds,n){const d=new Date(ds+'T12:00:00');d.setDate(d.getDate()+n);return fmt(d.getFullYear(),d.getMonth(),d.getDate());}
+function lrDiff(a,b){return Math.round((new Date(b+'T12:00:00')-new Date(a+'T12:00:00'))/86400000);}
+function lrDL(ds){const d=new Date(ds+'T12:00:00');return d.getDate()+' '+MONTHS[d.getMonth()]+' '+d.getFullYear();}
+function lrDS(ds){const d=new Date(ds+'T12:00:00');return d.getDate()+' '+MONTHS[d.getMonth()].slice(0,3);}
+function lrSvcOn(k){return !!(lrCfg.on&&lrCfg.svc&&lrCfg.svc[k]!==false);}
+function lrCalc(s,pays){
   try{
-    if(!s)return false;
-    const now=new Date();
-    if(todays()<RESTRICT_START)return false;
-    if(!(parseFloat(s.fee)>0||parseFloat(s.lessonFee)>0))return false; // ücreti tanımsız öğrenciye uygulanmaz
-    const list=(pays||[]).filter(p=>p&&p.date&&!p.recId);
-    const has=mk=>list.some(p=>p.date.startsWith(mk))||!!((typeof latePaid!=='undefined'&&latePaid&&latePaid[s.id]||{})[mk]);
+    if(!s||isFrozen(s))return null;
+    if(!(parseFloat(String(s.fee||'').replace(',','.'))>0||parseFloat(String(s.lessonFee||'').replace(',','.'))>0))return null; // ücreti tanımsız öğrenciye uygulanmaz
+    const per=Math.max(1,parseInt(lrCfg.per,10)||7);
+    const today=todays(),now=new Date();
+    const all=(pays||Object.values(lateAllPay[s.id]||{})).filter(p=>p&&p.date&&!p.recId);
     const reg=(effStart(s)||'').slice(0,7);
-    const curK=mkey(now.getFullYear(),now.getMonth());
-    // Bu ay: 20'sinden sonra ödeme yoksa kısıtlı
-    if(now.getDate()>RESTRICT_DAY&&!has(curK)&&(!reg||reg<=curK))return true;
-    // Önceki ay (Kasım 2026 ve sonrası) ödenmemiş ve bu ay da henüz ödeme yoksa kısıtlı kalır
-    let pm=now.getMonth()-1,py=now.getFullYear();if(pm<0){pm=11;py--;}
-    const prevK=mkey(py,pm);
-    if(prevK+'-01'>=RESTRICT_START&&(!reg||reg<=prevK)&&!has(prevK)&&!has(curK))return true;
+    const dates=new Set(),months=[];let unpaidNow=false;
+    for(let k=0;k<6;k++){
+      const d=new Date(now.getFullYear(),now.getMonth()-k,1);const mk=mkey(d.getFullYear(),d.getMonth());
+      if(mk+'-01'<RESTRICT_START)continue;
+      if(reg&&reg>mk)continue;
+      const exM=stuExFor(s,mk);
+      const fee=exM?(parseFloat(exM.amount)||0):(parseFloat(String(s.fee||'').replace(',','.'))||0);
+      if(exM&&fee<=0)continue;                                         // istisna: o ay ücret yok
+      const mp=all.filter(p=>String(p.date).startsWith(mk)).sort((x,y)=>String(x.date)<String(y.date)?-1:1);
+      let done=null;
+      const ex=mp.find(p=>p.exception);if(ex)done=String(ex.date).slice(0,10);   // istisna işaretli ödeme: ay tam
+      if(!done){let cum=0;for(const p of mp){cum+=parseFloat(p.amount||0);if(fee<=0||cum>=fee*0.94){done=String(p.date).slice(0,10);break;}}}  // %94 kuralı
+      const lp=(latePaid[s.id]||{})[mk];                                // elle "ödedi" onayı
+      if(lp){const ld=(typeof lp==='string'&&lp.length>=10)?lp.slice(0,10):mk+'-'+String(RESTRICT_DAY).padStart(2,'0');if(!done||ld<done)done=ld;}
+      const first=mk+'-'+String(RESTRICT_DAY+1).padStart(2,'0');
+      let last;
+      if(done)last=done>today?today:done;
+      else{if(k>2)continue;last=today;}                                 // ödenmemiş: bugüne kadar sayılır (en çok 2 ay geri)
+      if(last<first)continue;
+      let n=0;for(let c=first;c<=last;c=lrAdd(c,1)){dates.add(c);n++;}   // aynı gün iki kez sayılmaz (Set)
+      const isUnpaid=!done;if(isUnpaid)unpaidNow=true;
+      months.push({mk,label:MONTHS[d.getMonth()],done,days:n,unpaid:isUnpaid});
+    }
+    if(!dates.size)return {n:0,active:false,unpaidNow:false,months:[],per};
+    const sorted=[...dates].sort();
+    let end=null;
+    sorted.forEach(dd=>{const base=(end&&end>dd)?end:dd;end=lrAdd(base,per);});
+    const remaining=Math.max(0,lrDiff(today,end));
+    return {n:sorted.length,per,accrued:sorted.length*per,since:sorted[0],end,remaining,active:today<end,unpaidNow,months};
+  }catch(e){return null;}
+}
+function payRestriction(s,pays,svc){
+  try{
+    svc=svc||'hw';
+    if(!s||!lrSvcOn(svc)||lrExempt[s.id])return false;
+    const r=lrCalc(s,pays);
+    if(r&&r.active){lrLast=r;return r;}
     return false;
   }catch(e){return false;}
 }
 const RESTRICT_TXT='⛔ ÖDEME GECİKMESİ — KISITLAMA ALTINDA';
 const RESTRICT_SUB='Ödeme gecikmesinden dolayı ödeme yapılana kadar bildirim gönderilmeyecektir.';
-function restrictBlockMsg(){showConf('Ödeme gecikmesinden dolayı ödeme yapılana kadar ödev/not bildirimi gönderilemez (kısıtlama altında).','⛔','Tamam',()=>{});}
+function restrictBlockMsg(){const r=lrLast;showConf('Ödeme gecikmesi nedeniyle ek hizmetler kısıtlı'+(r?(' — '+r.n+' gün gecikme × '+r.per+' = '+r.accrued+' gün. Ek hizmetler '+lrDL(r.end)+' tarihinde açılır'):'')+'.\n\n(Kısıtlamayı Geç Ödeyenler ekranından kapatabilir veya öğrenciyi muaf tutabilirsiniz.)','⛔','Tamam',()=>{});}
 function updateHwRestrictUI(){
   const s=students.find(x=>x.id===curId);
-  const r=payRestriction(s,payData);
+  const r=payRestriction(s,payData,'hw');
   const box=document.getElementById('hw-restrict-box');
-  if(box)box.style.display=r?'block':'none';
+  if(box){box.style.display=r?'block':'none';const sub=document.getElementById('hw-restrict-sub');if(sub&&r)sub.textContent='Gecikilen '+r.n+' gün × '+r.per+' = '+r.accrued+' gün ek hizmet kısıtlaması. Ek hizmetler '+lrDL(r.end)+' tarihinde yeniden açılır. Ödev ve notu yazıp kaydedebilirsiniz.';}
   ['wa-hw-send','wa-hw-copy'].forEach(id=>{
     const b=document.getElementById(id);
     if(b){b.disabled=r;b.style.opacity=r?'.4':'';b.style.cursor=r?'not-allowed':'';}
@@ -4191,14 +4242,105 @@ function lateWaUrl(st){return 'https://wa.me/'+waPhone(st.momPhone||st.dadPhone|
 // Ana ekranda ince çubuk → Geç Ödeyenler sekmesine gider
 function renderLateBanner(){
   const box=document.getElementById('late-banner');
-  if(box)box.innerHTML='';
+  if(box){let c=0;try{c=lrActiveCount();}catch(e){}box.innerHTML=c?'<button onclick="go(\'s-chronic\')" style="width:100%;display:flex;align-items:center;gap:8px;padding:10px 13px;margin:0 0 12px;border-radius:12px;border:2px solid #dc2626;background:#fef2f2;color:#991b1b;font:800 13px \'Inter\',system-ui,sans-serif;cursor:pointer;text-align:left"><span>🚫</span><span style="flex:1">Geciken ödeme: <b>'+c+'</b> öğrencide ek hizmet kısıtlaması aktif</span><span>›</span></button>':'';}
   const a=document.querySelector('.screen.active');
   if(a&&a.id==='s-chronic')renderChronic();
 }
+/* ── Kısıtlama arayüzü ── */
+function lrWho(){ // aktif kısıtı olan veya şu an gecikmede olan öğrenciler
+  const out=[];
+  (students||[]).forEach(st=>{
+    const r=lrCalc(st);if(!r||!r.n)return;
+    if(r.active||r.unpaidNow)out.push({s:st,r,ex:!!lrExempt[st.id]});
+  });
+  return out.sort((a,b)=>(b.r.end||'')<(a.r.end||'')?-1:1);
+}
+function lrActiveCount(){return lrCfg.on?lrWho().filter(x=>x.r.active&&!x.ex).length:0;}
+function lrSvcChips(){return LR_SVC.filter(x=>lrSvcOn(x[0])).map(x=>'<span style="background:#fee2e2;color:#991b1b;border:1px solid #fecaca;border-radius:8px;padding:2px 7px;font-size:10.5px;font-weight:700">'+x[1].replace(/^\S+\s/,'')+'</span>').join(' ');}
+function lrPayStatus(r){const u=r.months.find(m=>m.unpaid);if(u)return '❌ Ödenmedi ('+u.label+')';const l=r.months.filter(m=>m.done).sort((a,b)=>a.done<b.done?1:-1)[0];return l?('✅ Ödendi · '+lrDS(l.done)):'—';}
+async function lrToggleExempt(sid){
+  const on=!lrExempt[sid];
+  if(on)lrExempt[sid]=true;else delete lrExempt[sid];
+  try{await fbSet('lateRestrictExempt/'+sid,on?true:null);}catch(e){}
+  lrRefreshAll();
+}
+function lrRenderDet(){
+  const box=document.getElementById('det-late');if(!box)return;
+  const st=students.find(x=>x.id===curId);if(!st||!lrCfg.on){box.innerHTML='';return;}
+  const r=lrCalc(st);
+  if(!r||!r.n||(!r.active&&!r.unpaidNow)){box.innerHTML='';return;}
+  if(lrExempt[st.id]){box.innerHTML='<div class="card mb12" style="border:2px dashed #9ca3af;background:#f9fafb;padding:11px 14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap"><div style="flex:1;font-size:13px;font-weight:700;color:#4b5563">⚪ Geciken ödeme kısıtlaması bu öğrenci için kapalı (muaf)</div><button class="btn btn-ghost btn-sm" onclick="lrToggleExempt(\''+st.id+'\')">Yeniden aç</button></div>';return;}
+  const wk=r.accrued%7===0?(' ('+(r.accrued/7)+' hafta)'):'';
+  box.innerHTML='<div class="card mb12" style="border:3px solid #dc2626;background:#fef2f2;padding:14px">'+
+    '<div style="font-size:19px;font-weight:900;color:#b91c1c;line-height:1.3;text-align:center">'+(r.active?'🚫 Engelli – Geciken Ödeme':'⏳ Geciken Ödeme')+'</div>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;margin:10px 0;font-size:12.5px;font-weight:700;color:#7f1d1d">'+
+      '<div>Ödeme: <b>'+lrPayStatus(r)+'</b></div><div>Gecikme: <b>'+r.n+' gün</b></div>'+
+      '<div>Biriken süre: <b>'+r.accrued+' gün'+wk+'</b></div><div>Kalan süre: <b>'+r.remaining+' gün</b></div>'+
+      '<div style="grid-column:1/-1">Ek hizmetler <b>'+lrDL(r.end)+'</b> tarihinde açılır'+(r.unpaidNow?' (ödeme yapılmazsa her gün 7 gün eklenir)':'')+'</div></div>'+
+    '<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px">'+lrSvcChips()+'</div>'+
+    '<div style="text-align:center"><button class="btn btn-ghost btn-sm" onclick="lrToggleExempt(\''+st.id+'\')">⚪ Bu öğrenci için kısıtlamayı kapat (muaf)</button></div></div>';
+}
+function lrSectionHtml(){
+  const list=lrWho();
+  const act=list.filter(x=>x.r.active&&!x.ex).length;
+  let h='<div style="background:#fff;border:2px solid #dc2626;border-radius:14px;padding:12px 13px;margin-bottom:14px">'+
+    '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><div style="font-weight:900;font-size:14px;color:#991b1b;flex:1;min-width:150px">🚫 Ek Hizmetleri Kısıtlı'+(lrCfg.on?' ('+act+')':' — KAPALI')+'</div>'+
+    '<button class="btn btn-ghost btn-sm" onclick="lrTogglePanel()">⚙️ Kısıtlama Ayarları</button></div>';
+  if(lrPanelOpen){
+    h+='<div style="margin:10px 0;padding:11px;border-radius:12px;background:#fef2f2;border:1px solid #fecaca">'+
+      '<label style="display:flex;gap:8px;align-items:center;font-size:13px;font-weight:800;color:#7f1d1d;cursor:pointer"><input type="checkbox" '+(lrCfg.on?'checked':'')+' onchange="lrSet(\'on\',this.checked)" style="width:18px;height:18px"> Gecikmeye bağlı kısıtlama sistemi açık</label>'+
+      '<div style="font-size:12px;font-weight:700;color:#7f1d1d;margin:9px 0 4px;display:flex;align-items:center;gap:6px;flex-wrap:wrap">Gecikilen her takvim günü için kısıtlama: <input type="number" min="1" max="60" value="'+lrCfg.per+'" onchange="lrSet(\'per\',this.value)" style="width:60px;padding:6px;border:1px solid #fca5a5;border-radius:8px;font-weight:800"> gün <span style="font-weight:600;color:#9a3412">(son ödeme günü her ayın '+RESTRICT_DAY+'\'si; '+(RESTRICT_DAY+1)+'\'inden itibaren sayılır)</span></div>'+
+      '<div style="font-size:12px;font-weight:800;color:#7f1d1d;margin:10px 0 4px">Kısıtlanacak ek hizmetler (işaretliler kısıtlanır):</div>'+
+      LR_SVC.map(x=>'<label style="display:flex;gap:8px;align-items:flex-start;padding:5px 0;font-size:12.5px;font-weight:700;color:#334155;cursor:pointer"><input type="checkbox" '+(lrCfg.svc[x[0]]!==false?'checked':'')+' onchange="lrSet(\'svc.'+x[0]+'\',this.checked)" style="width:17px;height:17px;margin-top:1px"><span>'+x[1]+(x[2]?'':' <small style="color:#64748b;font-weight:600">(bilgi: programda otomatik engellenmez, uyarıda listelenir)</small>')+'</span></label>').join('')+
+      '</div>';
+  }
+  if(!lrCfg.on)h+='<div style="font-size:12px;color:var(--muted);font-weight:700;padding:6px 0">Sistem kapalı: gecikme hesaplanır ama hiçbir hizmet kısıtlanmaz.</div>';
+  else if(!list.length)h+='<div style="font-size:13px;color:#166534;font-weight:700;padding:6px 0">✅ Şu an ek hizmet kısıtlaması olan veya gecikmede olan öğrenci yok.</div>';
+  else h+=list.map(x=>{const r=x.r,st=x.s;
+    return '<div style="border-top:1px solid #fecaca;padding:9px 0;'+(x.ex?'opacity:.6':'')+'">'+
+      '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><div style="font-weight:800;font-size:13.5px;cursor:pointer;min-width:0" onclick="openDetNewWin(\''+st.id+'\')">'+repEsc(st.name+' '+st.surname)+'</div>'+
+      '<span style="background:'+(x.ex?'#9ca3af':(r.active?'#dc2626':'#f59e0b'))+';color:#fff;border-radius:20px;padding:3px 10px;font-size:10.5px;font-weight:800;white-space:nowrap">'+(x.ex?'MUAF':(r.active?'KISITLI':'SÜRE DOLDU'))+'</span></div>'+
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:3px 10px;margin-top:5px;font-size:11.5px;font-weight:700;color:#7f1d1d">'+
+      '<div>Ödeme: '+lrPayStatus(r)+'</div><div>Gecikme: '+r.n+' gün</div><div>Biriken: '+r.accrued+' gün</div><div>Kalan: '+r.remaining+' gün</div>'+
+      '<div style="grid-column:1/-1">Ek hizmetler açılış: <b>'+lrDL(r.end)+'</b></div></div>'+
+      '<div style="margin-top:6px"><button class="btn btn-ghost btn-sm" onclick="lrToggleExempt(\''+st.id+'\')">'+(x.ex?'Kısıtlamayı yeniden aç':'⚪ Muaf tut')+'</button></div></div>';}).join('');
+  return h+'</div>';
+}
+function lrTogglePanel(){lrPanelOpen=!lrPanelOpen;try{renderChronic();}catch(e){}}
+async function lrSet(path,val){
+  if(path==='per')val=Math.max(1,Math.min(60,parseInt(val,10)||7));
+  if(path.startsWith('svc.')){lrCfg.svc=lrCfg.svc||{};lrCfg.svc[path.slice(4)]=!!val;}else lrCfg[path]=val;
+  try{await fbSet('settings/lateRestrict',lrCfg);}catch(e){}
+  lrRefreshAll();
+}
+function lrRefreshAll(){
+  try{renderLateBanner();}catch(e){}
+  try{lrRenderDet();}catch(e){}
+  try{updateHwRestrictUI();}catch(e){}
+  const a=document.querySelector('.screen.active');
+  if(a&&a.id==='s-chronic'){try{renderChronic();}catch(e){}}
+  clearTimeout(lrSyncT);lrSyncT=setTimeout(lrSync,1500);
+}
+// Veli bağlantısı için: kısıtı olan öğrencilerin bitiş tarihini Firebase'e yazar (veli sayfası bunu okur)
+async function lrSync(){
+  try{
+    if(!students||!students.length||!db)return;
+    for(const st of students){
+      const r=lrCfg.on&&lrSvcOn('parent')&&!lrExempt[st.id]?lrCalc(st):null;
+      const val=(r&&r.active)?{until:r.end,n:r.n}:null;
+      const sig=val?val.until+'|'+val.n:'';
+      if((lrSynced[st.id]||'')===sig)continue;
+      lrSynced[st.id]=sig;
+      try{await fbSet('lateRestrict/'+st.id,val);}catch(e){}
+    }
+  }catch(e){}
+}
+const _lrRD=renderDetail;renderDetail=function(){const r=_lrRD.apply(this,arguments);try{lrRenderDet();}catch(e){}return r;};
 function lateBtn(label,bg,fn){return '<button onclick="event.stopPropagation();'+fn+'" style="background:'+bg+';color:#fff;border:none;border-radius:8px;padding:5px 9px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap">'+label+'</button>';}
 function lateSectionsHtml(){
   const cur=lateList(),old=lateOlder(),mon=MONTHS[new Date().getMonth()];
   let h='';
+  const lrH=(function(){try{return lrSectionHtml();}catch(e){return '';}})();
   const row=(st,sub,btns)=>'<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;border-top:1px solid #fecaca">'+
     '<div style="min-width:0"><div style="font-weight:700;font-size:13px;cursor:pointer" onclick="openDetNewWin(\''+st.id+'\')">'+repEsc(st.name+' '+st.surname)+'</div><div style="font-size:11px;color:#b91c1c;font-weight:600;margin-top:1px">'+sub+'</div></div>'+
     '<div style="display:flex;gap:5px;flex-shrink:0">'+btns+'</div></div>';
@@ -4213,7 +4355,7 @@ function lateSectionsHtml(){
       x.months.map(m=>lateBtn('✓ '+m.label,'#16a34a',"lateMarkPaid('"+x.s.id+"','"+m.mk+"')")).join('')+lateBtn('📲','#25d366',"lateOpen('"+x.s.id+"')"))).join(''));
   }
   if(!h)h='<div class="card empty" style="margin-bottom:12px"><p style="color:var(--muted);font-size:14px;font-weight:700">✅ Bu ay ve geçen 2 ayda ödemesi gelmeyen yok.</p></div>';
-  return h;
+  return lrH+h;
 }
 function lateMarkPaid(sid,mk){
   const st=students.find(x=>x.id===sid);if(!st)return;
@@ -4243,10 +4385,12 @@ function startLateWatch(){
     if(a&&a.id==='s-chronic')renderChronic();
   };
   try{
-    db.ref('payments').on('value',sn=>{lateAllPay=sn.val()||{};refresh();});
+    db.ref('payments').on('value',sn=>{lateAllPay=sn.val()||{};refresh();lrRefreshAll();});
     db.ref('receiptSent').on('value',sn=>{rcptSent=sn.val()||{};refresh();try{updateRcptBox();}catch(e){}});
     db.ref('lateRemind').on('value',sn=>{lateLog=sn.val()||{};renderLateBanner();});
-    db.ref('latePaid').on('value',sn=>{latePaid=sn.val()||{};refresh();});
+    db.ref('latePaid').on('value',sn=>{latePaid=sn.val()||{};refresh();lrRefreshAll();});
+    db.ref('settings/lateRestrict').on('value',sn=>{const v=sn.val();lrCfg=JSON.parse(JSON.stringify(LR_DEF));if(v&&typeof v==='object'){if(typeof v.on==='boolean')lrCfg.on=v.on;if(v.per)lrCfg.per=v.per;if(v.svc)Object.assign(lrCfg.svc,v.svc);}lrRefreshAll();});
+    db.ref('lateRestrictExempt').on('value',sn=>{lrExempt=sn.val()||{};lrRefreshAll();});
   }catch(e){}
   setTimeout(()=>{const c=document.getElementById('late-card');if(c){c.classList.add('pulse');setTimeout(()=>c.classList.remove('pulse'),3500);}},1500);
 }
@@ -6357,8 +6501,8 @@ async function msumMarkSent(id){
 }
 async function msumDeliver(id,mode,lines){
   const s=students.find(x=>x.id===id);if(!s)return;
-  if(mode==='send'){
-    try{const pv=await fbGet('payments/'+id);if(payRestriction(s,Object.values(pv||{}))){restrictBlockMsg();return;}}catch(e){}
+  {
+    try{const pv=await fbGet('payments/'+id);if(payRestriction(s,Object.values(pv||{}),'sum')){restrictBlockMsg();return;}}catch(e){}
   }
   await deliverMsg(mode,()=>msumFullTr(s,lines),L=>msumFullLang(s,L,lines),mode==='send'?msumToPhone(s):'','Aylık özet çevirisi',mode==='send'?()=>msumMarkSent(id):undefined);
 }
@@ -6391,12 +6535,13 @@ async function hwSumTextLang(s,y,m,lang){
 }
 async function hwSumSend(sid,y,m){
   const s=students.find(x=>x.id===sid);if(!s)return;
-  try{const pv=await fbGet('payments/'+sid);if(payRestriction(s,Object.values(pv||{}))){restrictBlockMsg();return;}}catch(e){}
+  try{const pv=await fbGet('payments/'+sid);if(payRestriction(s,Object.values(pv||{}),'sum')){restrictBlockMsg();return;}}catch(e){}
   const to=s.momPhone||s.dadPhone||s.phone||s.kinPhone||'';
   await deliverMsg('send',()=>hwSumText(s,y,m),L=>hwSumTextLang(s,y,m,L),to,'Aylık ödev özeti çevirisi');
 }
 function hwSumCopy(sid,y,m){
   const s=students.find(x=>x.id===sid);if(!s)return;
+  if(payRestriction(s,Object.values(lateAllPay[sid]||{}),'sum')){restrictBlockMsg();return;}
   return deliverMsg('copy',()=>hwSumText(s,y,m),L=>hwSumTextLang(s,y,m,L),'','Aylık ödev özeti çevirisi');
 }
 function hwSumCardHtml(s,y,m,showName){
@@ -6849,9 +6994,9 @@ async function makeVeliUrl(id,loadMsg){
     ml:lvlMonthLabel(k),lv:r.level||0,ln:LVL_NAMES[(r.level||1)-1]||'',pr:r.progress||0,topics:r.topics||'',note:r.note||'',tm:r.time||''
   }));
 
-  const restricted=payRestriction(s,pays);
+  const restricted=payRestriction(s,pays,'parent');
   const data={
-    rs:restricted?1:0,
+    rs:restricted?1:0,ru:restricted?restricted.end:'',sid:id,
     n:s.name+' '+s.surname, e:s.education||'', pr:s.program||'', pk:s.pkg||'',
     f:baseFee||'', pd:s.payDay||'', reg:effStart(s)||'',
     att:attSummary, ist:istList, last5:last5, pay3:pay3, bal:carryover, nd:nextDiscount,
@@ -6894,7 +7039,8 @@ function sendVeliWA(){
   window.open('https://wa.me/?text='+encodeURIComponent(msg),'_blank');
 }
 
-function renderVeliView(data){
+async function renderVeliView(data){
+  try{if(data&&data.sid&&!data.rs){const lr=await fbGet('lateRestrict/'+data.sid);if(lr&&lr.until&&lr.until>todays()){data.rs=1;data.ru=lr.until;data.hw='';data.gr='';data.hwLog=[];}}}catch(e){}
   hideLoad();
   document.querySelectorAll('.screen').forEach(sc=>sc.classList.remove('active'));
   document.getElementById('s-veli-view').classList.add('active');
@@ -7001,7 +7147,7 @@ function renderVeliView(data){
         ${x.g?(x.ts==='came'?'<div style="font-weight:700;color:#166534;font-size:13px">🩷 Telafi dersi yapıldı</div>':x.ts==='absent'?'<div style="font-weight:700;color:#b91c1c;font-size:13px">Telafi dersine katılınmadı</div>':x.td?`<div style="font-weight:800;color:#be185d;font-size:14px">🩷 Telafi dersi: ${x.td}${x.tt?' · '+x.tt:''}</div>`:`<div style="font-weight:700;color:#92400e;font-size:13px">🩷 Telafi hakkı var · son tarih ${x.exp}</div>`):''}
       </div>`).join('')}
     </div>`:''}
-    ${data.rs?`<div class="card mb12" style="border:3px solid #dc2626;background:#fef2f2;text-align:center;padding:20px 14px"><div style="font-size:22px;font-weight:900;color:#b91c1c;line-height:1.3">⛔ ÖDEME GECİKMESİ<br>KISITLAMA ALTINDA</div><div style="font-size:15px;font-weight:800;color:#991b1b;margin-top:8px;line-height:1.5">Ödeme gecikmesinden dolayı ödeme yapılana kadar ödev ve öğretmen notu bildirimi yapılmayacaktır.</div></div>`:''}
+    ${data.rs?`<div class="card mb12" style="border:3px solid #dc2626;background:#fef2f2;text-align:center;padding:20px 14px"><div style="font-size:22px;font-weight:900;color:#b91c1c;line-height:1.3">⛔ ÖDEME GECİKMESİ<br>KISITLAMA ALTINDA</div><div style="font-size:15px;font-weight:800;color:#991b1b;margin-top:8px;line-height:1.5">Ödeme gecikmesinden dolayı ödev ve öğretmen notu bildirimi geçici olarak durdurulmuştur.${data.ru?` Ek hizmetler <b>${repDL(data.ru)}</b> tarihinde yeniden başlayacaktır.`:' Ödeme yapılana kadar devam etmeyecektir.'}</div></div>`:''}
     ${(data.hwLog&&data.hwLog.length)?`<div class="card mb12">
       <div class="section-lbl">📚 Ödev &amp; Öğretmen Notu (Son 3 Ay)</div>
       ${data.hwLog.map(l=>`<div class="pay-row">
@@ -7246,11 +7392,12 @@ function repFullMsg(){
   return repMsgFor(s,r,toStudent);
 }
 function repSendWA(){
-  if(payRestriction(students.find(x=>x.id===curId),payData)){restrictBlockMsg();return;}
+  if(payRestriction(students.find(x=>x.id===curId),payData,'rep')){restrictBlockMsg();return;}
   const ph=document.getElementById('wa-hw-to').value;
   return deliverMsg('send',repFullMsg,repFullMsgLang,ph,'3 aylık rapor çevirisi');
 }
 function repCopy(){
+  if(payRestriction(students.find(x=>x.id===curId),payData,'rep')){restrictBlockMsg();return;}
   return deliverMsg('copy',repFullMsg,repFullMsgLang,'','3 aylık rapor çevirisi');
 }
 
@@ -7356,7 +7503,7 @@ async function repSaveModal(sendAfter){
   const toStudent=(()=>{const sel=document.getElementById('rep-m-wa');return !!(sel&&sel.selectedOptions[0]&&sel.selectedOptions[0].textContent.startsWith('🎓'));})();
   rep.mode='manual';rep.createdAt=todays();
   if(sendAfter&&s){
-    try{const pv=await fbGet('payments/'+id);if(payRestriction(s,Object.values(pv||{}))){restrictBlockMsg();return;}}catch(e){}
+    try{const pv=await fbGet('payments/'+id);if(payRestriction(s,Object.values(pv||{}),'rep')){restrictBlockMsg();return;}}catch(e){}
   }
   showLoad('Kaydediliyor…');
   try{
@@ -8009,40 +8156,75 @@ function waBulkReset(){waBulkQueue=[];waBulkIndex=0;document.getElementById('wab
 const PR_DEFAULTS = {"tr": {"full": "🎓 ROCKJAZZ MÜZİK & SATRANÇ ATÖLYESİ\nVELİLERİMİZ VE ÖĞRENCİLERİMİZ İÇİN 8 TEMEL ÇALIŞMA KURALI\n\nDeğerli Velilerimiz ve Öğrencilerimiz,\n\nEğitim sistemimizin düzenli, adil ve verimli yürütülmesi; ders saatlerimizin ve kontenjanlarımızın korunması amacıyla aşağıdaki çalışma esasları uygulanmaktadır.\n\n1. 📅 AYLIK DERS PROGRAMI\nEğitimlerimiz 4 haftalık aylık sabit program üzerinden yürütülür.\n• 4 ders: Haftada 1 ders.\n• 8 ders: Haftada 2 ders.\n• 12 ders: Haftada 3 ders.\nAylık ücret, kayıt olunan programın tamamına aittir. Derslerin haftalık dağılımı kurum tarafından oluşturulan programa göre belirlenir.\n\n2. ❌ ÖĞRENCİ KAYNAKLI DEVAMSIZLIKTA TELAFİ YOKTUR\nHastalık, tatil, seyahat, kişisel mazeret veya başka bir nedenle öğrencinin katılamadığı dersler telafi edilmez.\n• Kaçırılan ders başka bir güne aktarılmaz.\n• Ücret iadesi yapılmaz.\n• Ders hakkı sonraki aya devredilmez.\n📢 24 SAAT ÖNCEDEN BİLDİRİM\nKatılamayacağınız dersleri en az 24 saat önceden bildirmenizi rica ederiz. Bu bildirim, boşalan ders saatinin başka bir öğrenciye verilmesini sağlayabilir; ancak telafi hakkı oluşturmaz. Son 12 saat içerisinde yapılan bildirimlerde program değişikliği yapılamaz.\n\n3. 🏫 KURUM KAYNAKLI İPTALLER VE ÖNCEDEN DUYURULAN İZİNLER\n• Eğitmen veya kurum kaynaklı, önceden planlanmamış nedenlerle yapılamayan dersler telafi edilir.\n• Dini bayramlarda ders yapılmaz ve telafi verilmez.\n• Kurumumuz, takvimdeki beşinci haftaya denk gelen günlerde yılda en fazla 2 kez önceden planlanmış izin kullanabilir.\n• Bu izinler en az 1 ay önceden WhatsApp grubundan duyurulur.\n• Önceden duyurulan kurum izin günleri için ayrıca telafi dersi verilmez.\nÖnemli: Önceden ilan edilen izin tarihleri aylık program hazırlanırken dikkate alınmalıdır. Öğrencilerimizin kayıtlı oldukları aylık ders sayılarını, izin tarihleri dışındaki uygun haftalarda tamamlamaları gerekir.\n\n4. ⭐ FAZLADAN DERSLER VE 5. HAFTA AVANTAJI\nBazı aylarda takvim gereği 5 haftalık dönemler oluşabilir. Bu durum, kurumumuzun ve öğrencilerimizin ders programını daha esnek yürütmesine imkân tanır.\nÖrnek olarak:\n• 4 derslik program: Uygunluk durumunda 5 derse kadar.\n• 8 derslik program: Uygunluk durumunda 9–10 derse kadar.\n• 12 derslik program: Uygunluk durumunda 13–14 derse kadar.\nBu dersler garanti edilmiş ek ders hakkı değildir.\n• Fazladan dersler yalnızca beşinci haftada değil, uygun olan başka haftalarda da yapılabilir.\n• Öğrenci, kayıtlı olduğu aylık ders programını eksiksiz tamamlamakla yükümlüdür.\n• Kurumun önceden duyurduğu izin günleri, öğrencinin aylık programını tamamlamasına engel oluşturmaz. Öğrenci derslerini diğer uygun haftalara göre planlamalıdır.\n• Önceden duyurulmuş kurum izinleri nedeniyle yapılamayan dersler için ayrıca telafi verilmez.\n• Fazladan dersler, öğrenci kaynaklı devamsızlıkların telafisi olarak kullanılamaz.\nKısacası: Beşinci hafta bir ek ders garantisi değil, programın uygunluk durumuna göre esnetilebildiği bir dönemdir.\n\n5. 💳 AYLIK ÖDEME DÜZENİ\n• Ödemeler her ayın 1'i ile 20'si arasında yapılmalıdır.\n• Ödeme en geç üçüncü haftanın son ders gününe kadar tamamlanmalıdır.\n• Öğrencinin kendi devamsızlığı aylık program ücretini düşürmez.\n• Ay içerisinde yalnızca bir derse katılım sağlanmış olsa bile aylık program ücreti esas alınır.\n• Tek ders ödeme seçeneği kurum tarafından ayrıca uygulanırsa güncel tek ders ücreti üzerinden hesaplama yapılır.\n\n6. ⏸️ DERSLERE ARA VERME\nDerslere ara vermek isteyen velilerimizin kararlarını en geç devam edilen ayın üçüncü haftasında bildirmeleri gerekir.\n• Ekonomik paketlerde yaz tatili molası en fazla 4 haftadır.\n• Dört haftayı aşan aralarda eski fiyat avantajı korunmaz.\n• Yeniden başlama durumunda ders programı mevcut kontenjanlara göre belirlenir.\n\n7. 📢 WHATSAPP DUYURULARI\nGenel duyurular, bilgilendirmeler, izin tarihleri ve program değişiklikleri kayıtlı WhatsApp grubumuz üzerinden yapılır.\n• Grubun düzenli takip edilmesi veli ve öğrencinin sorumluluğundadır.\n• Genel duyurular kişiye özel olarak tekrar gönderilmez.\n• Mesajın görülmemesi veya okunmaması, duyuruları takip etme sorumluluğunu ortadan kaldırmaz.\n\n8. 📚 ÜCRETSİZ ÖDEV VE ÇALIŞMA TAKİBİ\nÖğrencilerimiz evde yaptıkları çalışmaları ve ödevlerini haftanın 6 günü (Cumartesi hariç), 11.00–22.00 saatleri arasında öğretmenlerine gönderebilirler.\nBu ücretsiz hizmet; öğrencinin gelişimini takip etmek, eksiklerini belirlemek ve eğitim başarısını artırmak amacıyla sunulmaktadır.\n\n❤️ BİRLİKTE DAHA DÜZENLİ, DAHA VERİMLİ BİR EĞİTİM İÇİN\nKurallarımızı dikkatle okuyup dikkate aldığınız için teşekkür ederiz.\nROCKJAZZ MÜZİK ALETLERİ\nSİLİFKE SATRANÇ ATÖLYESİ\nDisiplinli çalışma, düzenli devam, kalıcı başarı! ❤️", "short": "🎓 ROCKJAZZ MÜZİK & SATRANÇ ATÖLYESİ\n📢 VELİLERİMİZ VE ÖĞRENCİLERİMİZ İÇİN 8 ÖNEMLİ KURAL\n\nDeğerli Velilerimiz,\n\nEğitim sistemimizin düzenli ve verimli yürütülebilmesi için lütfen aşağıdaki kuralları dikkate alınız.\n\n1️⃣ AYLIK PROGRAM\nDersler 4 haftalık sabit program üzerinden yürütülür. Aylık ücret kayıtlı olunan programın tamamına aittir.\n\n2️⃣ ÖĞRENCİ DEVAMSIZLIĞI\nHastalık, tatil veya kişisel nedenlerle kaçırılan dersler telafi edilmez, iade edilmez ve sonraki aya aktarılmaz.\n\n3️⃣ 24 SAAT ÖNCEDEN BİLDİRİM\nDerse katılamayacağınız zaman en az 24 saat önceden haber veriniz. Bildirim telafi hakkı oluşturmaz. Son 12 saat içinde program değişikliği yapılamaz.\n\n4️⃣ KURUM İZİNLERİ\nYılda en fazla 2 kez, beşinci haftaya denk gelen önceden planlanmış kurum izni kullanılabilir. Bu tarihler en az 1 ay önceden duyurulur ve telafi edilmez. Aylık ders programı diğer uygun haftalarda tamamlanmalıdır.\n\n5️⃣ BEŞİNCİ HAFTA\nUygunluk durumunda fazladan ders yapılabilir. Ancak bu dersler garanti değildir ve öğrenci devamsızlığının telafisi yerine geçmez.\n\n6️⃣ AYLIK ÖDEME\nÖdemeler ayın 1–20'si arasında, en geç üçüncü haftanın son ders gününe kadar yapılmalıdır. Öğrenci devamsızlığı aylık ücreti düşürmez.\n\n7️⃣ WHATSAPP DUYURULARI\nTüm genel duyurular ve program değişiklikleri WhatsApp grubundan yapılır. Grubun düzenli takip edilmesi veli sorumluluğundadır.\n\n8️⃣ ÜCRETSİZ ÖDEV TAKİBİ\nÖğrencilerimiz ödevlerini haftanın 6 günü (Cumartesi hariç), 11.00–22.00 saatleri arasında öğretmenlerine gönderebilirler.\n\n❤️ ÖNEMLİ HATIRLATMA:\nÖnceden duyurulan kurum izinleri, öğrenci devamsızlıkları ve beşinci hafta dersleri birbirinden farklı uygulamalardır. Her öğrenci kendi aylık ders programını eksiksiz tamamlamakla yükümlüdür.\n\nAnlayışınız ve iş birliğiniz için teşekkür ederiz.\nROCKJAZZ MÜZİK ALETLERİ • SİLİFKE SATRANÇ ATÖLYESİ"}, "ru": {"full": "🎓 ROCKJAZZ — МУЗЫКАЛЬНАЯ И ШАХМАТНАЯ МАСТЕРСКАЯ\n8 ОСНОВНЫХ ПРАВИЛ ДЛЯ РОДИТЕЛЕЙ И УЧЕНИКОВ\n\nУважаемые родители и ученики!\n\nДля обеспечения организованного, справедливого и эффективного учебного процесса, а также для сохранения расписания и учебных мест, действуют следующие правила.\n\n1. 📅 ЕЖЕМЕСЯЧНОЕ РАСПИСАНИЕ ЗАНЯТИЙ\nОбучение проводится по фиксированной программе продолжительностью 4 недели.\n• 4 занятия: 1 занятие в неделю.\n• 8 занятий: 2 занятия в неделю.\n• 12 занятий: 3 занятия в неделю.\nОплата взимается за всю выбранную программу. Распределение занятий определяется расписанием учреждения.\n\n2. ❌ ПРОПУСКИ ПО ИНИЦИАТИВЕ УЧЕНИКА НЕ КОМПЕНСИРУЮТСЯ\nЗанятия, пропущенные по причине болезни, отпуска, поездки, личных обстоятельств или по другим причинам со стороны ученика, не компенсируются.\n• Пропущенное занятие не переносится на другой день.\n• Возврат денежных средств не производится.\n• Неиспользованное занятие не переносится на следующий месяц.\n📢 УВЕДОМЛЕНИЕ ЗА 24 ЧАСА\nПросим сообщать о невозможности посещения занятия не менее чем за 24 часа. Это может позволить предоставить освободившееся время другому ученику, однако не даёт права на компенсационное занятие. При уведомлении менее чем за 12 часов изменение расписания невозможно.\n\n3. 🏫 ОТМЕНЫ ПО ВИНЕ УЧРЕЖДЕНИЯ И ЗАРАНЕЕ ОБЪЯВЛЕННЫЕ ВЫХОДНЫЕ\n• Занятия, отменённые по незапланированным причинам со стороны преподавателя или учреждения, компенсируются.\n• В дни религиозных праздников занятия не проводятся и не компенсируются.\n• Учреждение может использовать не более двух заранее запланированных дней отдыха в год, приходящихся на пятую неделю календарного периода.\n• Об этих днях сообщается в группе WhatsApp не менее чем за 1 месяц.\n• За заранее объявленные дни отдыха дополнительные компенсационные занятия не предоставляются.\nВажно: Ученик должен пройти все занятия своей месячной программы в другие подходящие недели, не приходящиеся на объявленные дни отдыха.\n\n4. ⭐ ДОПОЛНИТЕЛЬНЫЕ ЗАНЯТИЯ И ПРЕИМУЩЕСТВО ПЯТОЙ НЕДЕЛИ\nВ некоторые месяцы календарь предусматривает пять недель. Это даёт возможность более гибко распределять занятия.\nНапример:\n• Программа на 4 занятия: до 5 занятий при наличии возможности.\n• Программа на 8 занятий: до 9–10 занятий при наличии возможности.\n• Программа на 12 занятий: до 13–14 занятий при наличии возможности.\nЭти дополнительные занятия не являются гарантированным правом.\n• Дополнительные занятия могут проводиться не только на пятой неделе, но и в другие подходящие недели.\n• Ученик обязан полностью пройти занятия своей месячной программы.\n• Заранее объявленные выходные учреждения необходимо учитывать при планировании занятий.\n• Занятия, не состоявшиеся из-за заранее объявленных выходных, отдельно не компенсируются.\n• Дополнительные занятия не заменяют занятия, пропущенные по инициативе ученика.\nКратко: Пятая неделя — это возможность гибкого планирования, а не гарантия дополнительных занятий.\n\n5. 💳 ПОРЯДОК ЕЖЕМЕСЯЧНОЙ ОПЛАТЫ\n• Оплата производится с 1-го по 20-е число каждого месяца.\n• Оплата должна быть завершена не позднее последнего учебного дня третьей недели.\n• Пропуски по инициативе ученика не уменьшают ежемесячную стоимость программы.\n• Даже если ученик посетил только одно занятие в течение месяца, применяется полная стоимость месячной программы.\n• Если учреждение отдельно предоставляет возможность оплаты за одно занятие, расчёт производится по действующему тарифу.\n\n6. ⏸️ ВРЕМЕННОЕ ПРЕКРАЩЕНИЕ ЗАНЯТИЙ\nРодители, желающие временно приостановить занятия, должны сообщить об этом не позднее третьей недели текущего месяца.\n• В экономичных пакетах летний перерыв допускается максимум на 4 недели.\n• При перерыве более 4 недель прежняя льготная стоимость не сохраняется.\n• После возвращения расписание определяется с учётом имеющихся свободных мест.\n\n7. 📢 ОБЪЯВЛЕНИЯ В WHATSAPP\nВсе общие объявления, информационные сообщения, даты выходных и изменения расписания публикуются в зарегистрированной группе WhatsApp.\n• Регулярное отслеживание группы является обязанностью родителей и учеников.\n• Общие объявления повторно каждому родителю лично не отправляются.\n• То, что сообщение не было просмотрено или прочитано, не освобождает от ответственности за отслеживание объявлений.\n\n8. 📚 БЕСПЛАТНАЯ ПРОВЕРКА ДОМАШНИХ ЗАДАНИЙ\nУченики могут отправлять преподавателям выполненные дома задания и материалы для проверки 6 дней в неделю (кроме субботы), с 11:00 до 22:00.\nЭта бесплатная услуга предоставляется для отслеживания прогресса ученика, выявления пробелов и повышения эффективности обучения.\n\n❤️ ВМЕСТЕ К БОЛЕЕ ОРГАНИЗОВАННОМУ И ЭФФЕКТИВНОМУ ОБУЧЕНИЮ!\nБлагодарим за понимание и сотрудничество!\nROCKJAZZ — МУЗЫКАЛЬНЫЕ ИНСТРУМЕНТЫ\nШАХМАТНАЯ МАСТЕРСКАЯ SİLİFKE\nДисциплина, регулярное посещение, устойчивые результаты! ❤️", "short": "🎓 ROCKJAZZ — МУЗЫКАЛЬНАЯ И ШАХМАТНАЯ МАСТЕРСКАЯ\n📢 8 ВАЖНЫХ ПРАВИЛ ДЛЯ РОДИТЕЛЕЙ И УЧЕНИКОВ\n\nУважаемые родители!\n\nДля организованного и эффективного обучения просим обратить внимание на следующие правила.\n\n1️⃣ ЕЖЕМЕСЯЧНАЯ ПРОГРАММА\nЗанятия проводятся по фиксированной программе на 4 недели. Оплата производится за всю выбранную программу.\n\n2️⃣ ПРОПУСКИ УЧЕНИКА\nЗанятия, пропущенные по болезни, отпуску или личным причинам, не компенсируются, не возвращаются и не переносятся на следующий месяц.\n\n3️⃣ УВЕДОМЛЕНИЕ ЗА 24 ЧАСА\nО невозможности посещения необходимо сообщить минимум за 24 часа. Уведомление не даёт права на компенсацию. Изменение расписания менее чем за 12 часов невозможно.\n\n4️⃣ ВЫХОДНЫЕ УЧРЕЖДЕНИЯ\nУчреждение может использовать не более двух заранее запланированных выходных в год. Объявление публикуется в WhatsApp минимум за 1 месяц. Эти дни не компенсируются. Месячную программу необходимо завершить в другие подходящие недели.\n\n5️⃣ ПЯТАЯ НЕДЕЛЯ\nПри наличии возможности могут проводиться дополнительные занятия. Они не гарантируются и не заменяют пропущенные занятия ученика.\n\n6️⃣ ЕЖЕМЕСЯЧНАЯ ОПЛАТА\nОплата производится с 1-го по 20-е число месяца, не позднее последнего учебного дня третьей недели. Пропуски ученика не уменьшают месячную стоимость.\n\n7️⃣ ОБЪЯВЛЕНИЯ В WHATSAPP\nВсе общие объявления и изменения расписания публикуются в группе WhatsApp. Родители несут ответственность за регулярное отслеживание сообщений.\n\n8️⃣ БЕСПЛАТНАЯ ПРОВЕРКА ДОМАШНИХ ЗАДАНИЙ\nЗадания можно отправлять преподавателям 6 дней в неделю (кроме субботы), с 11:00 до 22:00.\n\n❤️ ВАЖНО!\nЗаранее объявленные выходные учреждения, пропуски ученика и дополнительные занятия пятой недели — это разные ситуации. Каждый ученик обязан полностью выполнить свою ежемесячную программу.\n\nБлагодарим за понимание и сотрудничество!\nROCKJAZZ — МУЗЫКАЛЬНЫЕ ИНСТРУМЕНТЫ • ШАХМАТНАЯ МАСТЕРСКАЯ SİLİFKE"}};
 let prTexts=null, prCurrentKey='tr|full';
 function prLoadState(){try{const v=JSON.parse(localStorage.getItem('rockjazzProgramRules_v1')||'null');return v&&typeof v==='object'?v:null;}catch(e){return null;}}
-function prPersistState(){try{localStorage.setItem('rockjazzProgramRules_v1',JSON.stringify(prTexts||PR_DEFAULTS));}catch(e){}}
-function prCapture(){const ta=document.getElementById('pr-content');if(!ta)return;const lang=document.getElementById('pr-lang')?.value||'tr',kind=document.getElementById('pr-kind')?.value||'full';if(!prTexts)prTexts=prLoadState()||JSON.parse(JSON.stringify(PR_DEFAULTS));prTexts[lang]=prTexts[lang]||{};prTexts[lang][kind]=ta.value;prCurrentKey=lang+'|'+kind;prPersistState();}
-function prInit(){prTexts=prLoadState()||JSON.parse(JSON.stringify(PR_DEFAULTS));const sel=document.getElementById('pr-student');if(sel){const keep=sel.value;const sorted=(students||[]).slice().sort((a,b)=>((a.name||'')+' '+(a.surname||'')).localeCompare((b.name||'')+' '+(b.surname||''),'tr'));sel.innerHTML='<option value="">— Öğrenci seçin —</option>'+sorted.map(s=>'<option value="'+String(s.id).replace(/"/g,'&quot;')+'">'+escHtml((s.name||'')+' '+(s.surname||''))+'</option>').join('');if(keep&&sorted.some(s=>String(s.id)===keep))sel.value=keep;}prLoadCurrent();prFillContacts();}
-function prLoadCurrent(){if(!prTexts)prTexts=prLoadState()||JSON.parse(JSON.stringify(PR_DEFAULTS));const ta=document.getElementById('pr-content');if(!ta)return;const lang=document.getElementById('pr-lang').value,kind=document.getElementById('pr-kind').value,key=lang+'|'+kind;prTexts[lang]=prTexts[lang]||{};if(typeof prTexts[lang][kind]!=='string')prTexts[lang][kind]=PR_DEFAULTS[lang][kind];ta.value=prTexts[lang][kind];ta.classList.toggle('short',kind==='short');prCurrentKey=key;const st=document.getElementById('pr-status');if(st)st.textContent='';}
-let prTranslateTimer=null,prTranslateSeq=0;
-function prOnEdit(){
-  prCapture();
-  const lang=document.getElementById('pr-lang')?.value||'tr';
-  const kind=document.getElementById('pr-kind')?.value||'full';
-  const st=document.getElementById('pr-status');
-  if(lang!=='tr'){if(st)st.textContent='✓ Rusça metin düzenlemesi otomatik kaydedildi.';return;}
-  if(prTranslateTimer)clearTimeout(prTranslateTimer);
-  const seq=++prTranslateSeq;
-  if(st)st.textContent='💾 Türkçe kaydedildi. Yazmayı bitirdiğinizde Rusça çeviri otomatik güncellenecek…';
-  prTranslateTimer=setTimeout(()=>prAutoTranslate(kind,seq),1100);
+let prRemoteTimer=null,prRemoteLoaded=false;
+function prPersistState(noRemote){
+  if(prTexts&&!noRemote)prTexts._ts=Date.now();
+  try{localStorage.setItem('rockjazzProgramRules_v1',JSON.stringify(prTexts||PR_DEFAULTS));}catch(e){}
+  if(noRemote)return;
+  clearTimeout(prRemoteTimer);
+  prRemoteTimer=setTimeout(async()=>{
+    try{await fbSet('settings/programRules',prTexts);const st=document.getElementById('pr-sync');if(st)st.textContent='☁️ Tüm cihazlarda kayıtlı';}
+    catch(e){const st=document.getElementById('pr-sync');if(st)st.textContent='⚠️ Sunucuya kaydedilemedi; yalnızca bu cihazda.';}
+  },800);
 }
-async function prAutoTranslate(kind,seq){
-  const src=(prTexts?.tr?.[kind]||'').trim();
-  const st=document.getElementById('pr-status');
-  if(!src)return;
+async function prRemoteLoad(){
+  const st=document.getElementById('pr-sync');
   try{
-    if(st)st.textContent='🌐 Rusça çeviri hazırlanıyor…';
-    const translated=await trText(src,'ru');
-    if(seq!==prTranslateSeq)return;
-    // Kullanıcı çeviri sürerken Türkçe metni değiştirdiyse eski sonucu kaydetme.
-    if((prTexts?.tr?.[kind]||'').trim()!==src)return;
-    prTexts.ru=prTexts.ru||{};
-    prTexts.ru[kind]=translated;
-    prPersistState();
-    if(st)st.textContent='✓ Rusça çeviri güncellendi ve otomatik kaydedildi. Rusça sekmesine geçtiğinizde yeni metni göreceksiniz.';
-  }catch(e){
-    if(seq!==prTranslateSeq)return;
-    if(st)st.textContent='⚠️ Türkçe kaydedildi ancak Rusça otomatik çevrilemedi. İnternet/çeviri servisini kontrol edip tekrar deneyin.';
-    console.error('Program kuralları Rusça çeviri hatası:',e);
+    const remote=await fbGet('settings/programRules');
+    const local=prLoadState();
+    if(remote&&typeof remote==='object'&&(!local||(remote._ts||0)>=(local._ts||0))){
+      const clean=JSON.parse(JSON.stringify(PR_DEFAULTS));
+      ['tr','ru'].forEach(l=>['full','short'].forEach(k=>{if(remote[l]&&typeof remote[l][k]==='string')clean[l][k]=remote[l][k];}));
+      clean._src=remote._src&&typeof remote._src==='object'?remote._src:{};clean._ts=remote._ts||0;
+      prTexts=clean;prPersistState(true);
+      const ta=document.getElementById('pr-content');
+      if(ta&&document.activeElement!==ta)prLoadCurrent();
+    }else if(local){ // bu cihazdaki metin daha yeni (veya sunucuda henüz yok) → sunucuya gönder
+      prTexts=local;try{await fbSet('settings/programRules',local);}catch(e){}
+    }
+    prRemoteLoaded=true;if(st)st.textContent='☁️ Tüm cihazlarda kayıtlı';
+  }catch(e){if(st)st.textContent='⚠️ Sunucuya ulaşılamadı; bu cihazdaki metin gösteriliyor.';}
+}
+function prCapture(){const ta=document.getElementById('pr-content');if(!ta)return;const lang=document.getElementById('pr-lang')?.value||'tr',kind=document.getElementById('pr-kind')?.value||'full';if(!prTexts)prTexts=prLoadState()||JSON.parse(JSON.stringify(PR_DEFAULTS));prTexts[lang]=prTexts[lang]||{};prTexts[lang][kind]=ta.value;prCurrentKey=lang+'|'+kind;prPersistState();}
+function prInit(){prTexts=prLoadState()||JSON.parse(JSON.stringify(PR_DEFAULTS));const sel=document.getElementById('pr-student');if(sel){const keep=sel.value;const sorted=(students||[]).slice().sort((a,b)=>((a.name||'')+' '+(a.surname||'')).localeCompare((b.name||'')+' '+(b.surname||''),'tr'));sel.innerHTML='<option value="">— Öğrenci seçin —</option>'+sorted.map(s=>'<option value="'+String(s.id).replace(/"/g,'&quot;')+'">'+escHtml((s.name||'')+' '+(s.surname||''))+'</option>').join('');if(keep&&sorted.some(s=>String(s.id)===keep))sel.value=keep;}prLoadCurrent();prFillContacts();prRemoteLoad();}
+function prLoadCurrent(){if(!prTexts)prTexts=prLoadState()||JSON.parse(JSON.stringify(PR_DEFAULTS));const ta=document.getElementById('pr-content');if(!ta)return;const lang=document.getElementById('pr-lang').value,kind=document.getElementById('pr-kind').value,key=lang+'|'+kind;prTexts[lang]=prTexts[lang]||{};if(typeof prTexts[lang][kind]!=='string')prTexts[lang][kind]=PR_DEFAULTS[lang][kind];ta.value=prTexts[lang][kind];ta.classList.toggle('short',kind==='short');prCurrentKey=key;const st=document.getElementById('pr-status');if(st)st.textContent='';try{const c=document.getElementById('pr-auto');if(c)c.checked=prAutoOn();prStaleNote();}catch(e){}}
+function prAutoOn(){try{const v=localStorage.getItem('rockjazzPrAuto');return v===null?true:v==='1';}catch(e){return true;}}
+function prAutoSave(){try{localStorage.setItem('rockjazzPrAuto',document.getElementById('pr-auto').checked?'1':'0');}catch(e){}}
+let prTrTimer=null,prTrBusy=false;
+function prTrText(kind){return(prTexts&&prTexts.tr&&typeof prTexts.tr[kind]==='string')?prTexts.tr[kind]:PR_DEFAULTS.tr[kind];}
+function prStale(kind){const src=(prTexts&&prTexts._src&&typeof prTexts._src[kind]==='string')?prTexts._src[kind]:PR_DEFAULTS.tr[kind];return prTrText(kind).trim()!==src.trim();}
+function prStaleNote(){
+  const st=document.getElementById('pr-status');if(!st)return;
+  const lang=document.getElementById('pr-lang').value,kind=document.getElementById('pr-kind').value;
+  if(lang==='ru'&&prStale(kind))st.textContent='⚠️ Türkçe metin değişti; bu Rusça metin eski olabilir. “🌐 Türkçeden Rusçaya Çevir”e bas.';
+}
+async function prTranslateRu(kind,silent){
+  if(!prTexts)prTexts=prLoadState()||JSON.parse(JSON.stringify(PR_DEFAULTS));
+  kind=kind||document.getElementById('pr-kind').value;
+  const st=document.getElementById('pr-status');
+  const src=prTrText(kind);
+  if(!src.trim()){if(st)st.textContent='Önce Türkçe metni yaz.';return;}
+  if(prTrBusy)return;prTrBusy=true;
+  if(st)st.textContent='🌐 Rusçaya çevriliyor…';
+  try{
+    const out=await wfTranslate(src,'ru');
+    if(prTrText(kind)!==src){prTrBusy=false;return prTranslateRu(kind,silent);} // çeviri sırasında metin değişti
+    prTexts.ru=prTexts.ru||{};prTexts.ru[kind]=out;prTexts._src=prTexts._src||{};prTexts._src[kind]=src;prPersistState();
+    const lang=document.getElementById('pr-lang').value,k2=document.getElementById('pr-kind').value;
+    if(lang==='ru'&&k2===kind)document.getElementById('pr-content').value=out;
+    if(st)st.textContent='✓ Rusça çeviri güncellendi'+(lang==='tr'?' (Rusça sekmesinden kontrol edebilirsin).':'. Göndermeden önce bir kez oku.');
+  }catch(e){if(st)st.textContent='⚠️ Çeviri servisine ulaşılamadı (internet bağlantısı?). Rusça metin eski kalabilir.';}
+  prTrBusy=false;
+}
+function prOnEdit(){
+  prCapture();const st=document.getElementById('pr-status');
+  const lang=document.getElementById('pr-lang').value,kind=document.getElementById('pr-kind').value;
+  if(lang==='tr'){
+    if(prAutoOn()){if(st)st.textContent='✓ Kaydedildi. Rusçası çevriliyor (yazmayı bıraktıktan sonra)…';clearTimeout(prTrTimer);prTrTimer=setTimeout(()=>prTranslateRu(kind,true),2000);}
+    else if(st)st.textContent='✓ Kaydedildi. Rusça artık eski; “🌐 Türkçeden Rusçaya Çevir”e bas.';
+  }else{
+    prTexts._src=prTexts._src||{};prTexts._src[kind]=prTrText(kind);prPersistState(); // elle düzeltilen Rusça “eski” sayılmaz
+    if(st)st.textContent='✓ Düzenleme otomatik kaydedildi. (Türkçe metni sonra değiştirirsen bu Rusça yeniden çevrilir.)';
   }
 }
 function prSave(){prCapture();const st=document.getElementById('pr-status');if(st)st.textContent='✓ Metin bu tarayıcıya kaydedildi.';}
@@ -8147,11 +8329,12 @@ async function wfTrFetch(text,tl){
   return res.join('\n');
 }
 async function wfTranslate(text,tl){
-  const bullets=text.split('\n').map(l=>{const m=l.match(/^(\s*[•\-]\s+)/);return m?m[1]:'';});
-  const plain=text.split('\n').map((l,i)=>l.slice(bullets[i].length)).join('\n');
-  let out=await wfTrFetch(plain,tl);
-  const ol=out.split('\n');
-  return ol.map((l,i)=>(bullets[i]||'')+l).join('\n').replace(/\*\s+([^*\n]+?)\s+\*/g,'*$1*').replace(/_\s+([^_\n]+?)\s+_/g,'_$1_');
+  const lines=String(text).split('\n'),groups=[];let cur=[],len=0;
+  lines.forEach(l=>{if(len+l.length>1000&&cur.length){groups.push(cur.join('\n'));cur=[];len=0;}cur.push(l);len+=l.length+1;});
+  if(cur.length)groups.push(cur.join('\n'));
+  const out=[];
+  for(const g of groups){out.push(g.trim()?await wfTrFetch(g,tl):g);}
+  return out.join('\n').replace(/\*\s+([^*\n]+?)\s+\*/g,'*$1*').replace(/_\s+([^_\n]+?)\s+_/g,'_$1_');
 }
 async function wcAuto(id,langs){
   const m=wcFind(id);if(!m)return;
