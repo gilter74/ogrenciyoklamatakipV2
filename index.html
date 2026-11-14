@@ -1220,6 +1220,12 @@ summary::-webkit-details-marker{display:none}
     <p style="font-size:11px;color:var(--muted);line-height:1.5;margin-top:6px">Kullanılabilir alanlar: <b>{ad}</b>, <b>{soyad}</b>, <b>{gun_saat}</b>, <b>{ucret}</b>, <b>{odeme_gunu}</b>. Her öğrencinin bilgileri mesaja otomatik yerleştirilir.</p>
   </div>
   <div class="card mb14">
+    <div class="section-lbl">📎 Kaynaklardan Dosya Ekle</div>
+    <p style="font-size:11px;color:var(--muted);line-height:1.5;margin-bottom:8px">Kaynaklar bölümündeki resim/PDF/Word dosyalarından seçin; aşağıdaki “Dosyaları WhatsApp'ta paylaş” düğmesiyle gönderin.</p>
+    <div id="wab-res" style="display:flex;flex-direction:column;gap:6px;max-height:220px;overflow:auto"></div>
+    <div id="wab-res-sel" style="font-size:12px;font-weight:700;color:#0f766e;margin-top:8px"></div>
+  </div>
+  <div class="card mb14">
     <div style="display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:10px"><b>Alıcıları seç</b><span id="wab-count" class="badge" style="background:var(--green-l);color:var(--green)">0 seçili</span></div>
     <input id="wab-search" placeholder="Öğrenci veya telefon ara…" oninput="waBulkRender()" style="margin-bottom:10px">
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px"><button class="btn-ghost btn-sm" onclick="waBulkSelectAll(true)">Tümünü seç</button><button class="btn-ghost btn-sm" onclick="waBulkSelectAll(false)">Seçimi kaldır</button><button class="btn-ghost btn-sm" onclick="waBulkSelectParents()">Anne + baba numaraları</button></div>
@@ -1227,7 +1233,7 @@ summary::-webkit-details-marker{display:none}
   </div>
   <div class="card">
     <div id="wab-status" style="font-size:13px;color:var(--text2);font-weight:700;margin-bottom:10px">Gönderim sırası hazır değil.</div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-wa" onclick="waBulkStart()">📲 Seçilenlerle WhatsApp'ı başlat</button><button class="btn btn-purple" onclick="waBulkNext()">Sonraki alıcı →</button><button class="btn-ghost" onclick="waBulkReset()">Sıfırla</button></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" style="background:#0d9488;color:#fff" onclick="waBulkShareFiles()">📎 Dosyaları WhatsApp'ta paylaş</button><button class="btn btn-wa" onclick="waBulkStart()">📲 Seçilenlerle WhatsApp'ı başlat</button><button class="btn btn-purple" onclick="waBulkNext()">Sonraki alıcı →</button><button class="btn-ghost" onclick="waBulkReset()">Sıfırla</button></div>
     <p style="font-size:11px;color:var(--muted);line-height:1.5;margin-top:10px">WhatsApp Web/Desktop açılır. Mesaj gönderilmeden önce son kontrol ve gönderme işlemi size aittir. Bir sonraki alıcıya geçmek için “Sonraki alıcı” düğmesine basın.</p>
   </div>
 </div>
@@ -1676,7 +1682,7 @@ function go(id){
   if(id!=='s-reg') sozAfterReg=false;
   if(id==='s-sozlesme') sozRenderMenu();
   if(id==='s-iban'){const c=document.getElementById('home-iban-content');if(c)c.style.display='block';try{homeIbanLoad();}catch(e){}}
-  if(id==='s-wa-bulk'){waBulkInitStudents();waBulkRender();}
+  if(id==='s-wa-bulk'){waBulkInitStudents();waBulkRender();try{kyInit();}catch(e){}waBulkResRender();}
   if(id==='s-program-rules'){prInit();}
   if(id==='s-kaynak'){kyInit();}
   if(id==='s-soz-pro'||id==='s-soz-esnek') sozMount();
@@ -4111,7 +4117,7 @@ function checkOverdue(){
 const KY_MAX=3*1024*1024;
 let kyMeta={},kyFilter='',kyOn=false;
 function kyInit(){
-  if(!kyOn){kyOn=true;try{db.ref('resources/meta').on('value',s=>{kyMeta=s.val()||{};kyRender();});}catch(e){}}
+  if(!kyOn){kyOn=true;try{db.ref('resources/meta').on('value',s=>{kyMeta=s.val()||{};kyRender();try{waBulkResRender();}catch(e){}});}catch(e){}}
   kyRender();
 }
 function kyMsg(m,ok){const e=document.getElementById('ky-msg');if(!e)return;e.style.display=m?'block':'none';e.style.color=ok===false?'#dc2626':'#0f766e';e.textContent=m||'';}
@@ -8293,6 +8299,32 @@ function waBulkMessage(r){
 }
 function waBulkStart(){waBulkQueue=waBulkRecipients().filter(r=>waBulkSelected.has(r.key));waBulkIndex=0;if(!waBulkQueue.length){alert('Önce en az bir alıcı seçin.');return;}waBulkOpenCurrent();}
 async function waBulkOpenCurrent(){if(waBulkIndex>=waBulkQueue.length){document.getElementById('wab-status').textContent='✅ Seçilen tüm alıcıların sohbetleri açıldı. Gönderim durumlarını WhatsApp üzerinden kontrol edin.';return;}const r=waBulkQueue[waBulkIndex];let msg=waBulkMessage(r);const lang=document.getElementById('wab-lang').value;if(lang!=='tr'){try{msg=await trText(msg,lang);}catch(e){alert('Mesaj çevrilemedi. Türkçe metin açılacak.');}}document.getElementById('wab-status').textContent=(waBulkIndex+1)+' / '+waBulkQueue.length+' · '+r.student.name+' '+r.student.surname+' — '+r.who+' ('+r.raw+'). WhatsApp sohbeti açılıyor.';window.open('https://wa.me/'+r.phone+'?text='+encodeURIComponent(msg),'_blank');}
+const waBulkRes=new Set();
+function waBulkResRender(){
+  const box=document.getElementById('wab-res');if(!box)return;
+  const all=Object.values(kyMeta||{}).sort((a,b)=>(b.id||'').localeCompare(a.id||''));
+  box.innerHTML=all.map(m=>'<label style="display:flex;align-items:center;gap:8px;border:1px solid var(--border);border-radius:9px;padding:7px 9px;font-size:13px;font-weight:600;cursor:pointer"><input type="checkbox" style="width:auto" '+(waBulkRes.has(m.id)?'checked ':'')+'onchange="waBulkResTog(\''+m.id+'\',this.checked)"><span>'+kyIcon(m)+'</span><span style="flex:1;min-width:0;word-break:break-word">'+repEsc(m.name)+(m.cat?' <span style="color:var(--muted);font-weight:600">· '+repEsc(m.cat)+'</span>':'')+'</span><span style="font-size:10px;color:var(--muted)">'+kySize(m.size||0)+'</span></label>').join('')||'<div style="font-size:12px;color:var(--dim)">Henüz kaynak yok. Ana sayfadaki “Kaynaklar” bölümünden dosya ekleyin.</div>';
+  waBulkResCount();
+}
+function waBulkResTog(id,on){if(on)waBulkRes.add(id);else waBulkRes.delete(id);waBulkResCount();}
+function waBulkResCount(){const e=document.getElementById('wab-res-sel');if(e)e.textContent=waBulkRes.size?'✅ '+waBulkRes.size+' dosya seçili':'';}
+async function waBulkShareFiles(){
+  const ids=[...waBulkRes].filter(id=>kyMeta[id]);
+  if(!ids.length){alert('Önce yukarıdan en az bir kaynak dosyası seçin.');return;}
+  const st=document.getElementById('wab-status');st.textContent='Dosyalar hazırlanıyor…';
+  const files=[];
+  for(const id of ids){const d=await kyData(id);const b=d&&kyBlob(d);if(b){const m=kyMeta[id];files.push(new File([b],m.name||'dosya',{type:b.type||m.type||'application/octet-stream'}));}}
+  if(!files.length){st.textContent='Dosyalar okunamadı.';return;}
+  let text='';try{const r=waBulkQueue[waBulkIndex];if(r)text=waBulkMessage(r);else text=document.getElementById('wab-text').value.trim();}catch(e){}
+  try{
+    if(navigator.canShare&&navigator.canShare({files})){
+      await navigator.share({files,text:text||undefined});
+      st.textContent='✅ Paylaşım ekranı açıldı. WhatsApp\'ı seçip alıcıyı işaretleyin.';return;
+    }
+  }catch(e){if(e&&e.name==='AbortError'){st.textContent='Paylaşım iptal edildi.';return;}}
+  files.forEach(f=>{const u=URL.createObjectURL(f),a=document.createElement('a');a.href=u;a.download=f.name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),5000);});
+  st.textContent='⬇️ Bu cihaz dosya paylaşımını desteklemiyor: dosyalar indirildi. WhatsApp Web/Desktop sohbetinde 📎 ile ekleyin.';
+}
 function waBulkNext(){if(!waBulkQueue.length){waBulkStart();return;}waBulkIndex++;waBulkOpenCurrent();}
 function waBulkReset(){waBulkQueue=[];waBulkIndex=0;document.getElementById('wab-status').textContent='Gönderim sırası sıfırlandı.';}
 
