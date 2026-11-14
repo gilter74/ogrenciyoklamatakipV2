@@ -270,7 +270,22 @@ input:focus,select:focus{box-shadow:0 0 0 3px rgba(47,63,115,.12)}
 .mark-btn{font-weight:600}
 .sync-dot{box-shadow:0 0 0 2px rgba(255,255,255,.2)}
 /* ana menü kareleri */
-.mini-row2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:10px 0 14px}
+.mini-row2{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:10px 0 14px}
+.mini-w.mw-kay{background:#0d9488}
+@media(max-width:420px){.mini-w{font-size:12px;gap:5px;padding:11px 4px}.mini-w svg{width:19px;height:19px}}
+.ky-card{background:#fff;border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:12px;box-shadow:var(--shadow)}
+.ky-drop{border:2px dashed #5eead4;background:#f0fdfa;border-radius:12px;padding:16px;text-align:center;font-weight:700;font-size:13px;color:#0f766e;cursor:pointer}
+.ky-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.ky-it{border:1px solid var(--border);border-radius:12px;overflow:hidden;background:#fff;display:flex;flex-direction:column}
+.ky-th{height:100px;display:flex;align-items:center;justify-content:center;background:#f1f5f9;font-size:38px;cursor:pointer;overflow:hidden}
+.ky-th img{width:100%;height:100%;object-fit:cover}
+.ky-nm{padding:7px 9px 2px;font-weight:700;font-size:12px;word-break:break-word;line-height:1.3}
+.ky-mt{padding:0 9px 6px;font-size:10px;color:var(--muted);font-weight:600}
+.ky-ac{display:flex;gap:4px;padding:0 7px 8px;margin-top:auto}
+.ky-ac button{flex:1;border:1px solid var(--border);background:#fff;border-radius:7px;padding:5px 0;font-size:13px;cursor:pointer}
+.ky-chip{border:1px solid #99f6e4;background:#fff;color:#0f766e;border-radius:999px;padding:5px 11px;font:700 12px 'Inter',system-ui,sans-serif;cursor:pointer}
+.ky-chip.on{background:#0d9488;color:#fff;border-color:#0d9488}
+
 .mini-w{display:flex;align-items:center;justify-content:center;gap:8px;padding:12px 8px;border-radius:12px;border:0;cursor:pointer;font:800 13px/1.25 'Inter',system-ui,sans-serif;color:#fff;box-shadow:var(--shadow)}
 .mini-w svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
 .mini-w:active{transform:scale(.97)}
@@ -429,6 +444,8 @@ summary::-webkit-details-marker{display:none}
 .tile-prospect-pink{background:#ec4899!important;border-color:#ec4899!important;color:#fff!important}
 .tile-prospect-pink small{color:rgba(255,255,255,.94)!important}
 .tile-prospect-pink svg{stroke:#fff!important}
+.dsc-pop{display:none;font-size:11px;font-weight:700;color:#5b21b6;background:#f5f3ff;border:1px solid #d3d9ea;border-radius:8px;padding:5px 8px;margin-top:4px;line-height:1.5;white-space:normal}
+.stu-pay-row:hover .dsc-pop,.dsc-pop.on{display:block}
 </style>
 </head>
 <body>
@@ -465,6 +482,7 @@ summary::-webkit-details-marker{display:none}
   <div class="mini-row2" id="mini-row2">
     <button class="mini-w mw-day" onclick="go('s-daily')"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg><span>Günlük Yoklama</span></button>
     <button class="mini-w mw-form" onclick="go('s-yform')"><svg viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4h6v3H9zM9 12h6M9 16h6"/></svg><span>Yoklama Formu</span></button>
+  <button class="mini-w mw-kay" onclick="go('s-kaynak')"><svg viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg><span>Kaynaklar</span></button>
   </div>
   <div id="late-banner"><button onclick="go('s-chronic')" style="width:100%;display:flex;align-items:center;gap:8px;padding:10px 13px;margin:0 0 12px;border-radius:12px;border:2px solid #7c3aed;background:#f5f3ff;color:#5b21b6;font:800 13px 'Inter',system-ui,sans-serif;cursor:pointer;text-align:left"><span>🟣</span><span style="flex:1">Geç Ödeyenler · Kısıtlama Ayarları</span><span>›</span></button></div>
   <div id="tel-remind"></div>
@@ -1433,6 +1451,22 @@ summary::-webkit-details-marker{display:none}
 
 
 <!-- PROGRAM KURALLARI -->
+<div id="s-kaynak" class="screen">
+  <button class="btn-ghost mb14" onclick="go('s-list')">← Ana Sayfa</button>
+  <div class="app-hdr" style="padding:16px"><div style="font-size:34px">📁</div><h1 style="font-size:22px">Kaynaklar</h1><p>Resim · PDF · Word · Excel ve diğer dosyalar</p></div>
+  <div class="ky-card">
+    <input type="file" id="ky-file" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv" style="display:none" onchange="kyUpload(this.files)">
+    <div class="ky-drop" onclick="document.getElementById('ky-file').click()">➕ Dosya Ekle (resim, PDF, Word…)<div style="font-weight:600;font-size:11px;margin-top:4px;color:#475569">Dosya başına en fazla 3 MB · resimler otomatik küçültülür</div></div>
+    <div style="display:flex;gap:8px;margin-top:10px"><input id="ky-cat" type="text" list="ky-cats" placeholder="Başlık / klasör (isteğe bağlı) — örn: Satranç, Müzik" style="flex:1;font-size:14px"><datalist id="ky-cats"></datalist></div>
+    <div id="ky-msg" style="font-size:12px;font-weight:700;margin-top:8px;display:none"></div>
+  </div>
+  <div class="ky-card">
+    <input id="ky-q" type="text" placeholder="🔍 Kaynak ara…" oninput="kyRender()" style="margin-bottom:8px;font-size:14px">
+    <div id="ky-chips" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px"></div>
+    <div id="ky-list" class="ky-grid"></div>
+  </div>
+</div>
+
 <div id="s-program-rules" class="screen">
   <button class="btn-ghost mb14" onclick="go('s-list')">← Ana Sayfa</button>
   <div class="pr-hero"><h2>📘 PROGRAM KURALLARI</h2><p>Türkçe ve Rusça veli bilgilendirme metinleri. Tam kuralları veya kısa WhatsApp duyurusunu seçin, düzenleyin, kopyalayın; istediğiniz veliye ya da WhatsApp grubuna gönderin.</p></div>
@@ -1644,6 +1678,7 @@ function go(id){
   if(id==='s-iban'){const c=document.getElementById('home-iban-content');if(c)c.style.display='block';try{homeIbanLoad();}catch(e){}}
   if(id==='s-wa-bulk'){waBulkInitStudents();waBulkRender();}
   if(id==='s-program-rules'){prInit();}
+  if(id==='s-kaynak'){kyInit();}
   if(id==='s-soz-pro'||id==='s-soz-esnek') sozMount();
   if(id==='s-yform') openYForm();
   if(id==='s-week') renderWeek();
@@ -2864,11 +2899,19 @@ function effectiveFee(feeVal,discApplied){
 function refPctFor(disc,mk){
   return ((disc&&disc.referrals)||[]).filter(r=>r.usedMonth===mk).length*REF_PCT;
 }
+function refNamesFor(disc,mk){return ((disc&&disc.referrals)||[]).filter(r=>r.usedMonth===mk).map(r=>r.name).filter(Boolean);}
+function refReasonTxt(disc,mk){
+  const rp=refPctFor(disc,mk);if(!rp)return '';
+  const n=refNamesFor(disc,mk);
+  return 'Öğrenci kazandırma indirimi %'+rp+(n.length?' ('+n.join(', ')+' kazandırıldığı için)':'');
+}
 function monthPct(disc,discApplied,mk){return (typeof discApplied==='number'?discApplied:(discApplied?EARLY_PCT:0))+refPctFor(disc,mk);}
-function discTags(disc,discApplied,mk){
+function discTags(disc,discApplied,mk,baseFee){
   const rp=refPctFor(disc,mk);
+  const bf=parseFloat(baseFee||0);
+  const refAmt=(rp&&bf>0)?' · <s style="opacity:.7">'+bf.toLocaleString('tr-TR')+' ₺</s> → <b>'+effectiveFee(bf,monthPct(disc,discApplied,mk)).toLocaleString('tr-TR')+' ₺</b>':'';
   return (discApplied?'<div style="font-size:10px;color:#2f3f73;font-weight:600;margin-top:2px">🏷️ %'+(typeof discApplied==='number'?discApplied:EARLY_PCT)+' erken ödeme indirimi uygulandı</div>':'')+
-    (rp?'<div style="font-size:10px;color:#7c3aed;font-weight:600;margin-top:2px">🤝 Öğrenci kazandırma indirimi %'+rp+' uygulandı</div>':'');
+    (rp?'<div style="font-size:10px;color:#7c3aed;font-weight:700;margin-top:2px;background:#f5f3ff;border-radius:6px;padding:2px 6px;display:inline-block">🤝 '+refReasonTxt(disc,mk)+refAmt+'</div>':'');
 }
 
 // Bir (y,m) ayında yapılan ödemelere göre kazanılan indirim yüzdesi: 1-5. gün %10 · 6-10. gün %5 · sonrası 0
@@ -2934,7 +2977,7 @@ function renderRefCard(){
   const n=new Date(),defYm=mkey(n.getFullYear(),n.getMonth());
   box.innerHTML=refs.map((r,i)=>{
     const st=r.usedMonth
-      ?'<div style="font-size:12px;font-weight:700;color:#065f46;margin-top:4px">✅ Kullanıldı: '+MONTHS[+r.usedMonth.split('-')[1]-1]+' '+r.usedMonth.split('-')[0]+' (%'+REF_PCT+' indirim)</div><button class="btn-ghost" style="padding:5px 10px;font-size:12px;margin-top:6px" onclick="refUnuse('+i+')">↩️ Geri al</button>'
+      ?'<div style="font-size:12px;font-weight:700;color:#065f46;margin-top:4px">✅ Kullanıldı: '+MONTHS[+r.usedMonth.split('-')[1]-1]+' '+r.usedMonth.split('-')[0]+' (%'+REF_PCT+' indirim) — o ayın ödeme planında indirimli görünür</div><button class="btn-ghost" style="padding:5px 10px;font-size:12px;margin-top:6px" onclick="refUnuse('+i+')">↩️ Geri al</button>'
       :'<div style="display:flex;gap:6px;align-items:center;margin-top:6px;flex-wrap:wrap"><input type="month" id="ref-m-'+i+'" value="'+defYm+'" style="width:auto;padding:6px 8px;font-size:13px"><button class="btn btn-purple btn-sm" style="padding:6px 10px;font-size:12px" onclick="refUse('+i+')">Bu aya uygula</button></div>';
     return '<div style="border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:8px;background:'+(r.usedMonth?'#f0fdf4':'#fff')+'">'+
       '<div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><div><div style="font-weight:700;font-size:14px">🤝 '+repEsc(r.name)+'</div><div style="font-size:11px;color:var(--muted);font-weight:600">Eklenme: '+(r.date||'')+'</div></div><button class="btn-del" onclick="refDel('+i+')">Sil</button></div>'+st+'</div>';
@@ -3631,7 +3674,7 @@ function renderYearlyTable(){
     remLines.forEach(x=>parts.push(x));
     const tags=(stuEx?'<div style="font-size:10px;color:#92400e;background:#fef3c7;border-radius:6px;padding:2px 6px;font-weight:700;margin-top:3px;display:inline-block">🎫 İstisna: sadece bu ay '+fmtTL(stuEx.amount)+' ₺ (normal bedel '+fmtTL(baseFee)+' ₺)'+(stuEx.note?' — '+repEsc(stuEx.note):'')+'</div>':'')+
       (exM.on?'<div style="font-size:10px;color:#92400e;background:#fef3c7;border-radius:6px;padding:2px 6px;font-weight:700;margin-top:3px;display:inline-block">🎫 İstisna: '+repEsc(exM.notes||'Kısmi ay ücreti')+(exWaive>0?' (tam ücret '+fmtTL(fee)+' ₺, tam ödendi sayıldı)':'')+'</div>':'')+
-      (stuEx?'':discTags(discountData,discApplied,mk))+
+      (stuEx?'':discTags(discountData,discApplied,mk,baseFee))+
       (earlyPay?'<div style="font-size:10px;color:#059669;font-weight:600;margin-top:2px">⏱ Erken ödendi (sonraki ay %'+earlyPctFor(payData,tableYear,m)+' indirim kazandırır)</div>':'')+
       addLines.map(t=>'<div style="font-size:10px;color:#b45309;font-weight:600;margin-top:2px">➕ '+t+'</div>').join('')+
       ((iExp>0||iRem>0)&&balance>0?'<div style="font-size:10px;color:#991b1b;font-weight:600;margin-top:2px">Kalan: '+parts.join(' + ')+'</div>':'');
@@ -4063,6 +4106,94 @@ function checkOverdue(){
 }
 
 // ══ CONFIRM ═══════════════════════════════════════════════════════════
+
+// ── Kaynaklar (resim / PDF / Word …) ── Firebase: resources/meta/<id> (liste) ve resources/data/<id> (dosya içeriği, dataURL)
+const KY_MAX=3*1024*1024;
+let kyMeta={},kyFilter='',kyOn=false;
+function kyInit(){
+  if(!kyOn){kyOn=true;try{db.ref('resources/meta').on('value',s=>{kyMeta=s.val()||{};kyRender();});}catch(e){}}
+  kyRender();
+}
+function kyMsg(m,ok){const e=document.getElementById('ky-msg');if(!e)return;e.style.display=m?'block':'none';e.style.color=ok===false?'#dc2626':'#0f766e';e.textContent=m||'';}
+function kyIcon(m){const n=(m.name||'').toLowerCase(),ty=m.type||'';
+  if(ty.startsWith('image/'))return '🖼️';if(n.endsWith('.pdf'))return '📕';if(/\.docx?$/.test(n))return '📘';if(/\.xlsx?$|\.csv$/.test(n))return '📗';if(/\.pptx?$/.test(n))return '📙';return '📄';}
+function kySize(b){return b>1048576?(b/1048576).toFixed(1)+' MB':Math.max(1,Math.round(b/1024))+' KB';}
+function kyReadImg(file){return new Promise((res,rej)=>{
+  const fr=new FileReader();fr.onerror=()=>rej(new Error('okunamadı'));
+  fr.onload=()=>{const img=new Image();img.onerror=()=>res(fr.result);
+    img.onload=()=>{const M=1600;let w=img.width,h=img.height;const k=Math.min(1,M/Math.max(w,h));w=Math.round(w*k);h=Math.round(h*k);
+      const c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,w,h);x.drawImage(img,0,0,w,h);
+      let q=.85,o=c.toDataURL('image/jpeg',q);while(o.length>KY_MAX*1.33&&q>.4){q-=.1;o=c.toDataURL('image/jpeg',q);}res(o);};
+    img.src=fr.result;};fr.readAsDataURL(file);});}
+function kyReadAny(file){return new Promise((res,rej)=>{const fr=new FileReader();fr.onerror=()=>rej(new Error('okunamadı'));fr.onload=()=>res(fr.result);fr.readAsDataURL(file);});}
+async function kyUpload(files){
+  files=[...(files||[])];if(!files.length)return;
+  const cat=(document.getElementById('ky-cat').value||'').trim();
+  let ok=0,bad=[];
+  for(const f of files){
+    kyMsg('Yükleniyor: '+f.name+'…');
+    try{
+      const isImg=(f.type||'').startsWith('image/')&&!/svg|gif/.test(f.type);
+      if(!isImg&&f.size>KY_MAX){bad.push(f.name+' (3 MB üstü)');continue;}
+      const data=isImg?await kyReadImg(f):await kyReadAny(f);
+      if(data.length>KY_MAX*1.4){bad.push(f.name+' (çok büyük)');continue;}
+      const id='k'+Date.now()+Math.floor(Math.random()*1000);
+      const meta={id,name:f.name,type:isImg?'image/jpeg':(f.type||''),size:Math.round(data.length*0.75),cat,date:todays()};
+      await fbSet('resources/data/'+id,data);
+      await fbSet('resources/meta/'+id,meta);
+      kyMeta[id]=meta;ok++;
+    }catch(e){bad.push(f.name);}
+  }
+  document.getElementById('ky-file').value='';
+  kyMsg((ok?'✅ '+ok+' dosya eklendi. ':'')+(bad.length?'⚠️ Eklenemedi: '+bad.join(', '):''),!bad.length);
+  kyRender();
+}
+function kyRender(){
+  const list=document.getElementById('ky-list');if(!list)return;
+  const all=Object.values(kyMeta||{}).sort((a,b)=>(b.id||'').localeCompare(a.id||''));
+  const cats=[...new Set(all.map(m=>m.cat).filter(Boolean))].sort();
+  const dl=document.getElementById('ky-cats');if(dl)dl.innerHTML=cats.map(c=>'<option value="'+repEsc(c)+'">').join('');
+  if(kyFilter&&!cats.includes(kyFilter))kyFilter='';
+  document.getElementById('ky-chips').innerHTML=cats.length?['<button class="ky-chip'+(kyFilter?'':' on')+'" onclick="kySetF(\'\')">Tümü ('+all.length+')</button>'].concat(cats.map(c=>'<button class="ky-chip'+(kyFilter===c?' on':'')+'" data-c="'+repEsc(c)+'" onclick="kySetF(this.dataset.c)">'+repEsc(c)+'</button>')).join(''):'';
+  const q=(document.getElementById('ky-q').value||'').toLowerCase().trim();
+  const rows=all.filter(m=>(!kyFilter||m.cat===kyFilter)&&(!q||((m.name||'')+' '+(m.cat||'')).toLowerCase().includes(q)));
+  list.innerHTML=rows.map(m=>'<div class="ky-it"><div class="ky-th" onclick="kyOpen(\''+m.id+'\')" id="kth-'+m.id+'">'+kyIcon(m)+'</div>'+
+    '<div class="ky-nm">'+repEsc(m.name)+'</div><div class="ky-mt">'+(m.cat?repEsc(m.cat)+' · ':'')+kySize(m.size||0)+' · '+(m.date||'').split('-').reverse().join('.')+'</div>'+
+    '<div class="ky-ac"><button title="Aç" onclick="kyOpen(\''+m.id+'\')">👁️</button><button title="İndir" onclick="kyDown(\''+m.id+'\')">⬇️</button><button title="Yeniden adlandır / klasör" onclick="kyRename(\''+m.id+'\')">✏️</button><button title="Sil" onclick="kyDel(\''+m.id+'\')">🗑️</button></div></div>').join('')||'<p style="grid-column:1/-1;text-align:center;color:var(--dim);font-size:13px;margin:6px 0">Henüz kaynak yok. Yukarıdan dosya ekleyin.</p>';
+  rows.filter(m=>(m.type||'').startsWith('image/')).forEach(m=>kyThumb(m.id));
+}
+const kyCache={};
+async function kyData(id){if(kyCache[id])return kyCache[id];const d=await fbGet('resources/data/'+id);if(d)kyCache[id]=d;return d;}
+async function kyThumb(id){try{const d=await kyData(id);const e=document.getElementById('kth-'+id);if(d&&e)e.innerHTML='<img alt="" src="'+d+'">';}catch(e){}}
+function kyBlob(d){const m=/^data:([^;]*);base64,(.*)$/.exec(d);if(!m)return null;const b=atob(m[2]),u=new Uint8Array(b.length);for(let i=0;i<b.length;i++)u[i]=b.charCodeAt(i);return new Blob([u],{type:m[1]||'application/octet-stream'});}
+async function kyOpen(id){
+  const m=kyMeta[id];if(!m)return;
+  const d=await kyData(id);if(!d){showConf('Dosya içeriği bulunamadı.','⚠️','Tamam',()=>{});return;}
+  const b=kyBlob(d);if(!b)return;
+  const canView=(m.type||'').startsWith('image/')||/\.pdf$/i.test(m.name||'')||m.type==='application/pdf';
+  if(!canView){kyDown(id);return;}
+  const u=URL.createObjectURL(new Blob([b],{type:(m.type||'').startsWith('image/')?m.type:'application/pdf'}));
+  window.open(u,'_blank');setTimeout(()=>URL.revokeObjectURL(u),60000);
+}
+async function kyDown(id){
+  const m=kyMeta[id];if(!m)return;const d=await kyData(id);if(!d)return;const b=kyBlob(d);if(!b)return;
+  const u=URL.createObjectURL(b),a=document.createElement('a');a.href=u;a.download=m.name||'dosya';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),5000);
+}
+function kySetF(c){kyFilter=c||'';kyRender();}
+async function kyRename(id){
+  const m=kyMeta[id];if(!m)return;
+  const n=prompt('Dosya adı:',m.name);if(n===null)return;
+  const c=prompt('Başlık / klasör (boş bırakabilirsiniz):',m.cat||'');if(c===null)return;
+  const nm={...m,name:(n.trim()||m.name),cat:c.trim()};
+  await fbSet('resources/meta/'+id,nm);kyMeta[id]=nm;kyRender();
+}
+function kyDel(id){
+  const m=kyMeta[id];if(!m)return;
+  showConf('"'+m.name+'" silinsin mi?','🗑️','Evet, Sil',async()=>{
+    await fbDel('resources/meta/'+id);await fbDel('resources/data/'+id);delete kyMeta[id];delete kyCache[id];kyRender();
+  });
+}
+
 function showConf(msg,icon,yTxt,cb){
   document.getElementById('conf-msg').textContent=msg;
   document.getElementById('conf-icon').textContent=icon||'⚠️';
@@ -4541,7 +4672,7 @@ function bulkDrive(){
 
 // ══ ANALYSIS ══════════════════════════════════════════════════════════
 let analysisPeriod=1;
-let allAttCache={}, allPayCache={}, archStudents=[];
+let allAttCache={}, allPayCache={}, allDiscCache={}, archStudents=[];
 // Kaydı silinen (arşive alınan) öğrenciler: ödemeleri aylık ödeme sayfasında korunsun diye arşivden okunur
 function loadArchivedForAnalysis(arc){
   archStudents=[];
@@ -4559,11 +4690,13 @@ function analysisStudents(){
 
 async function openAnalysis(){
   showLoad('Veriler yükleniyor…');
-  const [attSnap,paySnap,arcSnap]=await Promise.all([
+  const [attSnap,paySnap,arcSnap,discSnap]=await Promise.all([
     db.ref('attendance').once('value'),
     db.ref('payments').once('value'),
-    db.ref('archived').once('value')
+    db.ref('archived').once('value'),
+    db.ref('discount').once('value')
   ]);
+  allDiscCache=discSnap.val()||{};
   allAttCache=attSnap.val()||{};
   allPayCache=paySnap.val()||{};
   loadArchivedForAnalysis(arcSnap.val());
@@ -4603,12 +4736,14 @@ function stuMonthDue(s,mk){
     return{fee:0,due:0,rec:all1.reduce((a,p)=>a+parseFloat(p.amount||0),0),exPay:false,hasEx:false,ended:true};
   }
   const ex=stuExFor(s,mk);
-  const fee=ex?parseFloat(ex.amount||0):parseFloat(s.fee||0);
+  const dd=allDiscCache[s.id]||null;
+  const refPct=ex?0:refPctFor(dd,mk);
+  const fee=ex?parseFloat(ex.amount||0):effectiveFee(s.fee,refPct);
   const all=Object.values(allPayCache[s.id]||{}).filter(p=>p.date.startsWith(mk)&&!p.recId);
   const rec=all.reduce((a,p)=>a+parseFloat(p.amount||0),0);
   const exPay=all.some(p=>p.exception);
   const due=(exPay&&rec>0&&rec<fee)?rec:fee;
-  return{fee,due,rec,exPay,hasEx:!!ex};
+  return{fee,due,rec,exPay,hasEx:!!ex,refPct,refReason:refPct?refReasonTxt(dd,mk):'',baseFee:parseFloat(s.fee||0)};
 }
 
 function calcMonthData(mk){
@@ -4706,10 +4841,11 @@ function renderAnalysis(){
   const stuRows=analysisStudents().map(s=>{
     const fee=parseFloat(s.fee||0);
     const allPays=Object.values(allPayCache[s.id]||{}).filter(p=>!p.recId);
-    let periodPays=0,periodExp=0;
+    let periodPays=0,periodExp=0;const discInfo=[];
     months.forEach(mo=>{
       const m=stuMonthDue(s,mo.key);
       periodPays+=m.rec;periodExp+=m.due;
+      if(m.refPct)discInfo.push(MONTHS[mo.m]+' '+mo.y+': '+fmtN(m.baseFee)+' ₺ → '+fmtN(m.fee)+' ₺ — '+m.refReason);
     });
     const cm=stuMonthDue(s,curMk);
     const diff=Math.round((cm.rec-cm.due)*100)/100; // + fazla, - eksik
@@ -4723,7 +4859,7 @@ function renderAnalysis(){
     else if(diff===0){statusTxt='✅ Tam';statusColor='#059669';}
     else if(diff<0){statusTxt='⚠ Eksik '+fmtN(-diff)+' ₺';statusColor='#dc2626';}
     else{statusTxt='➕ Fazla '+fmtN(diff)+' ₺';statusColor='#2563eb';}
-    return{s,periodPays,periodExp,pct2,statusTxt,statusColor,kdvDahil:!!s.kdvDahil,grp:eduGroup(s.education),archived:!!s._archived};
+    return{s,discInfo,periodPays,periodExp,pct2,statusTxt,statusColor,kdvDahil:!!s.kdvDahil,grp:eduGroup(s.education),archived:!!s._archived};
   }).filter(r=>!r.archived||r.periodPays>0||r.periodExp>0).sort((a,b)=>b.periodPays-a.periodPays);
 
   // ── Branş bazlı sade KDV özeti (bugüne kadar alınan tüm ödemeler) ──
@@ -4775,12 +4911,13 @@ function renderAnalysis(){
       ${trio(sumOf(allTime))}
     </div>`;
 
-  const stuRowHtml=({s,periodPays,periodExp,pct2,statusTxt,statusColor})=>`
-    <div class="stu-pay-row">
+  const stuRowHtml=({s,discInfo,periodPays,periodExp,pct2,statusTxt,statusColor})=>`
+    <div class="stu-pay-row"${discInfo&&discInfo.length?' title="'+repEsc('🤝 '+discInfo.join('\n'))+'" onclick="this.querySelector(\'.dsc-pop\')&&this.querySelector(\'.dsc-pop\').classList.toggle(\'on\')" style="cursor:help;position:relative"':''}>
       <div style="font-size:18px;flex-shrink:0">${eduIcon(s.education)}</div>
       <div style="flex:1;min-width:0">
         <div style="font-weight:600;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${s.name} ${s.surname}${s._archived?' <span style="font-size:10px;font-weight:700;color:#92400e;background:#fef3c7;border-radius:6px;padding:1px 6px">kaydı silindi'+(s.deletedAt?' · '+s.deletedAt.split('-').reverse().join('.'):'')+'</span>':''}</div>
-        <div style="font-size:11px;color:var(--muted);margin-top:2px">${fmtN(periodPays)} ₺ / ${fmtN(periodExp)} ₺</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px">${fmtN(periodPays)} ₺ / ${fmtN(periodExp)} ₺${discInfo&&discInfo.length?' <span style="color:#7c3aed;font-weight:700">🤝 indirimli</span>':''}</div>
+        ${discInfo&&discInfo.length?'<div class="dsc-pop">'+discInfo.map(x=>'🤝 '+repEsc(x)).join('<br>')+'</div>':''}
         ${pct2!==null?`<div class="prog-bar" style="margin-top:4px"><div class="prog-fill" style="width:${pct2}%;background:${pct2>=100?'#059669':pct2>=50?'#d97706':'#dc2626'}"></div></div>`:''}
       </div>
       <div style="font-weight:700;font-size:12px;color:${statusColor};flex-shrink:0;text-align:right">${statusTxt}</div>
@@ -7192,7 +7329,7 @@ const REP_POS=['iyi','harika','başarı','mükemmel','gelişti','ilerledi','iler
 const REP_NEG=['geliştirilmeli','tekrar etmeli','zayıf','eksik','yapmadı','yapmamış','çalışmadı','çalışmamış','dikkatsiz','dağınık','geri kaldı','yetersiz','sorun','aksatt','isteksiz','unuttu','getirmedi','düzensiz'];
 const REP_LABELS={1:'Gelişmesi Gerekiyor',2:'Orta Altı',3:'Orta / Gelişiyor',4:'İyi',5:'Çok İyi'};
 
-function repEsc(t){return String(t==null?'':t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function repEsc(t){return String(t==null?'':t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function repStars(n){n=Math.max(0,Math.min(5,+n||0));return '★'.repeat(n)+'☆'.repeat(5-n);}
 function repLabel(n){return REP_LABELS[n]||'';}
 function repDL(ds){const d=new Date(ds+'T12:00:00');return d.getDate()+' '+MONTHS[d.getMonth()]+' '+d.getFullYear();}
