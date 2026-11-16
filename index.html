@@ -161,6 +161,24 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
 .pr-btn{padding:9px 8px;border-radius:9px;border:1px solid #fde047;background:#fff;color:#713f12;font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;font-weight:600;font-size:13px;cursor:pointer;transition:.18s;text-align:center}
 .pr-btn:hover{background:#fef9c3}
 .pr-btn.sel{background:#f59e0b;color:#fff;border-color:#d97706}
+.pay-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:7px}
+.pay-grid .pr-btn{padding:10px 0;font-size:15px;font-weight:700}
+.pay-exc-btn{width:100%;margin-top:9px;background:#fff7ed;border-color:#fdba74;color:#9a3412}
+.pay-exc-btn.sel{background:#ea580c;border-color:#c2410c;color:#fff}
+.pay-exc-box{margin-top:9px;background:#fff7ed;border:1px solid #fdba74;border-radius:10px;padding:10px 11px}
+.pay-info{margin-top:10px;font-size:11.5px;font-weight:600;color:#713f12;line-height:1.5;background:#fef3c7;border-radius:8px;padding:8px 10px}
+/* ── Ödeme günü hatırlatma ── */
+.payrem-card{border-radius:14px;padding:12px 13px;margin-bottom:12px;box-shadow:var(--shadow)}
+.payrem-pre{background:#f0f9ff;border:2px solid #0284c7}
+.payrem-due{background:#fefce8;border:2px solid #eab308}
+.payrem-post{background:#fef2f2;border:2px solid #dc2626}
+.payrem-row{background:#fff;border:1px solid rgba(0,0,0,.08);border-radius:11px;padding:9px 11px;margin-top:8px}
+.payrem-btn{border:0;border-radius:9px;padding:8px 12px;font:700 12px 'Inter',system-ui,sans-serif;cursor:pointer;color:#fff}
+@keyframes payRemFlashAnim{0%,100%{background:#f0f9ff;border-color:#0284c7;box-shadow:var(--shadow)}50%{background:#7dd3fc;border-color:#0369a1;box-shadow:0 0 0 7px rgba(14,165,233,.5),0 6px 22px rgba(2,132,199,.55)}}
+.payrem-flash{animation:payRemFlashAnim .8s ease-in-out 5}
+@keyframes payRemBarAnim{0%,100%{background:#0369a1}50%{background:#38bdf8;color:#082f49}}
+#payrem-bar{display:none;position:fixed;top:0;left:0;right:0;z-index:99999;padding:11px 14px;color:#fff;background:#0369a1;font:700 14px 'Inter',system-ui,sans-serif;text-align:center;cursor:pointer;box-shadow:0 4px 18px rgba(0,0,0,.3)}
+#payrem-bar.show{display:block;animation:payRemBarAnim .8s ease-in-out 5}
 .rec-bg{display:none;position:fixed;inset:0;background:rgba(30,27,74,.55);backdrop-filter:blur(6px);z-index:1100;overflow-y:auto;padding:18px 14px}
 .rec-bg.open{display:block}
 .rec-wrap{max-width:540px;margin:0 auto}
@@ -450,6 +468,7 @@ summary::-webkit-details-marker{display:none}
 </style>
 </head>
 <body>
+<div id="payrem-bar" onclick="payRemGoHome()"></div>
 
 <div id="loading">
   <div class="spinner"></div>
@@ -485,6 +504,7 @@ summary::-webkit-details-marker{display:none}
     <button class="mini-w mw-day" onclick="go('s-daily')"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg><span>Günlük Yoklama</span></button>
     <button class="mini-w mw-form" onclick="go('s-yform')"><svg viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4h6v3H9zM9 12h6M9 16h6"/></svg><span>Yoklama Formu</span></button>
   </div>
+  <div id="pay-remind"></div>
   <div id="late-banner"><button onclick="go('s-chronic')" style="width:100%;display:flex;align-items:center;gap:8px;padding:10px 13px;margin:0 0 12px;border-radius:12px;border:2px solid #7c3aed;background:#f5f3ff;color:#5b21b6;font:800 13px 'Inter',system-ui,sans-serif;cursor:pointer;text-align:left"><span>🟣</span><span style="flex:1">Geç Ödeyenler · Kısıtlama Ayarları</span><span>›</span></button></div>
   <div id="tel-remind"></div>
   <div id="dup-name-warn" style="display:none"></div>
@@ -625,14 +645,18 @@ summary::-webkit-details-marker{display:none}
     </div>
     <div class="section-lbl">💳 Ödeme Taahhüdü</div>
     <div style="background:#fefce8;border:1px solid #fde047;border-radius:11px;padding:12px 13px;margin-bottom:16px">
-      <div style="font-size:13px;font-weight:600;color:#713f12;margin-bottom:9px">📋 Veli hangi tarih aralığında ödeme yapacak?</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px" id="r-pr-btns">
-        <button type="button" class="pr-btn" data-v="1-5" onclick="selPR('r','1-5')">📅 1–5. günler</button>
-        <button type="button" class="pr-btn" data-v="6-10" onclick="selPR('r','6-10')">📅 6–10. günler</button>
-        <button type="button" class="pr-btn" data-v="11-15" onclick="selPR('r','11-15')">📅 11–15. günler</button>
-        <button type="button" class="pr-btn" data-v="16-20" onclick="selPR('r','16-20')">📅 16–20. günler</button>
+      <div style="font-size:13px;font-weight:600;color:#713f12;margin-bottom:9px">📋 Veli her ay hangi günü ödeme yapacak? <span style="font-weight:600;font-size:12px">(net gün · en geç ayın 20'si)</span></div>
+      <div class="pay-grid" id="r-pr-btns"></div>
+      <button type="button" class="pr-btn pay-exc-btn" id="r-pr-exc" onclick="togglePayExc('r')">⚠️ Özel durum — ayın 20'sinden sonra</button>
+      <div id="r-pr-exc-box" class="pay-exc-box" style="display:none">
+        <label class="lbl" style="color:#9a3412">Ayın kaçıncı günü? <span style="font-weight:600;text-transform:none;font-size:11px">(21–31)</span></label>
+        <input id="r-pr-exc-day" type="number" min="21" max="31" placeholder="Örn: 25" oninput="payExcInput('r')" style="margin-bottom:9px;font-size:14px">
+        <label class="lbl" style="color:#9a3412">Açıklama <span style="font-weight:600;text-transform:none;font-size:11px">(zorunlu)</span></label>
+        <input id="r-pr-exc-note" type="text" placeholder="Örn: Maaşını ayın 25'inde alıyor" oninput="payExcInput('r')" style="font-size:14px">
       </div>
+      <div class="pay-info">ℹ️ <b>Net gün</b> seçilir (en geç ayın 20'si). Bu sistem <b>1 Şubat 2027'den</b> itibaren geçerlidir; o tarihe kadar herkesin son ödeme günü ayın 20'sidir (sözleşme yenilenene kadar). Ödemesi bu günden <b>1 gün önce</b> hatırlatılır, ödenmezse <b>1 gün sonra</b> tekrar uyarılır.</div>
       <input type="hidden" id="r-payday" value="">
+      <input type="hidden" id="r-payday-note" value="">
     </div>
     <div class="section-lbl">👩 Anne Bilgileri</div>
     <div class="pg mb14">
@@ -737,13 +761,21 @@ summary::-webkit-details-marker{display:none}
     </div>
     <div class="section-lbl">💳 Ödeme Taahhüdü</div>
     <div style="background:#fefce8;border:1px solid #fde047;border-radius:11px;padding:12px 13px;margin-bottom:16px">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px" id="e-pr-btns">
-        <button type="button" class="pr-btn" data-v="1-5" onclick="selPR('e','1-5')">📅 1–5. günler</button>
-        <button type="button" class="pr-btn" data-v="6-10" onclick="selPR('e','6-10')">📅 6–10. günler</button>
-        <button type="button" class="pr-btn" data-v="11-15" onclick="selPR('e','11-15')">📅 11–15. günler</button>
-        <button type="button" class="pr-btn" data-v="16-20" onclick="selPR('e','16-20')">📅 16–20. günler</button>
+      <div class="pay-grid" id="e-pr-btns"></div>
+      <button type="button" class="pr-btn pay-exc-btn" id="e-pr-exc" onclick="togglePayExc('e')">⚠️ Özel durum — ayın 20'sinden sonra</button>
+      <div id="e-pr-exc-box" class="pay-exc-box" style="display:none">
+        <label class="lbl" style="color:#9a3412">Ayın kaçıncı günü? <span style="font-weight:600;text-transform:none;font-size:11px">(21–31)</span></label>
+        <input id="e-pr-exc-day" type="number" min="21" max="31" placeholder="Örn: 25" oninput="payExcInput('e')" style="margin-bottom:9px;font-size:14px">
+        <label class="lbl" style="color:#9a3412">Açıklama <span style="font-weight:600;text-transform:none;font-size:11px">(zorunlu)</span></label>
+        <input id="e-pr-exc-note" type="text" placeholder="Örn: Maaşını ayın 25'inde alıyor" oninput="payExcInput('e')" style="font-size:14px">
       </div>
+      <div class="pay-info">ℹ️ <b>Net gün</b> seçilir (en geç ayın 20'si). Bu sistem <b>1 Şubat 2027'den</b> itibaren geçerlidir; o tarihe kadar herkesin son ödeme günü ayın 20'sidir (sözleşme yenilenene kadar). Ödemesi bu günden <b>1 gün önce</b> hatırlatılır, ödenmezse <b>1 gün sonra</b> tekrar uyarılır.</div>
       <input type="hidden" id="e-payday" value="">
+      <input type="hidden" id="e-payday-note" value="">
+      <div style="margin-top:10px;padding-top:10px;border-top:1px dashed #fde047">
+        <label class="lbl" style="color:#713f12">Eski sistem ödeme günü <span style="font-weight:600;text-transform:none;font-size:11px">(1 Şubat 2027'ye / sözleşme yenilenene kadar · boş = 20)</span></label>
+        <input id="e-pay-legacy" type="number" min="1" max="31" placeholder="20" style="font-size:14px">
+      </div>
     </div>
     <div class="section-lbl">👩 Anne Bilgileri</div>
     <div class="pg mb14">
@@ -1632,7 +1664,54 @@ const dim=(y,m)=>new Date(y,m+1,0).getDate();
 const fd=(y,m)=>{const d=new Date(y,m,1).getDay();return d===0?6:d-1;};
 const tmin=t=>{const p=String(t||'').split(':').map(Number);return isNaN(p[0])?99999:(p[0]||0)*60+(p[1]||0);};
 const todays=()=>{const n=new Date();return fmt(n.getFullYear(),n.getMonth(),n.getDate());};
-const parseRange=s=>{if(!s)return null;const p=s.split('-');return p.length===2?{a:+p[0],b:+p[1]}:null;};
+const parseRange=s=>{if(!s)return null;const p=String(s).split('-');return p.length===2?{a:+p[0],b:+p[1]}:null;}; // eski aralık biçimi (yalnızca geriye uyum)
+/* ═══ ÖDEME GÜNÜ SİSTEMİ ═══
+   • 1 Şubat 2027'ye kadar: herkesin ödeme günü ayın 20'si (istisna: s.payLegacyDay — Nilda Kaya = 18, sözleşmesi yenilenene kadar).
+   • 1 Şubat 2027'den itibaren: kayıtta/yenilemede seçilen NET gün (s.payDay = "6"), en geç ayın 20'si.
+     20'sinden sonrası "özel durum"dur (s.payDay 21–31 + s.payDayNote açıklaması zorunlu).
+   • Yeni güne geçmemiş (boş / eski aralık) öğrenci, yenilenene kadar eski günle devam eder.
+   • "Son gün" (kısıtlama / geç ödeyenler): ayın 20'si; özel durumda öğrencinin kendi günü. */
+const PAY_SYS_MK='2027-02';          // yeni sistemin geçerli olduğu ilk ay (1 Şubat 2027)
+const PAY_MAX_DAY=20;                // normal son gün
+const PAY_LEGACY_DEF=20;             // yeni sisteme kadar herkesin günü
+const PAY_LEGACY_BY_NAME=[{n:'nilda',sn:'kaya',day:18}]; // sözleşmesi yenilenene kadar farklı gün
+const PAY_FLASH_BURSTS=5;            // ödeme gününden 1 gün önce: günde kaç kez yanıp sönsün
+const PAY_FLASH_EVERY_MIN=30;        // kaç dakikada bir
+function payTrNorm(t){return String(t||'').toLocaleLowerCase('tr').replace(/ı/g,'i').normalize('NFD').replace(/[̀-ͯ]/g,'').trim();}
+function payNewDay(s){const v=String((s&&s.payDay)||'').trim();if(!/^\d{1,2}$/.test(v))return null;const n=+v;return n>=1&&n<=31?n:null;}
+function payLegacyDay(s){
+  if(!s)return PAY_LEGACY_DEF;
+  const o=parseInt(s.payLegacyDay,10);if(o>=1&&o<=31)return o;
+  const fn=payTrNorm(String(s.name||'').split(/\s+/)[0]),sn=payTrNorm(String(s.surname||'').split(/\s+/)[0]);
+  const hit=PAY_LEGACY_BY_NAME.find(x=>x.n===fn&&x.sn===sn);
+  return hit?hit.day:PAY_LEGACY_DEF;
+}
+function payDueDay(s,mk){const nw=payNewDay(s);return (mk>=PAY_SYS_MK&&nw)?nw:payLegacyDay(s);}  // taahhüt edilen ödeme günü
+function payDueDayIn(s,y,m){const dim=new Date(y,m+1,0).getDate();return Math.min(payDueDay(s,mkey(y,m)),dim);}
+function payFinalDayIn(s,y,m){const dim=new Date(y,m+1,0).getDate();return Math.min(Math.max(PAY_MAX_DAY,payDueDay(s,mkey(y,m))),dim);} // kısıtlama / geç ödeme sınırı
+function payRng(s,y,m){
+  if(y==null){const n=new Date();y=n.getFullYear();m=n.getMonth();}
+  const d=payDueDayIn(s,y,m);
+  return {a:d,b:d,day:d,special:d>PAY_MAX_DAY};
+}
+function payContractText(s){
+  const dd=payNewDay(s)||payLegacyDay(s);
+  return dd>PAY_MAX_DAY?'Her ayın '+dd+'. günü (özel durum'+(s&&s.payDayNote?': '+s.payDayNote:'')+')':'Her ayın '+dd+'. günü (en geç ayın '+PAY_MAX_DAY+'. günü)';
+}
+function payBadge(s){
+  const sty='background:#fef9c3;color:#713f12;border:1px solid #fde047';
+  const nw=payNewDay(s),lg=payLegacyDay(s),now=new Date(),mk=mkey(now.getFullYear(),now.getMonth());
+  let h='';
+  if(mk<PAY_SYS_MK){
+    h+='<span class="badge" style="'+sty+'">💳 Ödeme günü: her ayın '+lg+'. günü</span>';
+    if(nw)h+='<span class="badge" style="background:#e0f2fe;color:#075985;border:1px solid #7dd3fc">🗓️ 1 Şub 2027\'den itibaren: her ayın '+nw+'. günü'+(nw>PAY_MAX_DAY?' (özel durum)':'')+'</span>';
+  }else{
+    const dd=payDueDay(s,mk);
+    h+='<span class="badge" style="'+sty+'">💳 Her ayın '+dd+'. günü'+(dd>PAY_MAX_DAY?' (özel durum)':'')+'</span>';
+  }
+  if(nw&&nw>PAY_MAX_DAY&&s.payDayNote)h+='<span class="badge" style="background:#fff7ed;color:#9a3412;border:1px solid #fdba74;white-space:normal">⚠️ Özel durum: '+repEsc(s.payDayNote)+'</span>';
+  return h;
+}
 const isAiEdu=e=>!!e&&(e.includes('Yapay Zeka')||/\bYZ-?[12]\b/.test(e));
 const eduGroup=e=>isAiEdu(e)?'ai':(e&&e.includes('Satranç')?'chess':'music');
 const eduIcon=e=>{
@@ -1922,6 +2001,7 @@ function renderList(){
   renderRecBanner();
   try{renderFrozenBanner();}catch(e){}
   try{renderLateBanner();}catch(e){}
+  try{renderPayRemind();}catch(e){}
   try{updateChronicTile();}catch(e){}
   renderDupNameWarning();
   const q=(document.getElementById('search').value||'').toLowerCase();
@@ -2508,7 +2588,7 @@ function resetReg(){
   ['r-err-name','r-err-surname','r-err-edu','r-err-prog','r-err-pkg'].forEach(id=>{
     const el=document.getElementById(id);if(el)el.textContent='';
   });
-  document.querySelectorAll('#r-pr-btns .pr-btn').forEach(b=>b.classList.remove('sel'));
+  payUiReset('r');
   selPkg('r','');
   try{fillExForm('r',null);}catch(e){}
   const rKdv=document.getElementById('r-kdv');if(rKdv)rKdv.value='0';
@@ -2615,9 +2695,49 @@ function ce(iid,eid){
   document.getElementById(eid).textContent='';
 }
 
+function buildPayGrids(){
+  ['r','e'].forEach(p=>{
+    const g=document.getElementById(p+'-pr-btns');if(!g||g.children.length)return;
+    let h='';for(let d=1;d<=PAY_MAX_DAY;d++)h+='<button type="button" class="pr-btn" data-v="'+d+'" onclick="selPR(\''+p+'\',\''+d+'\')">'+d+'</button>';
+    g.innerHTML=h;
+  });
+}
+function payExcShow(p,on){
+  const b=document.getElementById(p+'-pr-exc-box');if(b)b.style.display=on?'block':'none';
+  const bt=document.getElementById(p+'-pr-exc');if(bt)bt.classList.toggle('sel',!!on);
+}
 function selPR(p,v){
   document.getElementById(p+'-payday').value=v;
-  document.querySelectorAll('#'+p+'-pr-btns .pr-btn').forEach(b=>b.classList.toggle('sel',b.dataset.v===v));
+  document.getElementById(p+'-payday-note').value='';
+  payExcShow(p,false);
+  document.querySelectorAll('#'+p+'-pr-btns .pr-btn').forEach(b=>b.classList.toggle('sel',b.dataset.v===String(v)));
+}
+function togglePayExc(p){
+  const box=document.getElementById(p+'-pr-exc-box');
+  if(box.style.display!=='none'){selPR(p,'');return;}   // kapat: seçimi temizle
+  document.querySelectorAll('#'+p+'-pr-btns .pr-btn').forEach(b=>b.classList.remove('sel'));
+  payExcShow(p,true);payExcInput(p);
+}
+function payExcInput(p){
+  const dv=parseInt(document.getElementById(p+'-pr-exc-day').value,10);
+  document.getElementById(p+'-payday').value=(dv>=PAY_MAX_DAY+1&&dv<=31)?String(dv):'';
+  document.getElementById(p+'-payday-note').value=(document.getElementById(p+'-pr-exc-note').value||'').trim();
+}
+function payUiReset(p){
+  buildPayGrids();
+  ['-pr-exc-day','-pr-exc-note','-payday','-payday-note'].forEach(x=>{const el=document.getElementById(p+x);if(el)el.value='';});
+  payExcShow(p,false);
+  document.querySelectorAll('#'+p+'-pr-btns .pr-btn').forEach(b=>b.classList.remove('sel'));
+}
+function payUiSet(p,s){
+  payUiReset(p);
+  const nw=payNewDay(s);if(!nw)return;
+  if(nw>PAY_MAX_DAY){
+    payExcShow(p,true);
+    document.getElementById(p+'-pr-exc-day').value=nw;
+    document.getElementById(p+'-pr-exc-note').value=s.payDayNote||'';
+    payExcInput(p);
+  }else selPR(p,String(nw));
 }
 
 const PKG_LABELS={'4':'Aylık 4 Derslik Paket','8':'Aylık 8 Derslik Paket','12':'Aylık 12 Derslik Paket','saat':'Saat Ücreti (katıldığı kadar öder)'};
@@ -2679,6 +2799,8 @@ function readForm(p){
     lessonFee:document.getElementById(p+'-lesson-fee').value.trim(),
     kdvDahil:document.getElementById(p+'-kdv').value==='1',
     payDay:document.getElementById(p+'-payday').value||'',
+    payDayNote:document.getElementById(p+'-payday-note').value||'',
+    payLegacyDay:(()=>{const el=document.getElementById(p+'-pay-legacy');const v=el?parseInt(el.value,10):NaN;return (v>=1&&v<=31)?v:null;})(),
     momName:document.getElementById(p+'-mom-name').value.trim(),
     momPhone:document.getElementById(p+'-mom-phone').value.trim(),
     dadName:document.getElementById(p+'-dad-name').value.trim(),
@@ -2697,6 +2819,11 @@ function validate(d,p){
   chk(d.education,p+'-edu',   ep+'edu',     'Eğitim türü seçin');
   chk(d.program, p+'-prog',   ep+'prog',    'Program seçin');
   if(p==='r'&&!d.pkg){const el=document.getElementById('r-err-pkg');if(el)el.textContent='⚠ Paket / ödeme şekli seçin';ok=false;}
+  const _eb=document.getElementById(p+'-pr-exc-box');
+  if(_eb&&_eb.style.display!=='none'){
+    if(!(parseInt(d.payDay,10)>=PAY_MAX_DAY+1)){showConf('Özel durum için ayın 21–31. günlerinden birini yazın.','⚠️','Tamam',()=>{});return false;}
+    if(!String(d.payDayNote||'').trim()){showConf('Özel durum için açıklama yazın.','⚠️','Tamam',()=>{});return false;}
+  }else if(p==='r'&&!d.payDay){showConf('Ödeme taahhüdü için ayın hangi günü olacağını seçin (1–20).','⚠️','Tamam',()=>{});return false;}
   return ok;
 }
 
@@ -2739,12 +2866,12 @@ function fillEdit(){
   document.getElementById('e-lesson-fee').value=s.lessonFee||'';
   document.getElementById('e-kdv').value=s.kdvDahil?'1':'0';
   document.querySelectorAll('#e-kdv-btns .pr-btn').forEach(b=>b.classList.toggle('sel',b.dataset.v===(s.kdvDahil?'1':'0')));
-  document.getElementById('e-payday').value=s.payDay||'';
+  payUiSet('e',s);
+  try{const lg=document.getElementById('e-pay-legacy');if(lg){lg.value=s.payLegacyDay||'';lg.placeholder=String(payLegacyDay(Object.assign({},s,{payLegacyDay:null})));}}catch(e){}
   document.getElementById('e-mom-name').value=s.momName||'';
   document.getElementById('e-mom-phone').value=s.momPhone||'';
   document.getElementById('e-dad-name').value=s.dadName||'';
   document.getElementById('e-dad-phone').value=s.dadPhone||'';
-  document.querySelectorAll('#e-pr-btns .pr-btn').forEach(b=>b.classList.toggle('sel',b.dataset.v===(s.payDay||'')));
   renderSchedRows('e',s.pendingSchedule||s.schedule||[]);
   fillExForm('e',s);
   ['e-err-name','e-err-surname','e-err-edu','e-err-prog'].forEach(id=>{
@@ -2760,6 +2887,8 @@ async function saveEdit(){
   const regVal=(document.getElementById('e-reg').value||'').trim();
   if(i>=0){
     students[i]={...students[i],...d};
+    if(!d.payLegacyDay)delete students[i].payLegacyDay;
+    if(!d.payDayNote)delete students[i].payDayNote;
     if(regVal)students[i].registeredAt=regVal;
     const st=students[i];
     const smVal=((document.getElementById('e-start')||{}).value||'').trim();
@@ -2852,7 +2981,7 @@ function renderDetail(){
           ${s.fee?'<span class="badge" style="background:var(--green-l);color:var(--green);border:1px solid #a7f3d0">💰 '+parseFloat(s.fee).toLocaleString('tr-TR')+' ₺/ay</span>':''}
           ${s.lessonFee?'<span class="badge" style="background:#f0fdf4;color:#166534;border:1px solid #86efac">📚 '+parseFloat(s.lessonFee).toLocaleString('tr-TR')+' ₺/ders</span>':''}
           ${s.fee?(s.kdvDahil?'<span class="badge" style="background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe">✅ KDV Dahil</span>':'<span class="badge" style="background:#f3f4f6;color:#4b5563;border:1px solid #d1d5db">🚫 KDV Hariç</span>'):''}
-          ${rng?'<span class="badge" style="background:#fef9c3;color:#713f12;border:1px solid #fde047">💳 Her ay '+s.payDay+'. günler</span>':''}
+          ${payBadge(s)}
           ${s.exMonth?'<span class="badge" style="background:#fef3c7;color:#92400e;border:1px solid #fcd34d;white-space:normal">🎫 İstisna: yalnızca '+MONTHS[+s.exMonth.ym.split('-')[1]-1]+' '+s.exMonth.ym.split('-')[0]+' ayı '+parseFloat(s.exMonth.amount).toLocaleString('tr-TR')+' ₺'+(s.fee?' — sonraki aylar '+parseFloat(s.fee).toLocaleString('tr-TR')+' ₺':'')+(s.exMonth.note?' ('+repEsc(s.exMonth.note)+')':'')+'</span>':''}
           ${s.pendingSchedule&&s.startMonth?'<span class="badge" style="background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;white-space:normal">⏳ Başlangıç: '+MONTHS[+s.startMonth.split('-')[1]-1]+' '+s.startMonth.split('-')[0]+(s.pendingSchedule.length?' — saatler o ay eklenecek: '+s.pendingSchedule.map(sl=>SCHED_DAYS[sl.day]+' '+sl.time).join(' · '):'')+'</span>':''}
           ${s.schedule&&s.schedule.length?'<span class="badge" style="background:#ecfdf5;color:#15803d;border:1px solid #86efac">📅 '+s.schedule.map(sl=>SCHED_DAYS[sl.day]+' '+sl.time).join(' · ')+'</span>':''}
@@ -3402,7 +3531,7 @@ function renderCal(){
 
   const total=dim(curY,curM),start=fd(curY,curM),today=todays();
   const s=students.find(x=>x.id===curId);
-  const rng=parseRange(s&&s.payDay);
+  const rng=payRng(s,curY,curM);
   let html='';
   for(let i=0;i<start;i++)html+='<div class="day-cell empty"></div>';
   for(let d=1;d<=total;d++){
@@ -3430,7 +3559,7 @@ function renderCal(){
     ?'<div class="ldot"><span class="dot" style="background:#1d4ed8"></span>Geldi</div>'+
       '<div class="ldot"><span class="dot" style="background:#dc2626"></span>Gelmedi</div>'+
       '<div class="ldot"><span class="dot" style="background:#f59e0b"></span>İstisna / Telafi günü</div>'+
-      (rng?'<div class="ldot"><span class="dot" style="background:#fef9c3;border:1px solid #fde047"></span>Taahhüt Günleri</div>':'')+
+      (rng?'<div class="ldot"><span class="dot" style="background:#fef9c3;border:1px solid #fde047"></span>Ödeme günü</div>':'')+
       '<div class="ldot"><span class="dot" style="background:transparent;border:1px solid var(--orange)"></span>Bugün</div>'
     :'<div class="ldot"><span class="dot" style="background:#059669"></span>Ödeme Yapıldı</div>'+
       '<div class="ldot"><span class="dot" style="background:transparent;border:1px solid var(--orange)"></span>Bugün</div>';
@@ -3586,7 +3715,7 @@ function renderPayStatus(){
   const box=document.getElementById('pay-status-box');
   if(curTab!=='pay'){box.style.display='none';return;}
   const s=students.find(x=>x.id===curId);
-  const rng=parseRange(s&&s.payDay);
+  const rng=payRng(s,curY,curM);
   const mk=mkey(curY,curM);
   const now=new Date();
   const isPast=(curY*100+curM)<(now.getFullYear()*100+now.getMonth());
@@ -3595,7 +3724,7 @@ function renderPayStatus(){
   if(prevM2<0){prevM2=11;prevY--;}
   const prevPays=payData.filter(p=>p.date.startsWith(mkey(prevY,prevM2))&&!p.recId);
   if(pays.length>0&&rng){
-    const onTime=pays.some(p=>{const d=new Date(p.date+'T12:00:00').getDate();return d>=rng.a&&d<=rng.b;});
+    const onTime=pays.some(p=>{const d=new Date(p.date+'T12:00:00').getDate();return d<=rng.b;});
     box.style.display='block';
     if(onTime){
       box.style.background='#d1fae5';box.style.borderColor='#10b981';box.style.color='#065f46';
@@ -4039,9 +4168,10 @@ function lrCalc(s,pays){
       let done=null;
       const ex=mp.find(p=>p.exception);if(ex)done=String(ex.date).slice(0,10);   // istisna işaretli ödeme: ay tam
       if(!done){let cum=0;for(const p of mp){cum+=parseFloat(p.amount||0);if(fee<=0||cum>=fee*0.94){done=String(p.date).slice(0,10);break;}}}  // %94 kuralı
+      const fdd=payFinalDayIn(s,d.getFullYear(),d.getMonth());          // son gün: 20 (özel durumda öğrencinin günü)
       const lp=(latePaid[s.id]||{})[mk];                                // elle "ödedi" onayı
-      if(lp){const ld=(typeof lp==='string'&&lp.length>=10)?lp.slice(0,10):mk+'-'+String(RESTRICT_DAY).padStart(2,'0');if(!done||ld<done)done=ld;}
-      const first=mk+'-'+String(RESTRICT_DAY+1).padStart(2,'0');
+      if(lp){const ld=(typeof lp==='string'&&lp.length>=10)?lp.slice(0,10):mk+'-'+String(fdd).padStart(2,'0');if(!done||ld<done)done=ld;}
+      const first=lrAdd(mk+'-'+String(fdd).padStart(2,'0'),1);
       let last;
       if(done)last=done>today?today:done;
       else{if(k>2)continue;last=today;}                                 // ödenmemiş: bugüne kadar sayılır (en çok 2 ay geri)
@@ -4087,7 +4217,7 @@ function checkOverdue(){
   try{updateHwRestrictUI();}catch(e){}
   const s=students.find(x=>x.id===curId);
   const box=document.getElementById('overdue-box');
-  const rng=parseRange(s&&s.payDay);
+  const rng=payRng(s,curY,curM);
   if(!rng||!box){if(box)box.className='overdue';return;}
   const now=new Date();
   const isCurMon=(curY===now.getFullYear()&&curM===now.getMonth());
@@ -4101,12 +4231,12 @@ function checkOverdue(){
   if(!isLate&&!isPast){box.className='overdue';return;}
   const ph=(s.momPhone||s.dadPhone||'').replace(/\D/g,'');
   const pn=s.momName||s.dadName||'Veli';
-  const msg='Sayın '+pn+',\n\nÖğrenciniz '+s.name+' '+s.surname+' adına '+MONTHS[curM]+' '+curY+' ayı ders ücreti, taahhüt edilen '+s.payDay+'. günler aralığı geçtiği halde henüz ödenmemiştir.\n\nLütfen en kısa sürede ödemenizi yapınız.\n\nSaygılarımla,\nRockJazz Müzik Aletleri ve Silifke Satranç Atölyesi';
+  const msg='Sayın '+pn+',\n\nÖğrenciniz '+s.name+' '+s.surname+' adına '+MONTHS[curM]+' '+curY+' ayı ders ücreti, son ödeme günü (ayın '+rng.b+'. günü) geçtiği halde henüz ödenmemiştir.\n\nLütfen en kısa sürede ödemenizi yapınız.\n\nSaygılarımla,\nRockJazz Müzik Aletleri ve Silifke Satranç Atölyesi';
   const waUrl='https://wa.me/'+(ph?'90'+ph.replace(/^0/,''):'')+'?text='+encodeURIComponent(msg);
   box.className='overdue show';
   box.innerHTML='<div style="display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap">'+
     '<div style="flex:1;min-width:0"><div style="font-weight:700;font-size:15px;color:#991b1b;margin-bottom:3px">⚠️ Ödeme Gecikmiş!</div>'+
-    '<div style="font-size:13px;color:#b91c1c;font-weight:700">'+s.name+' '+s.surname+' — <b>'+MONTHS[curM]+' '+curY+'</b><br>Taahhüt: <b>'+s.payDay+'. günler</b></div></div>'+
+    '<div style="font-size:13px;color:#b91c1c;font-weight:700">'+s.name+' '+s.surname+' — <b>'+MONTHS[curM]+' '+curY+'</b><br>Ödeme günü: <b>ayın '+rng.b+'. günü</b></div></div>'+
     '<div style="display:flex;flex-direction:column;gap:5px;flex-shrink:0">'+
     '<a href="'+waUrl+'" target="_blank" style="display:inline-flex;align-items:center;gap:5px;background:linear-gradient(135deg,#25d366,#128c7e);color:#fff;border-radius:9px;padding:8px 13px;font-family:\'Inter\',system-ui,sans-serif;font-weight:600;font-size:13px;text-decoration:none">📲 WhatsApp</a>'+
     (ph?'<div style="font-size:11px;color:#b91c1c;font-weight:700;text-align:center">'+ph+'</div>':'<div style="font-size:11px;color:#b91c1c;font-weight:700">⚠ Telefon yok</div>')+
@@ -4362,11 +4492,12 @@ function lateCheck(st,y,m,keepNoFee){
 // Bu ay (ayın 20'sinden sonra)
 function lateList(){
   const now=new Date();
-  if(now.getDate()<=LATE_DAY)return [];
   const out=[];
   students.forEach(st=>{
+    const fd=payFinalDayIn(st,now.getFullYear(),now.getMonth());   // normalde 20; özel durumda öğrencinin günü
+    if(now.getDate()<=fd)return;
     const r=lateCheck(st,now.getFullYear(),now.getMonth(),true);
-    if(r)out.push({s:st,fee:r.fee,paid:r.paid,rem:r.rem,daysLate:now.getDate()-LATE_DAY,mk:r.mk});
+    if(r)out.push({s:st,fee:r.fee,paid:r.paid,rem:r.rem,daysLate:now.getDate()-fd,mk:r.mk});
   });
   return out.sort((a,b)=>b.rem-a.rem);
 }
@@ -4523,6 +4654,142 @@ function lateOpen(sid){
   lateLog[sid][mk]=todays();
   try{fbSet('lateRemind/'+sid+'/'+mk,todays());}catch(e){}
 }
+
+// ══ ÖDEME GÜNÜ HATIRLATMA ══════════════════════════════════════════════
+// • Ödeme gününden 1 gün önce: ödenmemişse farklı renkte (mavi) kart yanıp söner — günde PAY_FLASH_BURSTS kez, PAY_FLASH_EVERY_MIN dakikada bir (5 kez yanıp söner) + hazır WhatsApp mesajı
+// • Ödeme günü: sarı bilgi kartı
+// • Ödeme gününden 1 gün sonra (ve ödenene kadar): kırmızı kart + tarayıcı bildirimi + hazır WhatsApp mesajı
+// Not: WhatsApp mesajı bir dokunuşla (mesaj hazır, "Gönder"e basılır) gider; uygulama sekmesi açıkken çalışır.
+let payRemLog={};
+const payRemReady={p:false,l:false};
+let payRemSig='',payFlashUntil=0;
+try{payRemLog=JSON.parse(localStorage.getItem('payRemLogLocal')||'{}')||{};}catch(e){payRemLog={};}
+function payRemOk(){return payRemReady.p&&payRemReady.l&&Array.isArray(students)&&students.length>0;}
+function payRemItems(){
+  if(!payRemOk())return [];
+  const now=new Date(),today=todays(),out=[];
+  students.forEach(st=>{
+    if(!st||isFrozen(st))return;
+    if(!(parseFloat(String(st.fee||'').replace(',','.'))>0||parseFloat(String(st.lessonFee||'').replace(',','.'))>0))return;
+    for(let k=-1;k<=1;k++){
+      const d0=new Date(now.getFullYear(),now.getMonth()+k,1),y=d0.getFullYear(),m=d0.getMonth();
+      const due=fmt(y,m,payDueDayIn(st,y,m)),pre=lrAdd(due,-1),post=lrAdd(due,1);
+      let phase=null;
+      if(today===pre)phase='pre';
+      else if(today===due)phase='due';
+      else if(today>=post&&(k===0||today===post))phase='post';
+      if(!phase)continue;
+      const r=lateCheck(st,y,m,true);          // null = ödendi / muaf / henüz başlamadı
+      if(!r)continue;
+      out.push({s:st,y,m,mk:mkey(y,m),due,phase,rem:r.rem,fee:r.fee,paid:r.paid,daysLate:phase==='post'?lrDiff(due,today):0});
+    }
+  });
+  return out.sort((a,b)=>(b.daysLate-a.daysLate)||String(a.s.name).localeCompare(String(b.s.name),'tr'));
+}
+function payRemMsg(it){
+  const s=it.s,pn=s.momName||s.dadName||'Veli',ay=MONTHS[it.m]+' '+it.y,dl=repDL(it.due);
+  const sign='\n\nSaygılarımla,\nRockJazz Müzik Aletleri ve Silifke Satranç Atölyesi';
+  if(it.phase==='post')return 'Sayın '+pn+',\n\nÖğrenciniz '+s.name+' '+s.surname+' adına '+ay+' ayı ders ücretinin ödeme günü ('+dl+') geçmiş olup ödeme henüz tarafımıza ulaşmamıştır.\n\nÖdemeyi yaptıysanız lütfen dekontu paylaşınız; yapmadıysanız en kısa sürede ödemenizi rica ederiz.'+sign;
+  return 'Sayın '+pn+',\n\nÖğrenciniz '+s.name+' '+s.surname+' adına '+ay+' ayı ders ücretinin ödeme günü '+(it.phase==='pre'?'yarındır':'bugündür')+' ('+dl+'). Hatırlatmak istedik, ödemenizi o güne kadar yapmanızı rica ederiz.'+sign;
+}
+function payRemWa(sid,due,phase){
+  const it=payRemItems().find(x=>x.s.id===sid&&x.due===due&&x.phase===phase);
+  const st=it?it.s:students.find(x=>x.id===sid);if(!st)return;
+  const ph=waPhone(st.momPhone||st.dadPhone||st.phone);
+  if(!ph){alert('Bu öğrenci için kayıtlı telefon yok.');return;}
+  const msg=it?payRemMsg(it):'';
+  window.open('https://wa.me/'+ph+'?text='+encodeURIComponent(msg),'_blank');
+  const ts=Date.now();
+  payRemLog[sid]=payRemLog[sid]||{};payRemLog[sid][due]=payRemLog[sid][due]||{};payRemLog[sid][due][phase]=ts;
+  try{localStorage.setItem('payRemLogLocal',JSON.stringify(payRemLog));}catch(e){}
+  try{fbSet('payRemind/'+sid+'/'+due+'/'+phase,ts);}catch(e){}
+  renderPayRemind();
+}
+function payRemSent(sid,due,phase){
+  const t=((payRemLog[sid]||{})[due]||{})[phase];if(!t)return '';
+  const d=new Date(t);return '<span style="font-size:11px;font-weight:700;color:#15803d">✓ WhatsApp açıldı '+String(d.getDate()).padStart(2,'0')+'.'+String(d.getMonth()+1).padStart(2,'0')+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')+'</span>';
+}
+function payRemRow(it){
+  const s=it.s,col=it.phase==='post'?'#991b1b':it.phase==='pre'?'#075985':'#713f12';
+  const sub=it.phase==='post'?'🔴 '+it.daysLate+' gün gecikti · ödeme günü '+repDL(it.due):it.phase==='pre'?'🗓️ Ödeme günü yarın · '+repDL(it.due):'📅 Ödeme günü bugün';
+  const ex=(payNewDay(s)&&payNewDay(s)>PAY_MAX_DAY&&mkey(it.y,it.m)>=PAY_SYS_MK)?' <span style="background:#ffedd5;color:#9a3412;border-radius:6px;padding:1px 6px;font-size:10px;font-weight:800">ÖZEL DURUM</span>':'';
+  return '<div class="payrem-row"><div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start">'+
+    '<div style="min-width:0"><div style="font-weight:700;font-size:14px;cursor:pointer;color:'+col+'" onclick="openDetNewWin(\''+s.id+'\')">'+repEsc(s.name+' '+s.surname)+ex+'</div>'+
+    '<div style="font-size:12px;font-weight:700;color:'+col+';margin-top:2px">'+sub+'</div>'+
+    '<div style="margin-top:3px">'+payRemSent(s.id,it.due,it.phase)+'</div></div>'+
+    '<div style="text-align:right;flex-shrink:0;font-weight:700;font-size:15px;color:'+col+'">'+(it.rem>0?fmtTL(it.rem)+' ₺':'')+'</div></div>'+
+    '<div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">'+
+    '<button class="payrem-btn" style="background:linear-gradient(135deg,#25d366,#128c7e)" onclick="payRemWa(\''+s.id+'\',\''+it.due+'\',\''+it.phase+'\')">📲 WhatsApp hatırlat</button>'+
+    '<button class="payrem-btn" style="background:#16a34a" onclick="lateMarkPaid(\''+s.id+'\',\''+it.mk+'\')">✓ Ödendi</button></div></div>';
+}
+function renderPayRemind(){
+  const box=document.getElementById('pay-remind');if(!box)return;
+  const items=payRemItems();
+  if(!items.length){box.innerHTML='';return;}
+  const sec=(ph,cls,id,title,list)=>list.length?'<div class="payrem-card '+cls+(ph==='pre'&&Date.now()<payFlashUntil?' payrem-flash':'')+'" id="'+id+'"><div style="font-weight:700;font-size:14px;color:'+(ph==='post'?'#991b1b':ph==='pre'?'#075985':'#713f12')+'">'+title+' <span style="background:'+(ph==='post'?'#dc2626':ph==='pre'?'#0284c7':'#ca8a04')+';color:#fff;border-radius:10px;padding:1px 8px;font-size:11px;margin-left:4px">'+list.length+'</span></div>'+list.map(payRemRow).join('')+'</div>':'';
+  box.innerHTML=
+    sec('post','payrem-post','payrem-post','🔴 Ödeme günü geçti, ödenmedi',items.filter(x=>x.phase==='post'))+
+    sec('pre','payrem-pre','payrem-pre','🔵 Yarın ödeme günü',items.filter(x=>x.phase==='pre'))+
+    sec('due','payrem-due','payrem-due','📅 Bugün ödeme günü',items.filter(x=>x.phase==='due'));
+}
+function payRemGoHome(){try{go('s-list');}catch(e){}setTimeout(()=>{const c=document.getElementById('payrem-pre');if(c)c.scrollIntoView({behavior:'smooth',block:'center'});},120);}
+function payRemBurst(pre,first){
+  payFlashUntil=Date.now()+4800;
+  const c=document.getElementById('payrem-pre');
+  if(c){c.classList.remove('payrem-flash');void c.offsetWidth;c.classList.add('payrem-flash');setTimeout(()=>c.classList.remove('payrem-flash'),4900);}
+  const bar=document.getElementById('payrem-bar');
+  if(bar){
+    bar.textContent='💳 Yarın ödeme günü: '+pre.slice(0,3).map(x=>x.s.name+' '+x.s.surname).join(', ')+(pre.length>3?' +'+(pre.length-3)+' kişi':'')+' — dokunun';
+    bar.classList.remove('show');void bar.offsetWidth;bar.classList.add('show');setTimeout(()=>bar.classList.remove('show'),4900);
+  }
+  try{blinkPageTitle('💳 Yarın ödeme günü!',8000);}catch(e){}
+  if(first&&'Notification' in window&&Notification.permission==='granted'){
+    try{new Notification('💳 Yarın ödeme günü ('+pre.length+')',{body:pre.slice(0,5).map(x=>x.s.name+' '+x.s.surname).join('\n')+(pre.length>5?'\n+'+(pre.length-5)+' kişi daha':'')});}catch(e){}
+  }
+}
+function payRemTick(){
+  try{
+    if(!payRemOk())return;
+    const items=payRemItems(),today=todays();
+    const sig=items.map(x=>x.s.id+x.due+x.phase+Math.round(x.rem)).join('|')+Object.keys(payRemLog).length;
+    if(sig!==payRemSig){payRemSig=sig;renderPayRemind();}
+    // 1 gün önce: günde en çok PAY_FLASH_BURSTS kez, PAY_FLASH_EVERY_MIN dakikada bir yanıp sönme
+    const pre=items.filter(x=>x.phase==='pre');
+    if(pre.length){
+      let st={};try{st=JSON.parse(localStorage.getItem('payFlashState')||'{}')||{};}catch(e){}
+      if(st.date!==today)st={date:today,n:0,last:0};
+      if(st.n<PAY_FLASH_BURSTS&&Date.now()-st.last>=PAY_FLASH_EVERY_MIN*60000){
+        st.n++;st.last=Date.now();
+        try{localStorage.setItem('payFlashState',JSON.stringify(st));}catch(e){}
+        payRemBurst(pre,st.n===1);
+      }
+    }
+    // 1 gün sonra ödenmemiş: bir kez bildirim (öğrenci + ödeme günü başına)
+    const post=items.filter(x=>x.phase==='post');
+    if(post.length){
+      let seen={};try{seen=JSON.parse(localStorage.getItem('payRemNotified')||'{}')||{};}catch(e){}
+      const fresh=post.filter(x=>!seen[x.s.id+'|'+x.due]);
+      if(fresh.length){
+        fresh.forEach(x=>seen[x.s.id+'|'+x.due]=Date.now());
+        try{localStorage.setItem('payRemNotified',JSON.stringify(seen));}catch(e){}
+        try{blinkPageTitle('🔴 Ödeme günü geçti!',20000);}catch(e){}
+        if('Notification' in window){
+          const body=fresh.slice(0,5).map(x=>x.s.name+' '+x.s.surname+' — ödeme günü '+repDL(x.due)).join('\n')+(fresh.length>5?'\n+'+(fresh.length-5)+' kişi daha':'');
+          if(Notification.permission==='granted'){try{new Notification('🔴 Ödeme yapılmadı ('+fresh.length+')',{body});}catch(e){}}
+          else if(Notification.permission==='default'){try{requestNotifPermission();}catch(e){}}
+        }
+        const c=document.getElementById('payrem-post');
+        if(c){c.classList.remove('flash-alert');void c.offsetWidth;c.classList.add('flash-alert');setTimeout(()=>c.classList.remove('flash-alert'),5000);}
+      }
+    }
+  }catch(e){}
+}
+try{document.addEventListener('DOMContentLoaded',buildPayGrids);}catch(e){}
+function startPayRemWatch(){
+  try{db.ref('payRemind').on('value',sn=>{const v=sn.val()||{};Object.keys(v).forEach(k=>{payRemLog[k]=Object.assign({},payRemLog[k]||{},v[k]);});payRemSig='';payRemTick();},()=>{});}catch(e){}
+  setInterval(payRemTick,30000);
+}
+
 function startLateWatch(){
   const refresh=()=>{
     renderLateBanner();
@@ -4531,13 +4798,14 @@ function startLateWatch(){
     if(a&&a.id==='s-chronic')renderChronic();
   };
   try{
-    db.ref('payments').on('value',sn=>{lateAllPay=sn.val()||{};refresh();lrRefreshAll();});
+    db.ref('payments').on('value',sn=>{lateAllPay=sn.val()||{};payRemReady.p=true;payRemSig='';refresh();lrRefreshAll();try{payRemTick();}catch(e){}});
     db.ref('receiptSent').on('value',sn=>{rcptSent=sn.val()||{};refresh();try{updateRcptBox();}catch(e){}});
     db.ref('lateRemind').on('value',sn=>{lateLog=sn.val()||{};renderLateBanner();});
-    db.ref('latePaid').on('value',sn=>{latePaid=sn.val()||{};refresh();lrRefreshAll();});
+    db.ref('latePaid').on('value',sn=>{latePaid=sn.val()||{};payRemReady.l=true;payRemSig='';refresh();lrRefreshAll();try{payRemTick();}catch(e){}});
     db.ref('settings/lateRestrict').on('value',sn=>{const v=sn.val();lrCfg=JSON.parse(JSON.stringify(LR_DEF));if(v&&typeof v==='object'){if(typeof v.on==='boolean')lrCfg.on=v.on;if(v.per)lrCfg.per=v.per;if(v.svc)Object.assign(lrCfg.svc,v.svc);}lrRefreshAll();});
     db.ref('lateRestrictExempt').on('value',sn=>{lrExempt=sn.val()||{};lrRefreshAll();});
   }catch(e){}
+  try{startPayRemWatch();}catch(e){}
   setTimeout(()=>{const c=document.getElementById('late-card');if(c){c.classList.add('pulse');setTimeout(()=>c.classList.remove('pulse'),3500);}},1500);
 }
 
@@ -4554,13 +4822,14 @@ function chronicInfo(st){
     for(let i=0;i<12;i++){
       const mk=mkey(y,m);
       // kayıttan önceki aylar / kayıt ayında 20'sinden sonra kayıt olanlar değerlendirilmez
-      if(reg&&(reg.slice(0,7)>mk||(reg.slice(0,7)===mk&&parseInt(reg.slice(8,10))>LATE_DAY)))break;
+      const fdc=payFinalDayIn(st,y,m);
+      if(reg&&(reg.slice(0,7)>mk||(reg.slice(0,7)===mk&&parseInt(reg.slice(8,10))>fdc)))break;
       const mp=pays.filter(x=>x.date.startsWith(mk)).map(x=>x.date).sort();
       const first=mp[0]||'';
       const isCur=(y===now.getFullYear()&&m===now.getMonth());
       let late;
-      if(first)late=parseInt(first.slice(8,10))>LATE_DAY;
-      else if(isCur&&now.getDate()<=LATE_DAY){late=null;}   // henüz belli değil
+      if(first)late=parseInt(first.slice(8,10))>fdc;
+      else if(isCur&&now.getDate()<=fdc){late=null;}   // henüz belli değil
       else late=true;
       if(late===null){ m--; if(m<0){m=11;y--;} continue; }
       if(!late)break;
@@ -4606,7 +4875,7 @@ function renderChronic(){
 function exportExcel(){
   const s=students.find(x=>x.id===curId);if(!s)return;
   const mk=mkey(curY,curM),total=dim(curY,curM);
-  const ar=[[s.name+' '+s.surname+' – '+MONTHS[curM]+' '+curY],['Eğitim',s.education],['Program',s.program],['Tel',s.phone||'—'],['Anne',(s.momName||'—')+' / '+(s.momPhone||'—')],['Baba',(s.dadName||'—')+' / '+(s.dadPhone||'—')],['Kayıt Tarihi',s.registeredAt||'—'],['Ödeme Taahhüdü',s.payDay?'Her ay '+s.payDay+'. günler':'—'],[],['Gün','Tarih','Durum']];
+  const ar=[[s.name+' '+s.surname+' – '+MONTHS[curM]+' '+curY],['Eğitim',s.education],['Program',s.program],['Tel',s.phone||'—'],['Anne',(s.momName||'—')+' / '+(s.momPhone||'—')],['Baba',(s.dadName||'—')+' / '+(s.dadPhone||'—')],['Kayıt Tarihi',s.registeredAt||'—'],['Ödeme Günü','Her ayın '+payRng(s,curY,curM).b+'. günü'],[],['Gün','Tarih','Durum']];
   let g=0,ab=0;
   for(let d=1;d<=total;d++){const ds=fmt(curY,curM,d);const v=attEff(curId,ds,attData[ds]);const st=v==='came'?'Geldi':v==='absent'?'Gelmedi':'—';if(v==='came')g++;if(v==='absent')ab++;ar.push([d,ds,st]);}
   ar.push([],['','Geldi',g],['','Gelmedi',ab]);
@@ -4649,16 +4918,16 @@ async function bulkExcel(){
     const absDays=Object.entries(att).filter(([d,v])=>d.startsWith(mk)&&v==='absent').length;
     const moPays=pays.filter(p=>p.date.startsWith(mk));
     const totPaid=moPays.reduce((a,p)=>a+parseFloat(p.amount||0),0);
-    const rng=parseRange(s.payDay);
+    const rng=payRng(s,y,m);
     const _lp=moPays.filter(p=>!p.recId);
-    const onTime=rng?_lp.some(p=>{const d=new Date(p.date+'T12:00:00').getDate();return d>=rng.a&&d<=rng.b;}):null;
+    const onTime=rng?_lp.some(p=>{const d=new Date(p.date+'T12:00:00').getDate();return d<=rng.b;}):null;
     const payStatus=(effStart(s)&&effStart(s).slice(0,7)>mk&&_lp.length===0)?'Henüz başlamadı':_lp.length===0?'Ödeme Yok':(onTime===null?'Ödeme Yapıldı':(onTime?'Zamanında':'Gecikmeli'));
-    sumRows.push([s.name+' '+s.surname,s.education,s.program,s.fee?parseFloat(s.fee):'—',s.lessonFee?parseFloat(s.lessonFee):'—',cameDays,absDays,totPaid||'—',payStatus,s.payDay?'Her ay '+s.payDay+'. günler':'—',s.momName||'—',s.momPhone||'—',s.dadName||'—',s.dadPhone||'—']);
-    const ar=[[s.name+' '+s.surname+' — '+MONTHS[m]+' '+y],['Eğitim',s.education],['Program',s.program],['Aylık',s.fee?s.fee+' ₺':'—'],['Ders Başı',s.lessonFee?s.lessonFee+' ₺':'—'],['Kayıt',s.registeredAt||'—'],['Taahhüt',s.payDay?'Her ay '+s.payDay+'. günler':'—'],[],['── YOKLAMA ──'],['Gün','Tarih','Gün Adı','Durum']];
+    sumRows.push([s.name+' '+s.surname,s.education,s.program,s.fee?parseFloat(s.fee):'—',s.lessonFee?parseFloat(s.lessonFee):'—',cameDays,absDays,totPaid||'—',payStatus,'Her ayın '+rng.b+'. günü',s.momName||'—',s.momPhone||'—',s.dadName||'—',s.dadPhone||'—']);
+    const ar=[[s.name+' '+s.surname+' — '+MONTHS[m]+' '+y],['Eğitim',s.education],['Program',s.program],['Aylık',s.fee?s.fee+' ₺':'—'],['Ders Başı',s.lessonFee?s.lessonFee+' ₺':'—'],['Kayıt',s.registeredAt||'—'],['Taahhüt','Her ayın '+rng.b+'. günü'],[],['── YOKLAMA ──'],['Gün','Tarih','Gün Adı','Durum']];
     for(let d=1;d<=total;d++){const ds=fmt(y,m,d);const dayName=['Pazar','Pazartesi','Salı','Çarşamba','Perşembe','Cuma','Cumartesi'][new Date(ds+'T12:00:00').getDay()];const v=attEff(s.id,ds,att[ds]);ar.push([d,ds,dayName,v==='came'?'Geldi':v==='absent'?'Gelmedi':'—']);}
     ar.push([],['','Geldi',cameDays],['','Gelmedi',absDays]);
     ar.push([],['── ÖDEMELER ──'],['Tarih','Tutar (₺)','Açıklama','Durum']);
-    moPays.forEach(p=>{const d=new Date(p.date+'T12:00:00').getDate();const st=p.recId?'Alınan mal / alacak':rng?(d>=rng.a&&d<=rng.b?'Zamanında':'Gecikmeli'):'—';ar.push([p.date,parseFloat(p.amount),p.desc||'',st]);});
+    moPays.forEach(p=>{const d=new Date(p.date+'T12:00:00').getDate();const st=p.recId?'Alınan mal / alacak':rng?(d<=rng.b?'Zamanında':'Gecikmeli'):'—';ar.push([p.date,parseFloat(p.amount),p.desc||'',st]);});
     ar.push([],['','TOPLAM',totPaid],['','Durum',payStatus]);
     const sn=(s.name+' '+s.surname).slice(0,31).replace(/[:\\\/\?\*\[\]]/g,'');
     const ws=XLSX.utils.aoa_to_sheet(ar);ws['!cols']=[{wch:8},{wch:14},{wch:12},{wch:14}];
@@ -4991,10 +5260,10 @@ async function exportAllPayments(){
   const ids0=new Set(students.map(x=>x.id));
   students.concat(arcList.filter(a=>!ids0.has(a.id))).forEach(s=>{
     const pays=Object.values(allPay[s.id]||{}).sort((a,b)=>a.date.localeCompare(b.date));
-    const rng=parseRange(s.payDay);
     pays.forEach(p=>{
       const d=new Date(p.date+'T12:00:00').getDate();
-      const status=p.recId?'Alınan mal / alacak':p.exception?'İstisna (tam ödendi)':rng?(d>=rng.a&&d<=rng.b?'Zamanında':'Gecikmeli'):'—';
+      const rng=payRng(s,+String(p.date).slice(0,4),+String(p.date).slice(5,7)-1);
+      const status=p.recId?'Alınan mal / alacak':p.exception?'İstisna (tam ödendi)':rng?(d<=rng.b?'Zamanında':'Gecikmeli'):'—';
       rows.push([p.date,s.name+' '+s.surname,s.education,parseFloat(p.amount),[p.desc,p.exception?('İstisna: '+(p.exNote||'')):''].filter(Boolean).join(' | '),status]);
     });
   });
@@ -7083,14 +7352,14 @@ async function makeVeliUrl(id,loadMsg){
 
   // Son 3 aydaki tüm ödemeler (zamanında / gecikmeli + erken ödeme indirim bilgisi)
   const policyOn=!!disc.enabled;
-  const payRange=parseRange(s.payDay);
   const pay3=pays
     .filter(p=>last3Keys.some(mk=>p.date.startsWith(mk)))
     .sort((a,b)=>a.date.localeCompare(b.date))
     .map(p=>{
       const d=new Date(p.date+'T12:00:00');
       const day=d.getDate();
-      const onTime=payRange?(day>=payRange.a&&day<=payRange.b):null;
+      const payRange=payRng(s,d.getFullYear(),d.getMonth());
+      const onTime=payRange?(day<=payRange.b):null;
       return{
         dl:day+' '+MONTHS[d.getMonth()]+' '+d.getFullYear(),
         amt:parseFloat(p.amount||0),
@@ -7150,7 +7419,7 @@ async function makeVeliUrl(id,loadMsg){
   const data={
     rs:restricted?1:0,ru:restricted?restricted.end:'',sid:id,
     n:s.name+' '+s.surname, e:s.education||'', pr:s.program||'', pk:s.pkg||'',
-    f:baseFee||'', pd:s.payDay||'', reg:effStart(s)||'',
+    f:baseFee||'', pd:String(payRng(s).b), reg:effStart(s)||'',
     att:attSummary, ist:istList, last5:last5, pay3:pay3, bal:carryover, nd:nextDiscount,
     hw:restricted?'':(note.homework||''), gr:restricted?'':(note.grade||''), hwLog:restricted?[]:hwLog, lvl:lvl,
     rep:lastRep?{from:lastRep.from,to:lastRep.to,score:lastRep.score,text:lastRep.text,mode:lastRep.mode||'auto'}:null,
@@ -7884,7 +8153,7 @@ function sozPrefillData(s){
   const days=[...new Set(sch.map(x=>SOZ_DAYS_FULL[x.day]).filter(Boolean))];
   const timeText=sch.map(x=>x.time+(minutes?' — '+sozAddMin(x.time,minutes):'')).join(', ');
   let payText='';
-  if(s.payDay){payText=/[-–]/.test(s.payDay)?'Her ayın '+s.payDay+'. günleri':'Her ayın '+s.payDay+'. günü';}
+  payText=payContractText(s);
   const pn=[];
   if(s.pkg&&typeof pkgLabel==='function'&&pkgLabel(s.pkg))pn.push(pkgLabel(s.pkg));
   if(s.fee)pn.push('Aylık '+parseFloat(s.fee).toLocaleString('tr-TR')+' ₺'+(s.kdvDahil?' (KDV dahil)':''));
@@ -8264,7 +8533,7 @@ function waBulkCardData(s){
  const schedule=sch.map(x=>(days[x.day]||x.day||'')+(x.time?' '+x.time:'')).filter(Boolean).join(' · ')||'Belirtilmedi';
  const mm=(s.program||'').match(/(\d+)\s*dk/i);const mins=mm?mm[1]+' dakika':'Belirtilmedi';
  const fee=s.fee?(Number(s.fee).toLocaleString('tr-TR')+' TL'):(s.lessonFee?(Number(s.lessonFee).toLocaleString('tr-TR')+' TL / ders'):'Belirtilmedi');
- const pay=s.payDay?(/[-–]/.test(s.payDay)?'Her ayın '+s.payDay+'. günleri':'Her ayın '+s.payDay+'. günü'):'Her ayın 16–20. günleri';
+ const pay=payContractText(s);
  return {schedule,mins,fee,pay,education:s.education||'Belirtilmedi',program:s.program||'Belirtilmedi',pkg:(typeof pkgLabel==='function'&&pkgLabel(s.pkg))||'Belirtilmedi',kdv:s.kdvDahil?'KDV dahil':'KDV hariç'};
 }
 function waBulkBuildForStudent(s){
