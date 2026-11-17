@@ -429,6 +429,14 @@ summary::-webkit-details-marker{display:none}
   #s-list>#search-res{grid-row:5}
   #s-list>.tile-grid{grid-column:2;grid-row:6/span 40;grid-template-columns:minmax(0,1fr) minmax(0,1fr);margin-top:0!important;position:sticky;top:20px}
   #s-list>#bulk-panel{grid-column:2}
+  /* Ödeme hatırlatma (web): sağ sütun, Günlük Yoklama butonları hizasında başlar; yüksekliği "Yoklama butonları + Geç Ödeyenler şeridi" bloğuyla aynı (JS ayarlar), taşarsa içinde kayar */
+  #s-list>.tile-grid.has-payrem{grid-row:5/span 40}
+  #pay-remind{display:flex;flex-direction:column;gap:7px;overflow-y:auto;max-height:230px;grid-column:1/-1;scrollbar-width:thin}
+  #pay-remind:empty{display:none}
+  #s-list>.tile-grid #late-banner{grid-column:1/-1}
+  #s-list>.tile-grid #late-banner button{margin:0!important}
+  #pay-remind .payrem-card{margin-bottom:0;flex:0 0 auto}
+  #pay-remind .payrem-card:only-child{flex:1 1 auto}
   #s-list .kpi-row{gap:14px}
   .search-row{max-width:720px}
   .s-row{margin-bottom:10px}
@@ -4807,7 +4815,7 @@ function renderPayRemind(){
   const box=document.getElementById('pay-remind');if(!box)return;
   const w=payRemInWin();
   const items=payRemItems().filter(x=>x.slot==='pre'||w);   // 'yarın son gün' listesi gün boyu; gecikme listeleri 11:30–18:30 arası
-  if(!items.length){box.innerHTML='';return;}
+  if(!items.length){box.innerHTML='';payRemFit();return;}
   const sec=(ph,id,title,list)=>{
     if(!list.length)return '';
     payRemLastCount[id]=list.length;
@@ -4822,7 +4830,24 @@ function renderPayRemind(){
     sec('post','payrem-post3','🔴 Ödemesi hâlâ yapılmayanlar · yeniden hatırlatma',items.filter(x=>x.slot==='late3'))+
     sec('post','payrem-post','🔴 Ödemesi gecikenler',items.filter(x=>x.slot==='late1'))+
     sec('pre','payrem-pre','⏳ Ödemesini hâlâ yapmamış olanlar',items.filter(x=>x.slot==='pre'));
+  payRemFit();
 }
+// Web görünümünde: kart, Yoklama butonları + Geç Ödeyenler şeridi bloğuyla aynı yükseklikte ve aynı hizada başlar
+function payRemFit(){
+  try{
+    const g=document.querySelector('#s-list>.tile-grid');if(!g)return;
+    const el=document.getElementById('pay-remind');
+    const desk=window.matchMedia('(min-width:1100px)').matches&&el&&el.parentNode===g;
+    g.classList.toggle('has-payrem',!!desk);
+    if(!desk){g.style.marginTop='';return;}
+    if((window.scrollY||0)>5)return;
+    const a=document.getElementById('mini-row2');if(!a)return;
+    g.style.marginTop='';
+    const off=Math.round(a.getBoundingClientRect().top-g.getBoundingClientRect().top);   // Günlük Yoklama satırıyla aynı hizaya
+    if(off>0&&off<80)g.style.setProperty('margin-top',off+'px','important');
+  }catch(e){}
+}
+window.addEventListener('resize',()=>payRemFit());
 function payRemGoHome(){try{go('s-list');}catch(e){}setTimeout(()=>{const c=document.querySelector('#pay-remind .payrem-'+payRemLastPhase);if(c)c.scrollIntoView({behavior:'smooth',block:'center'});},120);}
 function payRemBurst(phase,list){
   const meta=PAY_REM_META[phase];payRemLastPhase=phase;
@@ -4845,6 +4870,7 @@ function payRemTick(){
   try{
     if(!payRemOk())return;
     const inWin=payRemInWin(),today=todays();
+    payRemFit();
     const items=payRemItems();
     const sig=(inWin?'1':'0')+items.map(x=>x.s.id+x.due+x.slot+Math.round(x.rem)).join('|')+Object.keys(payRemLog).length;
     if(sig!==payRemSig){payRemSig=sig;renderPayRemind();}
@@ -8162,18 +8188,22 @@ if(location.hash.indexOf('#vid=')===0){
   try{
     const mq=window.matchMedia('(min-width:1100px)');
     const place=()=>{
-      const el=document.getElementById('pay-remind'),g=document.querySelector('#s-list>.tile-grid'),mini=document.getElementById('mini-row2');
+      const el=document.getElementById('pay-remind'),g=document.querySelector('#s-list>.tile-grid'),mini=document.getElementById('mini-row2'),lb=document.getElementById('late-banner');
       if(!el||!g||!mini)return;
       if(mq.matches){
         el.style.gridColumn='1 / -1';
         if(el.parentNode!==g||g.firstElementChild!==el)g.insertBefore(el,g.firstElementChild);
+        if(lb&&lb.previousElementSibling!==el)g.insertBefore(lb,el.nextSibling);   // Geç Ödeyenler şeridi: kartın altında
       }else{
         el.style.gridColumn='';
         if(el.nextElementSibling!==mini)mini.parentNode.insertBefore(el,mini);
+        const tel=document.getElementById('tel-remind');
+        if(lb&&tel&&lb.nextElementSibling!==tel)tel.parentNode.insertBefore(lb,tel);
       }
     };
+    const run=()=>{place();try{renderPayRemind();}catch(e){}try{payRemFit();}catch(e){}};
     place();
-    (mq.addEventListener?mq.addEventListener('change',place):mq.addListener(place));
+    (mq.addEventListener?mq.addEventListener('change',run):mq.addListener(run));
     window.addEventListener('load',place);
   }catch(e){}
 })();
