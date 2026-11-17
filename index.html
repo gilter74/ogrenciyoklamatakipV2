@@ -168,12 +168,20 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
 .pay-exc-box{margin-top:9px;background:#fff7ed;border:1px solid #fdba74;border-radius:10px;padding:10px 11px}
 .pay-info{margin-top:10px;font-size:11.5px;font-weight:600;color:#713f12;line-height:1.5;background:#fef3c7;border-radius:8px;padding:8px 10px}
 /* ── Ödeme günü hatırlatma ── */
-.payrem-card{border-radius:14px;padding:12px 13px;margin-bottom:12px;box-shadow:var(--shadow)}
+.payrem-card{border-radius:12px;padding:6px 9px;margin-bottom:7px;box-shadow:var(--shadow)}
+.payrem-hd{display:flex;align-items:center;gap:7px;cursor:pointer;min-height:26px;user-select:none}
+.payrem-hd .ttl{font-weight:700;font-size:13px;white-space:nowrap}
+.payrem-hd .cnt{color:#fff;border-radius:10px;padding:0 7px;font-size:11px;font-weight:700;line-height:18px}
+.payrem-hd .pv{flex:1;min-width:0;font-size:11.5px;font-weight:600;opacity:.75;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.payrem-hd .chv{margin-left:auto;font-size:12px;opacity:.6}
 .payrem-pre{background:#f0f9ff;border:2px solid #0284c7}
 .payrem-due{background:#fefce8;border:2px solid #eab308}
 .payrem-post{background:#fef2f2;border:2px solid #dc2626}
-.payrem-row{background:#fff;border:1px solid rgba(0,0,0,.08);border-radius:11px;padding:9px 11px;margin-top:8px}
-.payrem-btn{border:0;border-radius:9px;padding:8px 12px;font:700 12px 'Inter',system-ui,sans-serif;cursor:pointer;color:#fff}
+.payrem-row{display:flex;align-items:center;gap:7px;background:#fff;border:1px solid rgba(0,0,0,.08);border-radius:9px;padding:4px 6px 4px 9px;margin-top:5px;min-height:38px}
+.payrem-row .nm{font-weight:700;font-size:13px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;flex:1 1 0}
+.payrem-row .sb{font-size:11.5px;font-weight:600;white-space:nowrap;flex:none}
+.payrem-row .am{font-weight:700;font-size:13px;white-space:nowrap;flex:none}
+.payrem-btn{border:0;border-radius:8px;width:32px;height:30px;padding:0;flex:none;font:700 14px 'Inter',system-ui,sans-serif;cursor:pointer;color:#fff;display:inline-flex;align-items:center;justify-content:center}
 @keyframes payRemFlashPre{0%,100%{background:#f0f9ff;border-color:#0284c7;box-shadow:var(--shadow)}50%{background:#7dd3fc;border-color:#0369a1;box-shadow:0 0 0 7px rgba(14,165,233,.5),0 6px 22px rgba(2,132,199,.55)}}
 @keyframes payRemFlashDue{0%,100%{background:#fefce8;border-color:#eab308;box-shadow:var(--shadow)}50%{background:#fdba74;border-color:#c2410c;box-shadow:0 0 0 7px rgba(249,115,22,.5),0 6px 22px rgba(234,88,12,.55)}}
 @keyframes payRemFlashPost{0%,100%{background:#fef2f2;border-color:#dc2626;box-shadow:var(--shadow)}50%{background:#fca5a5;border-color:#991b1b;box-shadow:0 0 0 7px rgba(239,68,68,.5),0 6px 22px rgba(220,38,38,.55)}}
@@ -4773,26 +4781,43 @@ function payRemWa(sid,due,slot){
 }
 function payRemSent(sid,due,slot){
   const t=((payRemLog[sid]||{})[due]||{})[slot];if(!t)return '';
-  const d=new Date(t);return '<span style="font-size:11px;font-weight:700;color:#15803d">✓ WhatsApp açıldı '+String(d.getDate()).padStart(2,'0')+'.'+String(d.getMonth()+1).padStart(2,'0')+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')+'</span>';
+  const d=new Date(t),hm=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'),dm=String(d.getDate()).padStart(2,'0')+'.'+String(d.getMonth()+1).padStart(2,'0');
+  return '<span title="WhatsApp açıldı '+dm+' '+hm+'" style="font-size:10.5px;font-weight:700;color:#15803d;white-space:nowrap;flex:none">✓ '+(t>new Date().setHours(0,0,0,0)?hm:dm)+'</span>';
 }
 function payRemRow(it){
   const s=it.s,col=it.phase==='post'?'#991b1b':'#075985';
-  const sub=it.phase==='post'?'🔴 '+it.daysLate+' gün gecikti · ödeme günü '+repDL(it.due):'🗓️ Son ödeme günü yarın · '+repDL(it.due);
-  return '<div class="payrem-row"><div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start">'+
-    '<div style="min-width:0"><div style="font-weight:700;font-size:14px;cursor:pointer;color:'+col+'" onclick="openDetNewWin(\''+s.id+'\')">'+repEsc(s.name+' '+s.surname)+(it.special?' <span style="background:#ffedd5;color:#9a3412;border-radius:6px;padding:1px 6px;font-size:10px;font-weight:800">ÖZEL DURUM</span>':'')+'</div>'+
-    '<div style="font-size:12px;font-weight:700;color:'+col+';margin-top:2px">'+sub+'</div>'+
-    '<div style="margin-top:3px">'+payRemSent(s.id,it.due,it.slot)+'</div></div>'+
-    '<div style="text-align:right;flex-shrink:0;font-weight:700;font-size:15px;color:'+col+'">'+(it.rem>0?fmtTL(it.rem)+' ₺':'')+'</div></div>'+
-    '<div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">'+
-    '<button class="payrem-btn" style="background:linear-gradient(135deg,#25d366,#128c7e)" onclick="payRemWa(\''+s.id+'\',\''+it.due+'\',\''+it.slot+'\')">📲 WhatsApp mesajı</button>'+
-    '<button class="payrem-btn" style="background:#16a34a" onclick="lateMarkPaid(\''+s.id+'\',\''+it.mk+'\')">✓ Ödendi</button></div></div>';
+  const sub=it.phase==='post'?it.daysLate+' gün gecikti':repDL(it.due).replace(/\s*\d{4}$/,'').replace(/^(\d+)\s+(\S{3})\S*/,'$1 $2');
+  return '<div class="payrem-row">'+
+    '<span class="nm" style="color:'+col+'" onclick="openDetNewWin(\''+s.id+'\')">'+repEsc(s.name+' '+s.surname)+'</span>'+
+    (it.special?'<span style="background:#ffedd5;color:#9a3412;border-radius:5px;padding:0 5px;font-size:9.5px;font-weight:800;flex:none">ÖZEL</span>':'')+
+    '<span class="sb" style="color:'+col+'">'+sub+'</span>'+
+    payRemSent(s.id,it.due,it.slot)+
+    (it.rem>0?'<span class="am" style="color:'+col+'">'+fmtTL(it.rem)+' ₺</span>':'')+
+    '<button class="payrem-btn" title="WhatsApp mesajı" style="background:linear-gradient(135deg,#25d366,#128c7e)" onclick="payRemWa(\''+s.id+'\',\''+it.due+'\',\''+it.slot+'\')">📲</button>'+
+    '<button class="payrem-btn" title="Ödendi" style="background:#16a34a" onclick="lateMarkPaid(\''+s.id+'\',\''+it.mk+'\')">✓</button></div>';
 }
+let payRemCollapsed={};try{payRemCollapsed=JSON.parse(localStorage.getItem('payRemCollapsed')||'{}')||{};}catch(e){}
+function payRemToggle(id){
+  const cur=payRemCollapsed[id];const isCol=(cur===undefined)?(payRemLastCount[id]>3):cur;
+  payRemCollapsed[id]=!isCol;try{localStorage.setItem('payRemCollapsed',JSON.stringify(payRemCollapsed));}catch(e){}
+  renderPayRemind();
+}
+const payRemLastCount={};
 function renderPayRemind(){
   const box=document.getElementById('pay-remind');if(!box)return;
   const w=payRemInWin();
   const items=payRemItems().filter(x=>x.slot==='pre'||w);   // 'yarın son gün' listesi gün boyu; gecikme listeleri 11:30–18:30 arası
   if(!items.length){box.innerHTML='';return;}
-  const sec=(ph,id,title,list)=>list.length?'<div class="payrem-card payrem-'+ph+(Date.now()<payFlashUntil[ph]?' payrem-flash':'')+'" id="'+id+'"><div style="font-weight:700;font-size:14px;color:'+(ph==='post'?'#991b1b':'#075985')+'">'+title+' <span style="background:'+(ph==='post'?'#dc2626':'#0284c7')+';color:#fff;border-radius:10px;padding:1px 8px;font-size:11px;margin-left:4px">'+list.length+'</span></div>'+list.map(payRemRow).join('')+'</div>':'';
+  const sec=(ph,id,title,list)=>{
+    if(!list.length)return '';
+    payRemLastCount[id]=list.length;
+    const cur=payRemCollapsed[id],col=(cur===undefined)?list.length>3:cur;   // 3'ten uzun liste varsayılan kapalı (yer kaplamasın)
+    const c1=ph==='post'?'#991b1b':'#075985',bg=ph==='post'?'#dc2626':'#0284c7';
+    const names=list.slice(0,4).map(x=>x.s.name+' '+x.s.surname.charAt(0)+'.').join(', ')+(list.length>4?' +'+(list.length-4):'');
+    return '<div class="payrem-card payrem-'+ph+(Date.now()<payFlashUntil[ph]?' payrem-flash':'')+'" id="'+id+'">'+
+      '<div class="payrem-hd" onclick="payRemToggle(\''+id+'\')" style="color:'+c1+'"><span class="ttl">'+title+'</span><span class="cnt" style="background:'+bg+'">'+list.length+'</span>'+(col?'<span class="pv">'+repEsc(names)+'</span>':'')+'<span class="chv">'+(col?'▸':'▾')+'</span></div>'+
+      (col?'':list.map(payRemRow).join(''))+'</div>';
+  };
   box.innerHTML=
     sec('post','payrem-post3','🔴 Ödemesi hâlâ yapılmayanlar · yeniden hatırlatma',items.filter(x=>x.slot==='late3'))+
     sec('post','payrem-post','🔴 Ödemesi gecikenler',items.filter(x=>x.slot==='late1'))+
