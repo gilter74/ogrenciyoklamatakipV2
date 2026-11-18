@@ -542,6 +542,7 @@ summary::-webkit-details-marker{display:none}
     <button class="tile" onclick="go('s-veli-share')"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6M16 5a3 3 0 010 6M18 14c1.8.8 3 2.6 3 5"/></svg><span>Veli Paylaşımı</span></button>
     <button class="tile" onclick="openAnalysis()"><svg viewBox="0 0 24 24"><path d="M4 20V4M4 20h16M8 16v-4M12 16V8M16 16v-6"/></svg><span>Gelir &amp; Ödeme Analizi</span></button>
     <button class="tile" style="background:#FFFF00;border-color:#e6e600;color:#1e293b" onclick="go('s-fiyat')"><svg viewBox="0 0 24 24"><path d="M3 12V4h8l10 10-8 8L3 12z"/><circle cx="7.5" cy="8.5" r="1"/></svg><span>Fiyat Güncelleyici</span></button>
+    <button class="tile" style="background:#ecfdf5;border-color:#6ee7b7" onclick="go('s-rcpt')"><svg viewBox="0 0 24 24"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/></svg><span>Ödemeler &amp; Makbuz<small>Toplu makbuz gönder</small></span></button>
     <button class="tile" onclick="toggleBulkPanel()"><svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg><span>Aylık Toplu Arşiv</span></button>
     <button class="tile" onclick="openArchive()"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v11a1 1 0 001 1h12a1 1 0 001-1V8M10 12h4"/></svg><span>Eski Kursiyer Arşivi</span></button>
   </div>
@@ -998,6 +999,17 @@ summary::-webkit-details-marker{display:none}
     <button class="btn btn-purple btn-sm" onclick="addReferral()">➕ İndirim Hakkı Ekle (%5)</button>
   </div>
   </div>
+</div>
+
+<!-- ÖDEMELER & TOPLU MAKBUZ -->
+<div id="s-rcpt" class="screen">
+  <button class="btn-ghost mb14" onclick="go('s-list')">← Geri</button>
+  <div class="app-hdr" style="padding:18px 16px 16px;background:linear-gradient(135deg,#065f46,#10b981)">
+    <div style="font-size:36px">🧾</div>
+    <h1 style="font-size:22px">Ödemeler &amp; Makbuz</h1>
+    <p>Ödeme yapanlar · işaretle · makbuzlar kendi mesajıyla gitsin</p>
+  </div>
+  <div id="rcpt-body"></div>
 </div>
 
 <!-- GEÇ ÖDEYENLER (2 AY) SCREEN -->
@@ -1798,6 +1810,7 @@ function go(id){
   if(id==='s-hw') openHwScreen();
   if(id==='s-msum') openMsum();
   if(id==='s-chronic') renderChronic();
+  if(id==='s-rcpt') rcRender();
   const bm={'s-list':'home','s-sozlesme':'home','s-daily':'daily','s-week':'week','s-veli-share':'veli'};
   ['home','daily','week','veli'].forEach(k=>{const b=document.getElementById('bn-'+k);if(b)b.className=(bm[id]===k)?'on':'';});
 }
@@ -4479,6 +4492,11 @@ function recWaToChange(){
   sel.value=d;sel.dataset.prev=String(sel.selectedIndex);
 }
 function closeReceipt(){document.getElementById('rec-modal').classList.remove('open');}
+function rcptMsg(o){
+  const student=o.student,parent=o.parent,lesson=o.lesson,mon=o.mon,yr=o.yr,amt=o.amt,note=o.note;
+  const now=new Date();
+  return '🎵♟ *RockJazz Müzik Aletleri ve Silifke Satranç Atölyesi*\n━━━━━━━━━━━━━━━━━━━━\n✅ *ÖDEME MAKBUZU*\n━━━━━━━━━━━━━━━━━━━━\n👤 *Öğrenci:* '+student+'\n👨‍👩‍👦 *Veli:* '+parent+'\n📚 *Ders:* '+lesson+'\n📅 *Dönem:* '+mon+' '+yr+'\n💰 *Ücret:* '+parseFloat(amt).toLocaleString('tr-TR')+' ₺\n'+(note?'📝 *Not:* '+note+'\n':'')+'━━━━━━━━━━━━━━━━━━━━\n🗓 Tarih: '+now.getDate()+'.'+String(now.getMonth()+1).padStart(2,'0')+'.'+now.getFullYear()+'\n✍️ RockJazz Müzik Aletleri ve Silifke Satranç Atölyesi';
+}
 function sendWA(){
   const student=document.getElementById('rec-student').value||'—';
   const parent=document.getElementById('rec-parent').value||'—';
@@ -4488,7 +4506,7 @@ function sendWA(){
   const amt=document.getElementById('rec-amount').value||'0';
   const note=document.getElementById('rec-note').value;
   const now=new Date();
-  const msg='🎵♟ *RockJazz Müzik Aletleri ve Silifke Satranç Atölyesi*\n━━━━━━━━━━━━━━━━━━━━\n✅ *ÖDEME MAKBUZU*\n━━━━━━━━━━━━━━━━━━━━\n👤 *Öğrenci:* '+student+'\n👨‍👩‍👦 *Veli:* '+parent+'\n📚 *Ders:* '+lesson+'\n📅 *Dönem:* '+mon+' '+yr+'\n💰 *Ücret:* '+parseFloat(amt).toLocaleString('tr-TR')+' ₺\n'+(note?'📝 *Not:* '+note+'\n':'')+'━━━━━━━━━━━━━━━━━━━━\n🗓 Tarih: '+now.getDate()+'.'+String(now.getMonth()+1).padStart(2,'0')+'.'+now.getFullYear()+'\n✍️ RockJazz Müzik Aletleri ve Silifke Satranç Atölyesi';
+  const msg=rcptMsg({student,parent,lesson,mon,yr,amt,note});
   const _sel=document.getElementById('rec-wa-to');
   const _pick=_sel?_sel.value:'';
   const _ph=(_pick&&_pick!=='__other')?waPhone(_pick):'';
@@ -4509,6 +4527,14 @@ function markReceiptSent(via){
   const yr=parseInt(document.getElementById('rec-year').value)||curY;
   const mk=mkey(yr,mi);
   const rec={via:via,date:todays(),amount:parseFloat(document.getElementById('rec-amount').value)||0};
+  if(!rcptSent[sid])rcptSent[sid]={};
+  rcptSent[sid][mk]=rec;
+  try{fbSet('receiptSent/'+sid+'/'+mk,rec);}catch(e){}
+  try{updateRcptBox();}catch(e){}
+  try{renderLateBanner();}catch(e){}
+}
+function rcptMark(sid,mk,via,amount){
+  const rec={via:via,date:todays(),amount:parseFloat(amount)||0};
   if(!rcptSent[sid])rcptSent[sid]={};
   rcptSent[sid][mk]=rec;
   try{fbSet('receiptSent/'+sid+'/'+mk,rec);}catch(e){}
@@ -4536,6 +4562,117 @@ function rcptBadge(sid){
   const pays=Object.values(lateAllPay[sid]||{}).filter(x=>x.date&&x.date.startsWith(mk)&&!x.recId);
   if(pays.length)return '<div class="rcpt-no">🧾 Makbuz gönderilmedi</div>';
   return '';
+}
+
+
+// ══ ÖDEMELER & TOPLU MAKBUZ ═══════════════════════════════════════════
+let rcY=null,rcM=null,rcSel={},rcPhone={},rcQueue=[],rcQi=0;
+function rcInit(){if(rcY===null){const n=new Date();rcY=n.getFullYear();rcM=n.getMonth();}}
+function rcShift(d){rcInit();rcM+=d;if(rcM<0){rcM=11;rcY--;}if(rcM>11){rcM=0;rcY++;}rcSel={};rcQueue=[];rcRender();}
+function rcPhones(st){
+  const o=[];
+  if(st.momPhone)o.push({v:st.momPhone,l:'👩 '+(st.momName||'Anne')+' — '+st.momPhone});
+  if(st.dadPhone)o.push({v:st.dadPhone,l:'👨 '+(st.dadName||'Baba')+' — '+st.dadPhone});
+  if(st.phone)o.push({v:st.phone,l:'🎓 Öğrenci — '+st.phone});
+  return o;
+}
+function rcRows(){
+  rcInit();const mk=mkey(rcY,rcM),out=[];
+  (students||[]).forEach(st=>{
+    const pays=Object.values(lateAllPay[st.id]||{}).filter(x=>x&&x.date&&String(x.date).startsWith(mk)&&!x.recId);
+    if(!pays.length)return;
+    const total=pays.reduce((a,x)=>a+(parseFloat(x.amount)||0),0);
+    out.push({st,pays,total,sent:rcptInfo(st.id,mk)});
+  });
+  out.sort((a,b)=>(a.sent?1:0)-(b.sent?1:0)||(a.st.name+a.st.surname).localeCompare(b.st.name+b.st.surname,'tr'));
+  return out;
+}
+function rcNote(st,mk,pays,y,m){
+  let n='';
+  try{
+    const allPays=Object.values(lateAllPay[st.id]||{}).filter(x=>x&&x.date);
+    const disc=monthDiscountApplied(allPays,!!discountData.enabled,y,m);
+    const fee=stuFeeMk(st,mk,disc,discountData);
+    const total=pays.reduce((a,x)=>a+(parseFloat(x.amount)||0),0);
+    if(disc)n+='🏷️ Bir önceki ay ödeme zamanında yapıldığı için %'+(typeof disc==='number'?disc:EARLY_PCT)+' erken ödeme indirimi uygulanmıştır. ';
+    if(refPctFor(discountData,mk))n+='🤝 Öğrenci kazandırma hakkı kullanılmış, %'+refPctFor(discountData,mk)+' indirim uygulanmıştır. ';
+    if(fee>0&&total>0&&exMonth(pays).on){n+='🎫 İstisna: '+(exMonth(pays).notes||'Kısmi ay ücreti')+'. Bu ay ödemesi tam ödendi sayılmıştır.';}
+    else if(fee>0&&total>0){const bal=fee-total;n+=bal<=0?'Tam ödeme alınmıştır.':MONTHS[m]+' ayından '+bal.toLocaleString('tr-TR')+' ₺ bakiyeniz kalmıştır.';}
+  }catch(e){}
+  return n.trim();
+}
+function rcPhoneOf(r){
+  const sid=r.st.id;
+  if(rcPhone[sid]!==undefined)return rcPhone[sid];
+  const p=rcPhones(r.st);return p.length?p[0].v:'';
+}
+function rcRender(){
+  const box=document.getElementById('rcpt-body');if(!box)return;
+  rcInit();
+  const rows=rcRows(),mk=mkey(rcY,rcM);
+  const sentN=rows.filter(r=>r.sent).length,tot=rows.reduce((a,r)=>a+r.total,0);
+  const selN=rows.filter(r=>rcSel[r.st.id]).length;
+  const noPh=rows.filter(r=>rcSel[r.st.id]&&!rcPhoneOf(r)).length;
+  let h='<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><button class="btn btn-sm" onclick="rcShift(-1)">‹</button><div style="flex:1;text-align:center;font-weight:800;font-size:16px">'+MONTHS[rcY===null?0:rcM]+' '+rcY+'</div><button class="btn btn-sm" onclick="rcShift(1)">›</button></div>';
+  h+='<div style="background:#fff;border:1px solid var(--border);border-radius:12px;padding:10px 12px;margin-bottom:10px;font-size:13px;font-weight:700;display:flex;flex-wrap:wrap;gap:6px 14px"><span>👥 '+rows.length+' ödeme</span><span>💰 '+tot.toLocaleString('tr-TR')+' ₺</span><span style="color:#166534">✅ '+sentN+' makbuz gitti</span><span style="color:#92400e">⏳ '+(rows.length-sentN)+' bekliyor</span></div>';
+  if(!rows.length){box.innerHTML=h+'<div style="text-align:center;color:var(--muted);padding:30px 10px;font-size:14px">Bu ay için kayıtlı ödeme yok.</div>';return;}
+  h+='<div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap"><button class="btn btn-sm" onclick="rcSelAll(true)">☑️ Gitmeyenleri seç</button><button class="btn btn-sm" onclick="rcSelAll(false)">⬜ Temizle</button></div>';
+  rows.forEach(r=>{
+    const sid=r.st.id,ph=rcPhones(r.st),cur=rcPhoneOf(r),chk=!!rcSel[sid];
+    let sel='';
+    if(ph.length){
+      sel='<select onchange="rcPickPhone(\''+sid+'\',this.value)" style="flex:1;min-width:0;padding:7px;border-radius:8px;border:1px solid var(--border);font-size:12px">'+ph.map(o=>'<option value="'+escHtml(o.v)+'"'+(o.v===cur?' selected':'')+'>'+escHtml(o.l)+'</option>').join('')+'<option value="__new">✏️ Başka numara…</option></select>';
+    }else{
+      sel='<input type="tel" placeholder="📱 Telefon ekle (05xx…)" value="'+escHtml(rcPhone[sid]||'')+'" onchange="rcAddPhone(\''+sid+'\',this.value)" style="flex:1;min-width:0;padding:7px;border-radius:8px;border:1px solid #fca5a5;font-size:12px">';
+    }
+    h+='<div style="background:#fff;border:1px solid '+(r.sent?'#86efac':'var(--border)')+';border-radius:12px;padding:10px 12px;margin-bottom:8px">'
+      +'<label style="display:flex;align-items:center;gap:10px;cursor:pointer"><input type="checkbox" '+(chk?'checked ':'')+'onchange="rcToggle(\''+sid+'\',this.checked)" style="width:20px;height:20px">'
+      +'<span style="flex:1;font-weight:800;font-size:14px">'+escHtml(r.st.name+' '+r.st.surname)+'</span><span style="font-weight:800">'+r.total.toLocaleString('tr-TR')+' ₺</span></label>'
+      +'<div style="display:flex;align-items:center;gap:8px;margin-top:7px">'+sel+'<span style="font-size:11px;font-weight:700;white-space:nowrap;color:'+(r.sent?'#166534':'#92400e')+'">'+(r.sent?'✅ '+r.sent.date.slice(8,10)+'.'+r.sent.date.slice(5,7)+' '+r.sent.via:'⏳ gitmedi')+'</span></div></div>';
+  });
+  h+='<div style="position:sticky;bottom:10px;margin-top:12px"><button class="btn btn-green" style="width:100%;justify-content:center;padding:13px;font-size:15px;box-shadow:0 4px 14px rgba(0,0,0,.2)" '+(selN?'':'disabled ')+'onclick="rcStart()">📤 Seçilenlere makbuz gönder ('+selN+')</button>'
+    +(noPh?'<div style="text-align:center;font-size:12px;color:#b91c1c;font-weight:700;margin-top:6px">⚠️ '+noPh+' seçili kişide numara yok — atlanır</div>':'')+'</div>';
+  if(rcQueue.length&&rcQi<rcQueue.length){
+    const q=rcQueue[rcQi];
+    h+='<div id="rc-queue" style="position:fixed;left:12px;right:12px;bottom:12px;z-index:9999;background:#065f46;color:#fff;border-radius:14px;padding:12px 14px;box-shadow:0 6px 22px rgba(0,0,0,.35);display:flex;align-items:center;gap:10px"><div style="flex:1;font-weight:800;font-size:14px">🧾 Sıradaki ('+(rcQi+1)+'/'+rcQueue.length+'): '+escHtml(q.name)+'</div><button class="btn btn-sm" style="background:#fff;color:#065f46;font-weight:800" onclick="rcNext()">WhatsApp\'ta aç ›</button><button class="btn btn-sm" onclick="rcQueue=[];rcRender()">✕</button></div>';
+  }
+  box.innerHTML=h;
+}
+function rcToggle(sid,v){if(v)rcSel[sid]=1;else delete rcSel[sid];rcRender();}
+function rcSelAll(on){rcSel={};if(on)rcRows().forEach(r=>{if(!r.sent)rcSel[r.st.id]=1;});rcRender();}
+function rcPickPhone(sid,v){
+  if(v==='__new'){const n=prompt('WhatsApp numarası (örn. 0532 000 00 00):','');const d=String(n||'').replace(/\D/g,'');if(d.length>=10)rcAddPhone(sid,d);else rcRender();return;}
+  rcPhone[sid]=v;rcRender();
+}
+function rcAddPhone(sid,v){
+  const d=String(v||'').replace(/\D/g,'');
+  if(d.length<10){rcPhone[sid]=d;return;}
+  rcPhone[sid]=d;
+  const st=students.find(x=>x.id===sid);
+  if(st&&!rcPhones(st).length){st.momPhone=d;try{fbSet('students/'+sid,st);}catch(e){}}   // numara ilk kez eklendiyse öğrenci kaydına da işlenir
+  rcSel[sid]=1;rcRender();
+}
+function rcStart(){
+  const mk=mkey(rcY,rcM);
+  rcQueue=rcRows().filter(r=>rcSel[r.st.id]&&rcPhoneOf(r)).map(r=>{
+    const st=r.st,last=[...r.pays].sort((a,b)=>b.date.localeCompare(a.date))[0];
+    const lesson=(st.education||'')+(st.program?' · '+st.program:'');
+    const msg=rcptMsg({student:st.name+' '+st.surname,parent:st.momName||st.dadName||'—',lesson:lesson||'—',mon:MONTHS[rcM],yr:String(rcY),amt:String(r.total||(last&&last.amount)||0),note:rcNote(st,mk,r.pays,rcY,rcM)});
+    return {sid:st.id,name:st.name+' '+st.surname,phone:waPhone(rcPhoneOf(r)),msg,amount:r.total};
+  });
+  rcQi=0;
+  if(!rcQueue.length){showConf('Seçili kişilerde telefon numarası yok.','⚠️','Tamam',()=>{});return;}
+  rcNext();
+}
+function rcNext(){
+  if(rcQi>=rcQueue.length)return;
+  const q=rcQueue[rcQi];
+  window.open('https://wa.me/'+q.phone+'?text='+encodeURIComponent(q.msg),'_blank');
+  rcptMark(q.sid,mkey(rcY,rcM),'WhatsApp (toplu)',q.amount);
+  delete rcSel[q.sid];
+  rcQi++;
+  if(rcQi>=rcQueue.length){rcQueue=[];rcQi=0;}
+  rcRender();
 }
 
 // ══ 20'SİNDEN SONRA ÖDEMEYENLER ═══════════════════════════════════════
@@ -4901,7 +5038,7 @@ function startLateWatch(){
   };
   try{
     db.ref('payments').on('value',sn=>{lateAllPay=sn.val()||{};payRemReady.p=true;payRemSig='';refresh();lrRefreshAll();try{payRemTick();}catch(e){}});
-    db.ref('receiptSent').on('value',sn=>{rcptSent=sn.val()||{};refresh();try{updateRcptBox();}catch(e){}});
+    db.ref('receiptSent').on('value',sn=>{rcptSent=sn.val()||{};refresh();try{updateRcptBox();}catch(e){}try{if(document.getElementById('s-rcpt').classList.contains('active')&&!rcQueue.length)rcRender();}catch(e){}});
     db.ref('lateRemind').on('value',sn=>{lateLog=sn.val()||{};renderLateBanner();});
     db.ref('latePaid').on('value',sn=>{latePaid=sn.val()||{};payRemReady.l=true;payRemSig='';refresh();lrRefreshAll();try{payRemTick();}catch(e){}});
     db.ref('settings/lateRestrict').on('value',sn=>{const v=sn.val();lrCfg=JSON.parse(JSON.stringify(LR_DEF));if(v&&typeof v==='object'){if(typeof v.on==='boolean')lrCfg.on=v.on;if(v.per)lrCfg.per=v.per;if(v.svc)Object.assign(lrCfg.svc,v.svc);}lrRefreshAll();});
