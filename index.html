@@ -97,6 +97,8 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
 #yf-table .yf-cell:focus{background:#fff;box-shadow:inset 0 0 0 2px var(--purple)}
 .yf-due{background:#fecaca;border-radius:3px;padding:0 2px;box-decoration-break:clone;-webkit-box-decoration-break:clone}
 .yf-satranc{color:#ea580c;font-weight:700}
+.yf-break{background:#e9d5ff;color:#6b21a8;border-radius:4px;padding:0 3px;box-decoration-break:clone;-webkit-box-decoration-break:clone}
+.yf-brk-note{font-size:10px;font-weight:800;color:#6b21a8;background:#f3e8ff;border:1px solid #c084fc;border-radius:6px;padding:0 4px;margin-left:3px;white-space:nowrap;user-select:none}
 .yf-toolbar{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:8px 10px;margin-top:10px;position:sticky;top:0;z-index:20}
 .yf-tb-lbl{font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.5px}
 .yf-tb-btn{border:1px solid var(--border);background:#fff;border-radius:9px;padding:6px 12px;font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;font-weight:700;font-size:13px;cursor:pointer;color:var(--text)}
@@ -951,6 +953,7 @@ summary::-webkit-details-marker{display:none}
       <button class="btn btn-green btn-sm" onclick="exportExcel()">⬇️ Excel</button>
       <button class="btn btn-blue btn-sm" onclick="openDrive()">☁️ Drive</button>
       <button class="btn btn-sm" id="freeze-arc-btn" style="display:none;background:#64748b;color:#fff" onclick="freezeArchive(curId)">🗂️ Arşive Al</button>
+      <button class="btn btn-sm" id="break-btn" style="background:#a855f7;color:#fff" onclick="breakToggle()">⏸️ Ara Verdi</button>
       <button class="btn btn-sm" id="freeze-btn" style="background:#0ea5e9;color:#fff" onclick="freezeToggle()">❄️ Kaydı Dondur</button>
     </div>
   </div>
@@ -1827,6 +1830,92 @@ function dtShow(t){
 // ══ KAYIT DONDURMA ════════════════════════════════════════════════════
 // Dondurulan öğrencinin ders saatleri programdan (yoklama, günlük/haftalık program) çıkar → saat boşalır.
 // Öğrenci ana ekranda "❄️ Dondurulanlar" bölümünde kalır; 7 gün dolunca arşive alma uyarısı çıkar.
+
+// ══ ARA VERDİ (geçici ara: hafta/ay elle girilir) ═════════════════════
+// s.onBreak={from:'YYYY-MM-DD',n:2,unit:'week'|'month',until:'YYYY-MM-DD'}  — until dahil değil (o gün ders yeniden görünür).
+// Ders saatleri programda kalır; yalnızca bu aralıkta Günlük Yoklama / bugünün ders listesi / yoklama hatırlatmasında görünmez.
+function brkAdd(from,n,unit){
+  const p=from.split('-').map(Number),d=new Date(p[0],p[1]-1,p[2]);
+  if(unit==='month'){const day=d.getDate();d.setDate(1);d.setMonth(d.getMonth()+n);const last=new Date(d.getFullYear(),d.getMonth()+1,0).getDate();d.setDate(Math.min(day,last));}
+  else d.setDate(d.getDate()+7*n);
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function brkInfo(s,ds){
+  const b=s&&s.onBreak;if(!b||!b.from||!b.until)return null;
+  ds=ds||todays();
+  return(ds>=b.from&&ds<b.until)?b:null;
+}
+function brkLabel(b){return b.n+' '+(b.unit==='month'?'ay':'hafta');}
+function brkShort(b){return b.n+' '+(b.unit==='month'?'ay':'hf');}
+function brkDateTr(ds){const p=ds.split('-').map(Number);return p[2]+' '+MONTHS[p[1]-1];}
+function brkOverlapsMonth(b,y,m){ // b, görüntülenen ayla kesişiyor mu
+  if(!b||!b.from||!b.until)return false;
+  const a=y+'-'+String(m+1).padStart(2,'0')+'-01',z=m===11?(y+1)+'-01-01':y+'-'+String(m+2).padStart(2,'0')+'-01';
+  return b.from<z&&b.until>a;
+}
+function updateBreakBtn(){
+  const b=document.getElementById('break-btn');if(!b)return;
+  const s=students.find(x=>x.id===curId);
+  if(s&&brkInfo(s)){b.textContent='▶️ Arayı Bitir ('+brkLabel(s.onBreak)+')';b.style.background='#16a34a';}
+  else{b.textContent='⏸️ Ara Verdi';b.style.background='#a855f7';}
+}
+function breakToggle(){
+  const s=students.find(x=>x.id===curId);if(!s)return;
+  if(brkInfo(s)){
+    const b=s.onBreak;
+    showConf(s.name+' '+s.surname+' — '+brkLabel(b)+' ara ('+brkDateTr(b.from)+' → '+brkDateTr(b.until)+'). Ara şimdi bitirilsin mi? Yoklamada yeniden görünür.','▶️','Evet, Bitir',async()=>{
+      delete s.onBreak;
+      try{await fbSet('students/'+s.id,s);}catch(e){}
+      brkRefresh();
+    });
+    return;
+  }
+  brkOpenDlg(s);
+}
+function brkOpenDlg(s){
+  let m=document.getElementById('brk-dlg');if(m)m.remove();
+  m=document.createElement('div');m.id='brk-dlg';
+  m.style.cssText='position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:100000;display:flex;align-items:center;justify-content:center;padding:16px';
+  m.innerHTML='<div style="background:#fff;border-radius:16px;padding:18px;width:100%;max-width:360px;box-shadow:0 10px 40px rgba(0,0,0,.35)">'
+   +'<div style="font-weight:800;font-size:16px;margin-bottom:4px">⏸️ Ara Verdi</div>'
+   +'<div style="font-size:13px;color:#64748b;margin-bottom:12px">'+repEsc(s.name+' '+s.surname)+' — süre bitince yoklamada kendiliğinden geri görünür.</div>'
+   +'<div style="display:flex;gap:8px;margin-bottom:10px"><input id="brk-n" type="number" min="1" max="52" value="1" style="width:90px;padding:10px;border:1px solid #cbd5e1;border-radius:9px;font-size:16px;font-weight:700;text-align:center">'
+   +'<select id="brk-u" style="flex:1;padding:10px;border:1px solid #cbd5e1;border-radius:9px;font-size:15px;font-weight:700"><option value="week">Hafta</option><option value="month">Ay</option></select></div>'
+   +'<label style="font-size:12px;font-weight:700;color:#64748b">Başlangıç tarihi</label>'
+   +'<input id="brk-from" type="date" value="'+todays()+'" style="width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:9px;font-size:15px;margin:4px 0 12px">'
+   +'<div id="brk-prev" style="font-size:13px;font-weight:700;color:#6b21a8;background:#f3e8ff;border-radius:9px;padding:8px 10px;margin-bottom:12px"></div>'
+   +'<div style="display:flex;gap:8px"><button class="btn" style="flex:1;justify-content:center;background:#e2e8f0;color:#334155" onclick="document.getElementById(\'brk-dlg\').remove()">İptal</button>'
+   +'<button class="btn" style="flex:1;justify-content:center;background:#a855f7;color:#fff;font-weight:800" onclick="brkSave()">Kaydet</button></div></div>';
+  document.body.appendChild(m);
+  ['brk-n','brk-u','brk-from'].forEach(id=>document.getElementById(id).addEventListener('input',brkPrev));
+  brkPrev();
+}
+function brkVals(){
+  const n=Math.max(1,Math.min(52,parseInt(document.getElementById('brk-n').value,10)||0));
+  const unit=document.getElementById('brk-u').value,from=document.getElementById('brk-from').value||todays();
+  return{n,unit,from,until:brkAdd(from,n,unit)};
+}
+function brkPrev(){
+  const v=brkVals(),e=document.getElementById('brk-prev');if(!e)return;
+  e.textContent='⏸ '+brkLabel(v)+' ara · '+brkDateTr(v.from)+' → '+brkDateTr(v.until)+' tarihinde derse döner';
+}
+async function brkSave(){
+  const s=students.find(x=>x.id===curId);if(!s)return;
+  const raw=parseInt(document.getElementById('brk-n').value,10);
+  if(!raw||raw<1){showConf('Hafta / ay sayısı girin.','⚠️','Tamam',()=>{});return;}
+  s.onBreak=brkVals();
+  document.getElementById('brk-dlg').remove();
+  try{await fbSet('students/'+s.id,s);}catch(e){console.warn('break',e);}
+  brkRefresh();
+  try{snack('⏸️ '+s.name+' '+s.surname+' — '+brkLabel(s.onBreak)+' ara verdi.',[]);}catch(e){}
+}
+function brkRefresh(){
+  try{updateBreakBtn();}catch(e){}
+  try{renderDetail();}catch(e){}
+  try{renderList();}catch(e){}
+  try{renderTodaySched();}catch(e){}
+  try{if(yfData)yfRender();}catch(e){}
+}
 const FREEZE_DAYS=7;
 function isFrozen(s){return !!(s&&s.frozen&&s.frozen.date);}
 function frozenDaysPassed(s){
@@ -1836,6 +1925,7 @@ function frozenDaysPassed(s){
 }
 function frozenDue(s){return isFrozen(s)&&frozenDaysPassed(s)>=FREEZE_DAYS;}
 function updateFreezeBtn(){
+  try{updateBreakBtn();}catch(e){}
   const b=document.getElementById('freeze-btn');if(!b)return;
   const s=students.find(x=>x.id===curId);
   const a=document.getElementById('freeze-arc-btn');
@@ -1935,7 +2025,7 @@ function renderTodaySched(){
   const all=[];
   students.forEach(s=>{
     (s.schedule||[]).forEach(sl=>{
-      if(sl.day===todayIdx&&sl.time){all.push({s,time:sl.time});}
+      if(sl.day===todayIdx&&sl.time&&!brkInfo(s)){all.push({s,time:sl.time});}
     });
   });
   // Bugüne ayarlanmış telafi dersleri (henüz geldi/gelmedi işaretlenmemiş)
@@ -2016,7 +2106,7 @@ function stuRow(s,dupSet){
           <div style="font-size:12px;color:var(--muted);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${s.education} · ${s.program}</div>
           ${eduBadge(s,true)}
           <div style="font-size:12px;color:var(--dim);margin-top:1px">${s.phone?'📞 '+s.phone:''}${s.momPhone?' · 👩 '+s.momPhone:''}${dup?' · Kayıt no: '+s.id:''}</div>
-          ${isFrozen(s)?'<span style="display:inline-block;background:#e0f2fe;color:#0369a1;border:1px solid #7dd3fc;border-radius:8px;padding:1px 8px;font-size:11px;font-weight:700;margin-top:3px">❄️ Donduruldu · '+frozenDaysPassed(s)+'. gün</span>':''}${recBadge(s.id)}${rcptBadge(s.id)}${chr?chronicBadge(s):''}
+          ${isFrozen(s)?'<span style="display:inline-block;background:#e0f2fe;color:#0369a1;border:1px solid #7dd3fc;border-radius:8px;padding:1px 8px;font-size:11px;font-weight:700;margin-top:3px">❄️ Donduruldu · '+frozenDaysPassed(s)+'. gün</span>':''}${brkInfo(s)?'<span style="display:inline-block;background:#f3e8ff;color:#6b21a8;border:1px solid #c084fc;border-radius:8px;padding:1px 8px;font-size:11px;font-weight:700;margin-top:3px">⏸️ Ara verdi · '+brkLabel(s.onBreak)+' · '+brkDateTr(s.onBreak.until)+'\'e kadar</span>':''}${recBadge(s.id)}${rcptBadge(s.id)}${chr?chronicBadge(s):''}
         </div>
         <button class="btn-del" onclick="event.stopPropagation();delStudent('${s.id}')">Sil</button>
       </div>`;
@@ -2027,7 +2117,7 @@ function renderList(){
     const hs=document.getElementById('home-sum');
     if(hs){
       const ti=(new Date().getDay()+6)%7;
-      const n=students.reduce((a,x)=>a+(x.schedule||[]).filter(sl=>sl.day===ti&&sl.time).length,0);
+      const n=students.reduce((a,x)=>a+(brkInfo(x)?0:(x.schedule||[]).filter(sl=>sl.day===ti&&sl.time).length),0);
       const dn=new Date();
       hs.innerHTML='<div class="kpi"><div class="v">'+students.filter(x=>!isFrozen(x)).length+'</div><div class="k">Aktif öğrenci</div></div>'+
         '<div class="kpi"><div class="v">'+n+'</div><div class="k">Bugünkü ders</div></div>'+
@@ -2187,8 +2277,10 @@ function yfPlainText(html){
 }
 function yfHasTags(html){ return /<[a-z][\s\S]*>/i.test(html||''); }
 function yfStripDue(html){
-  if(!/yf-due/.test(html||''))return html;
+  if(!/yf-due|yf-break|yf-brk/.test(html||''))return html;
   const d=document.createElement('div');d.innerHTML=html;
+  d.querySelectorAll('span.yf-brk-note').forEach(e=>e.remove());
+  d.querySelectorAll('span.yf-break').forEach(sp=>{while(sp.firstChild)sp.parentNode.insertBefore(sp.firstChild,sp);sp.remove();});
   d.querySelectorAll('span.yf-due').forEach(sp=>{while(sp.firstChild)sp.parentNode.insertBefore(sp.firstChild,sp);sp.remove();});
   d.normalize();return d.innerHTML;
 }
@@ -2219,8 +2311,39 @@ function yfDecorateDue(html){
   root.querySelectorAll('span:empty').forEach(e=>e.remove());
   return root.innerHTML;
 }
+function yfDecorateBreak(html){
+  try{
+    const my=parseInt(document.getElementById('yf-month').value,10),yy=parseInt(document.getElementById('yf-year').value,10);
+    const map={};
+    students.forEach(st=>{
+      if(!st.onBreak||!brkOverlapsMonth(st.onBreak,yy,my))return;
+      const k=normName(st.name);if(!k)return;
+      if(students.filter(x=>normName(x.name)===k).length!==1)return;
+      map[k]=st.onBreak;
+    });
+    const keys=Object.keys(map);if(!keys.length)return html;
+    const root=document.createElement('div');root.innerHTML=html;
+    const re=new RegExp('(?<![A-Za-zÇĞİÖŞÜçğıöşü])('+keys.map(yfEscRe).join('|')+')(?![A-Za-zÇĞİÖŞÜçğıöşü])([+\\-−–\\d]*)','g');
+    const nodes=[];const it=document.createNodeIterator(root,NodeFilter.SHOW_TEXT);let n;
+    while((n=it.nextNode()))nodes.push(n);
+    nodes.forEach(tn=>{
+      const t=tn.data;re.lastIndex=0;if(!re.test(t))return;re.lastIndex=0;
+      const frag=document.createDocumentFragment();let last=0,m;
+      while((m=re.exec(t))){
+        if(m.index>last)frag.appendChild(document.createTextNode(t.slice(last,m.index)));
+        const sp=document.createElement('span');sp.className='yf-break';sp.textContent=m[0];
+        const nt=document.createElement('span');nt.className='yf-brk-note';nt.contentEditable='false';
+        const b=map[m[1]];nt.textContent='⏸ '+brkShort(b)+' ara';nt.title=brkLabel(b)+' ara · '+brkDateTr(b.from)+' → '+brkDateTr(b.until);
+        frag.appendChild(sp);frag.appendChild(nt);last=m.index+m[0].length;
+      }
+      if(last<t.length)frag.appendChild(document.createTextNode(t.slice(last)));
+      tn.parentNode.replaceChild(frag,tn);
+    });
+    return root.innerHTML;
+  }catch(e){return html;}
+}
 function yfCellDisplayHTML(text){
-  return yfDecorateDue(yfHasTags(text)?text:yfHighlight(text));
+  return yfDecorateBreak(yfDecorateDue(yfHasTags(text)?text:yfHighlight(text)));
 }
 function yfSyncActiveCell(){
   if(!yfActiveEl)return;
@@ -4467,6 +4590,21 @@ function openReceipt(){
   window.scrollTo(0,0);
 }
 // Makbuzun WhatsApp numarasını seç: anne / baba / öğrenci / elle yazılan / numarasız
+// Seçilen numaranın kayıtlı sahibi (anne/baba/öğrenci) → makbuzdaki "Veli" adı
+function rcptNameForPhone(st,v){
+  const d=x=>String(x||'').replace(/\D/g,'').slice(-10);
+  const t=d(v);if(!t)return '';
+  if(st.momPhone&&d(st.momPhone)===t)return st.momName||'Anne';
+  if(st.dadPhone&&d(st.dadPhone)===t)return st.dadName||'Baba';
+  if(st.phone&&d(st.phone)===t)return (st.name+' '+st.surname).trim();
+  return '';
+}
+function recSyncParent(){
+  const sel=document.getElementById('rec-wa-to'),s=students.find(x=>x.id===curId);
+  if(!sel||!s||sel.value==='__other'||!sel.value)return;
+  const n=rcptNameForPhone(s,sel.value);
+  if(n)document.getElementById('rec-parent').value=n;
+}
 function fillRecWaRecipients(){
   const sel=document.getElementById('rec-wa-to');
   const s=students.find(x=>x.id===curId);
@@ -4480,10 +4618,11 @@ function fillRecWaRecipients(){
   sel.innerHTML=opts.map(o=>'<option value="'+o.v+'">'+o.l+'</option>').join('');
   sel.selectedIndex=0;
   sel.dataset.prev='0';
+  try{recSyncParent();}catch(e){}
 }
 function recWaToChange(){
   const sel=document.getElementById('rec-wa-to');
-  if(sel.value!=='__other'){sel.dataset.prev=String(sel.selectedIndex);return;}
+  if(sel.value!=='__other'){sel.dataset.prev=String(sel.selectedIndex);try{recSyncParent();}catch(e){}return;}
   const n=prompt('WhatsApp numarası (örn. 0532 000 00 00):','');
   const d=String(n||'').replace(/\D/g,'');
   if(d.length<10){sel.selectedIndex=+(sel.dataset.prev||0);return;}
@@ -4657,7 +4796,7 @@ function rcStart(){
   rcQueue=rcRows().filter(r=>rcSel[r.st.id]&&rcPhoneOf(r)).map(r=>{
     const st=r.st,last=[...r.pays].sort((a,b)=>b.date.localeCompare(a.date))[0];
     const lesson=(st.education||'')+(st.program?' · '+st.program:'');
-    const msg=rcptMsg({student:st.name+' '+st.surname,parent:st.momName||st.dadName||'—',lesson:lesson||'—',mon:MONTHS[rcM],yr:String(rcY),amt:String(r.total||(last&&last.amount)||0),note:rcNote(st,mk,r.pays,rcY,rcM)});
+    const msg=rcptMsg({student:st.name+' '+st.surname,parent:rcptNameForPhone(st,rcPhoneOf(r))||st.momName||st.dadName||'—',lesson:lesson||'—',mon:MONTHS[rcM],yr:String(rcY),amt:String(r.total||(last&&last.amount)||0),note:rcNote(st,mk,r.pays,rcY,rcM)});
     return {sid:st.id,name:st.name+' '+st.surname,phone:waPhone(rcPhoneOf(r)),msg,amount:r.total};
   });
   rcQi=0;
@@ -5657,6 +5796,7 @@ function ydLessonsBase(ds){
   const idx=(ydDateObj(ds).getDay()+6)%7;
   const map={};
   students.forEach(s=>{
+    if(brkInfo(s,ds))return;   // ara verdi: o gün yoklamada görünmez
     (s.schedule||[]).forEach(sl=>{
       if(sl.day===idx&&sl.time){(map[s.id]=map[s.id]||{s,times:[]}).times.push(sl.time);}
     });
@@ -5733,6 +5873,7 @@ function umPending(){
     const ds=hwDateStr(d),idx=(d.getDay()+6)%7;
     students.forEach(s=>{
       if(effStart(s)&&ds<effStart(s))return;
+      if(brkInfo(s,ds))return;
       const times=(s.schedule||[]).filter(sl=>sl&&sl.day===idx&&sl.time).map(sl=>sl.time).sort((a,b)=>tmin(a)-tmin(b));
       if(!times.length)return;
       if(back===0&&nowMin<tmin(times[0])+umDur(s)+5)return;
