@@ -97,6 +97,7 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
 #yf-table .yf-cell:focus{background:#fff;box-shadow:inset 0 0 0 2px var(--purple)}
 .yf-due{background:#fecaca;border-radius:3px;padding:0 2px;box-decoration-break:clone;-webkit-box-decoration-break:clone}
 .yf-satranc{color:#ea580c;font-weight:700}
+.yf-restr{background:#fed7aa;color:#9a3412;border-radius:4px;padding:0 3px;box-decoration-break:clone;-webkit-box-decoration-break:clone}
 .yf-break{background:#e9d5ff;color:#6b21a8;border-radius:4px;padding:0 3px;box-decoration-break:clone;-webkit-box-decoration-break:clone}
 .yf-brk-note{font-size:10px;font-weight:800;color:#6b21a8;background:#f3e8ff;border:1px solid #c084fc;border-radius:6px;padding:0 4px;margin-left:3px;white-space:nowrap;user-select:none}
 .yf-toolbar{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:8px 10px;margin-top:10px;position:sticky;top:0;z-index:20}
@@ -2075,12 +2076,14 @@ function renderTodaySched(){
     const c=eduColor(s.education);
     const fn=((s.name||'')+' '+(s.surname||'')).trim().toLocaleUpperCase('tr').replace(/\s+/g,' ');
     const dup=dupSet.has(fn);
+    const lrr=!tel?lrRestrictedOn(s,todays()):null;
     const dupTag=dup?`<div style="font-size:11px;color:#dc2626;font-weight:700;margin-top:2px">⚠️ Aynı isimde başka öğrenci var — ${s.phone?'📞 '+s.phone:(s.momPhone?'👩 '+s.momPhone:'Kayıt no: '+s.id)}</div>`:'';
     return `
-    <div class="s-row" style="border-color:${c.border};background:${c.bg}" onclick="openDetCal('${s.id}')">
-      <div class="avatar" style="width:40px;height:40px;background:${c.border};font-size:18px">${eduIcon(s.education)}</div>
+    <div class="s-row" style="border-color:${lrr?'#ea580c':c.border};background:${lrr?'#fff7ed':c.bg};${lrr?'border-width:2px;':''}" onclick="openDetCal('${s.id}')">
+      <div class="avatar" style="width:40px;height:40px;background:${lrr?'#ea580c':c.border};font-size:18px">${lrr?'⛔':eduIcon(s.education)}</div>
       <div style="flex:1;min-width:0">
         <div style="font-weight:700;font-size:14px">${s.name} ${s.surname}</div>
+        ${lrr?`<div style="display:inline-block;background:#ea580c;color:#fff;border-radius:7px;padding:1px 8px;font-size:11px;font-weight:800;margin-top:2px">${lrRestrTag(lrr,todays())}</div>`:''}
         <div style="font-size:11px;color:var(--muted);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${s.education} · ${s.program}${tel?' · <b style="color:#b45309">🩷 Telafi dersi</b>':''}</div>
         ${dupTag}
       </div>
@@ -2288,7 +2291,7 @@ function yfStripDue(html){
   if(!/yf-due|yf-break|yf-brk/.test(html||''))return html;
   const d=document.createElement('div');d.innerHTML=html;
   d.querySelectorAll('span.yf-brk-note').forEach(e=>e.remove());
-  d.querySelectorAll('span.yf-break').forEach(sp=>{while(sp.firstChild)sp.parentNode.insertBefore(sp.firstChild,sp);sp.remove();});
+  d.querySelectorAll('span.yf-break,span.yf-restr').forEach(sp=>{while(sp.firstChild)sp.parentNode.insertBefore(sp.firstChild,sp);sp.remove();});
   d.querySelectorAll('span.yf-due').forEach(sp=>{while(sp.firstChild)sp.parentNode.insertBefore(sp.firstChild,sp);sp.remove();});
   d.normalize();return d.innerHTML;
 }
@@ -2329,6 +2332,16 @@ function yfDecorateBreak(html){
       if(students.filter(x=>normName(x.name)===k).length!==1)return;
       map[k]=st.onBreak;
     });
+    students.forEach(st=>{
+      try{
+        const r=lrCfg.on&&!lrExempt[st.id]?lrCalc(st):null;if(!r||!r.active)return;
+        const a=yy+'-'+String(my+1).padStart(2,'0')+'-01',z=my===11?(yy+1)+'-01-01':yy+'-'+String(my+2).padStart(2,'0')+'-01';
+        if(!(r.since<z&&r.end>a))return;
+        const k=normName(st.name);if(!k||map[k])return;
+        if(students.filter(x=>normName(x.name)===k).length!==1)return;
+        map[k]={restr:true,end:r.end,left:Math.max(0,lrDiff(todays(),r.end))};
+      }catch(e){}
+    });
     const keys=Object.keys(map);if(!keys.length)return html;
     const root=document.createElement('div');root.innerHTML=html;
     const re=new RegExp('(?<![A-Za-zÇĞİÖŞÜçğıöşü])('+keys.map(yfEscRe).join('|')+')(?![A-Za-zÇĞİÖŞÜçğıöşü])([+\\-−–\\d]*)','g');
@@ -2339,9 +2352,11 @@ function yfDecorateBreak(html){
       const frag=document.createDocumentFragment();let last=0,m;
       while((m=re.exec(t))){
         if(m.index>last)frag.appendChild(document.createTextNode(t.slice(last,m.index)));
-        const sp=document.createElement('span');sp.className='yf-break';sp.textContent=m[0];
+        const b=map[m[1]];
+        const sp=document.createElement('span');sp.className=b.restr?'yf-restr':'yf-break';sp.textContent=m[0];
         const nt=document.createElement('span');nt.className='yf-brk-note';nt.contentEditable='false';
-        const b=map[m[1]];nt.textContent='⏸ '+brkShort(b)+' ara';nt.title=brkLabel(b)+' ara · '+brkDateTr(b.from)+' → '+brkDateTr(b.until);
+        if(b.restr){nt.textContent='⛔ kısıtlı';nt.title='Kısıtlama '+lrDS(b.end)+' tarihine kadar';nt.style.cssText='background:#ffedd5;color:#9a3412;border-color:#fb923c';}
+        else{nt.textContent='⏸ '+brkShort(b)+' ara';nt.title=brkLabel(b)+' ara · '+brkDateTr(b.from)+' → '+brkDateTr(b.until);}
         frag.appendChild(sp);frag.appendChild(nt);last=m.index+m[0].length;
       }
       if(last<t.length)frag.appendChild(document.createTextNode(t.slice(last)));
@@ -4885,6 +4900,20 @@ function lrWho(){ // aktif kısıtı olan veya şu an gecikmede olan öğrencile
   });
   return out.sort((a,b)=>(b.r.end||'')<(a.r.end||'')?-1:1);
 }
+// Kısıtlaması sürüyor mu? (o gün için) → r veya null
+function lrRestrictedOn(s,ds){
+  try{
+    if(!lrCfg.on||!s||lrExempt[s.id])return null;
+    const r=lrCalc(s);if(!r||!r.active)return null;
+    ds=ds||todays();
+    if(ds<r.since||ds>=r.end)return null;
+    return r;
+  }catch(e){return null;}
+}
+function lrRestrTag(r,ds){
+  const left=Math.max(1,lrDiff(ds||todays(),r.end));
+  return '⛔ KISITLI · '+left+' gün kaldı · '+lrDS(r.end)+' tarihine kadar';
+}
 function lrActiveCount(){return lrCfg.on?lrWho().filter(x=>x.r.active&&!x.ex).length:0;}
 function lrSvcChips(){return LR_SVC.filter(x=>lrSvcOn(x[0])).map(x=>'<span style="background:#fee2e2;color:#991b1b;border:1px solid #fecaca;border-radius:8px;padding:2px 7px;font-size:10.5px;font-weight:700">'+x[1].replace(/^\S+\s/,'')+'</span>').join(' ');}
 function lrPayStatus(r){const u=r.months.find(m=>m.unpaid);if(u)return '❌ Ödenmedi ('+u.label+')';const l=r.months.filter(m=>m.done).sort((a,b)=>a.done<b.done?1:-1)[0];return l?('✅ Ödendi · '+lrDS(l.done)):'—';}
@@ -5429,14 +5458,15 @@ function kdvOf(s,x){const k=s.kdvDahil?Math.round(x*20/120*100)/100:0;return{gro
 function kdvAdd(a,b){return{gross:a.gross+b.gross,kdv:a.kdv+b.kdv,net:a.net+b.net};}
 function monthKdv(mk){
   const z=()=>({gross:0,kdv:0,net:0});
-  const g={music:{rec:z(),exp:z(),rows:[]},chess:{rec:z(),exp:z(),rows:[]},ai:{rec:z(),exp:z(),rows:[]}};
-  const tot={rec:z(),exp:z()};
+  const g={music:{rec:z(),exp:z(),miss:z(),rows:[]},chess:{rec:z(),exp:z(),miss:z(),rows:[]},ai:{rec:z(),exp:z(),miss:z(),rows:[]}};
+  const tot={rec:z(),exp:z(),miss:z()};
   analysisStudents().forEach(st=>{
     const m=stuMonthDue(st,mk);
     if(!(m.rec>0)&&!(m.due>0))return;
     const r=kdvOf(st,m.rec),e=kdvOf(st,m.due),k=g[eduGroup(st.education)];
-    k.rec=kdvAdd(k.rec,r);k.exp=kdvAdd(k.exp,e);k.rows.push({s:st,rec:r,exp:e});
-    tot.rec=kdvAdd(tot.rec,r);tot.exp=kdvAdd(tot.exp,e);
+    const mis=Math.max(0,Math.round((m.due-m.rec)*100)/100),ms=mis>=1?kdvOf(st,mis):z();
+    k.rec=kdvAdd(k.rec,r);k.exp=kdvAdd(k.exp,e);k.miss=kdvAdd(k.miss,ms);k.rows.push({s:st,rec:r,exp:e,miss:ms});
+    tot.rec=kdvAdd(tot.rec,r);tot.exp=kdvAdd(tot.exp,e);tot.miss=kdvAdd(tot.miss,ms);
   });
   Object.values(g).forEach(k=>k.rows.sort((a,b)=>b.rec.gross-a.rec.gross));
   return{g,tot};
@@ -5449,6 +5479,9 @@ function kdvTrio(t,lbl){
    +'<div><div style="font-weight:800;font-size:13px;color:#dc2626">'+kdvF2(t.kdv)+' ₺</div><div style="font-size:10px;color:var(--muted);font-weight:700">Sadece KDV</div></div>'
    +'<div><div style="font-weight:800;font-size:13px;color:#059669">'+kdvF2(t.net)+' ₺</div><div style="font-size:10px;color:var(--muted);font-weight:700">KDV\'siz</div></div></div>';
 }
+function kdvMissBlock(t){
+  return '<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:7px 6px;margin-top:5px"><div style="font-size:10px;font-weight:800;color:#b91c1c;margin-bottom:3px">🔴 ÖDEMEYENLER / EKSİK <span style="font-weight:700">(KDV dahil · KDV hariç)</span></div>'+kdvTrio(t,'Eksik (dahil)')+'</div>';
+}
 // tek ay: branş kartları (alınan = yeşil, beklenen = gri) + öğrenci listesi
 function monthKdvHtml(mk){
   const d=monthKdv(mk);
@@ -5457,14 +5490,14 @@ function monthKdvHtml(mk){
     return '<details style="background:'+c.bg+';border:1px solid '+c.bd+';border-radius:11px;padding:10px 12px;margin-bottom:8px">'
      +'<summary style="cursor:pointer;list-style:none"><div style="font-weight:800;font-size:14px;color:'+c.color+';margin-bottom:7px">'+c.t+' <span style="font-size:11px;color:var(--muted);font-weight:700">('+k.rows.length+' kişi) ▾</span></div>'
      +'<div style="background:#ecfdf5;border-radius:8px;padding:7px 6px;margin-bottom:5px"><div style="font-size:10px;font-weight:800;color:#065f46;margin-bottom:3px">🟢 ALINAN</div>'+kdvTrio(k.rec,'Alınan')+'</div>'
-     +'<div style="background:#f1f5f9;border-radius:8px;padding:7px 6px"><div style="font-size:10px;font-weight:800;color:#475569;margin-bottom:3px">⚪ BEKLENEN</div>'+kdvTrio(k.exp,'Beklenen')+'</div></summary>'
+     +'<div style="background:#f1f5f9;border-radius:8px;padding:7px 6px"><div style="font-size:10px;font-weight:800;color:#475569;margin-bottom:3px">⚪ BEKLENEN</div>'+kdvTrio(k.exp,'Beklenen')+'</div>'+kdvMissBlock(k.miss)+'</summary>'
      +(k.rows.length?k.rows.map(r=>'<div style="display:flex;justify-content:space-between;gap:8px;padding:7px 0;border-top:1px solid var(--border);font-size:12px"><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600">'+eduIcon(r.s.education)+' '+repEsc(r.s.name+' '+r.s.surname)+' <span style="color:var(--muted);font-weight:600">'+(r.s.kdvDahil?'KDV dahil':'KDV yok')+'</span></span>'
-        +'<span style="flex-shrink:0;text-align:right;font-weight:700">'+kdvF2(r.rec.gross)+' ₺ <span style="color:#dc2626">· KDV '+kdvF2(r.rec.kdv)+'</span> <span style="color:#059669">· net '+kdvF2(r.rec.net)+'</span></span></div>').join(''):'<div style="font-size:12px;color:var(--muted);padding:6px 0">Bu ay kayıt yok.</div>')
+        +'<span style="flex-shrink:0;text-align:right;font-weight:700">'+kdvF2(r.rec.gross)+' ₺ <span style="color:#dc2626">· KDV '+kdvF2(r.rec.kdv)+'</span> <span style="color:#059669">· net '+kdvF2(r.rec.net)+'</span>'+(r.miss.gross>0?'<br><span style="color:#b91c1c">🔴 ödemedi '+kdvF2(r.miss.gross)+' ₺ (KDV\'siz '+kdvF2(r.miss.net)+')</span>':'')+'</span></div>').join(''):'<div style="font-size:12px;color:var(--muted);padding:6px 0">Bu ay kayıt yok.</div>')
      +'</details>';
   }).join('');
   const all='<div style="background:#f0fdf4;border:1px solid #a7f3d0;border-radius:11px;padding:10px 12px"><div style="font-weight:800;font-size:14px;color:#065f46;margin-bottom:7px">📊 Ay Toplamı</div>'
    +'<div style="background:#ecfdf5;border-radius:8px;padding:7px 6px;margin-bottom:5px"><div style="font-size:10px;font-weight:800;color:#065f46;margin-bottom:3px">🟢 ALINAN</div>'+kdvTrio(d.tot.rec,'Alınan')+'</div>'
-   +'<div style="background:#f1f5f9;border-radius:8px;padding:7px 6px"><div style="font-size:10px;font-weight:800;color:#475569;margin-bottom:3px">⚪ BEKLENEN</div>'+kdvTrio(d.tot.exp,'Beklenen')+'</div></div>';
+   +'<div style="background:#f1f5f9;border-radius:8px;padding:7px 6px"><div style="font-size:10px;font-weight:800;color:#475569;margin-bottom:3px">⚪ BEKLENEN</div>'+kdvTrio(d.tot.exp,'Beklenen')+'</div>'+kdvMissBlock(d.tot.miss)+'</div>';
   return cards+all;
 }
 let kdvSelMk=null;
@@ -5483,11 +5516,11 @@ function renderMonthKdv(monthData){
   const box=document.getElementById('ana-month-kdv');if(!box)return;
   const rows=monthData.slice().reverse().map(d=>{
     const m=monthKdv(d.key),r=m.tot.rec,e=m.tot.exp;
-    const inner=KDV_CATS.map(c=>{const k=m.g[c.g];return '<div style="display:grid;grid-template-columns:78px 1fr 1fr;gap:6px;padding:6px 0;border-top:1px dashed var(--border);font-size:11px;font-weight:700"><span style="color:'+c.color+'">'+c.t+'</span><span style="color:#065f46">🟢 '+kdvF2(k.rec.gross)+' · KDV '+kdvF2(k.rec.kdv)+' · net '+kdvF2(k.rec.net)+'</span><span style="color:#475569">⚪ '+kdvF2(k.exp.gross)+' · net '+kdvF2(k.exp.net)+'</span></div>';}).join('');
+    const inner=KDV_CATS.map(c=>{const k=m.g[c.g];return '<div style="display:grid;grid-template-columns:78px 1fr 1fr;gap:6px;padding:6px 0;border-top:1px dashed var(--border);font-size:11px;font-weight:700"><span style="color:'+c.color+'">'+c.t+'</span><span style="color:#065f46">🟢 '+kdvF2(k.rec.gross)+' · KDV '+kdvF2(k.rec.kdv)+' · net '+kdvF2(k.rec.net)+'</span><span style="color:#475569">⚪ '+kdvF2(k.exp.gross)+' · net '+kdvF2(k.exp.net)+'</span><span style="grid-column:2/4;color:#b91c1c">🔴 ödemeyen '+kdvF2(k.miss.gross)+' ₺ · KDV\'siz '+kdvF2(k.miss.net)+'</span></div>';}).join('');
     return '<details class="mk-row" style="border:1px solid var(--border);border-radius:11px;padding:9px 11px;margin-bottom:7px;background:#fff"><summary>'
       +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><span style="font-weight:800;font-size:13px">'+MONTHS[d.m]+' '+d.y+' <span style="color:var(--muted);font-size:11px">▾</span></span></div>'
       +'<div style="background:#ecfdf5;border-radius:8px;padding:6px;margin-bottom:4px"><div style="font-size:10px;font-weight:800;color:#065f46;margin-bottom:2px">🟢 ALINAN</div>'+kdvTrio(r,'Alınan')+'</div>'
-      +'<div style="background:#f1f5f9;border-radius:8px;padding:6px"><div style="font-size:10px;font-weight:800;color:#475569;margin-bottom:2px">⚪ BEKLENEN</div>'+kdvTrio(e,'Beklenen')+'</div></summary>'+inner+'</details>';
+      +'<div style="background:#f1f5f9;border-radius:8px;padding:6px"><div style="font-size:10px;font-weight:800;color:#475569;margin-bottom:2px">⚪ BEKLENEN</div>'+kdvTrio(e,'Beklenen')+'</div>'+kdvMissBlock(m.tot.miss)+'</summary>'+inner+'</details>';
   }).join('');
   box.innerHTML='<div style="font-weight:800;font-size:13px;margin-bottom:8px">🧾 Ay Ayrıntısı — KDV\'li / KDV\'siz <span style="font-size:11px;color:var(--muted);font-weight:600">· aya dokun, branşlar açılsın</span></div>'+rows;
 }
@@ -5504,6 +5537,7 @@ function renderAnalysis(){
   const fmtN=n=>n.toLocaleString('tr-TR');
   const f0=n=>Math.round(n).toLocaleString('tr-TR');
 
+  let missNet=0;try{monthData.forEach(d=>{missNet+=monthKdv(d.key).tot.miss.net;});}catch(e){}
   const pct=totalExp>0?Math.round(totalRec/totalExp*100):0;
   const missing=Math.max(0,totalExp-totalRec);
 
@@ -5521,6 +5555,7 @@ function renderAnalysis(){
       <div class="sum-card" style="background:${missing>0?'#fee2e2':'#f0fdf4'};border-color:${missing>0?'#fecaca':'#a7f3d0'}">
         <div class="sum-n" style="color:${missing>0?'#dc2626':'#059669'};font-size:16px">${missing>0?fmtN(missing)+' ₺':'✅ Tam'}</div>
         <div class="sum-l">${missing>0?'Eksik':'Tüm Ödemeler'}</div>
+        ${missing>0?`<div style="font-size:10px;font-weight:700;color:#b91c1c;margin-top:3px">KDV'siz ${f0(missNet)} ₺</div>`:''}
       </div>
       <div class="sum-card" style="background:${pct>=100?'#f0fdf4':pct>=70?'#fefce8':'#fee2e2'};border-color:${pct>=100?'#a7f3d0':pct>=70?'#fde047':'#fecaca'}">
         <div class="sum-n" style="color:${pct>=100?'#059669':pct>=70?'#d97706':'#dc2626'}">${pct}%</div>
@@ -6070,8 +6105,9 @@ function ydToggleDone(){
 function ydCardHtml(it,ds,canSkip){
   const s=it.s,v=itSt(it,ds),c=eduColor(s.education),tel=!!it.tel,pr=!!it.pros;
   const mk=v&&v!=='came'&&v!=='absent'&&v!=='istisna'; // diğer
-  const bd=v==='absent'?'#fca5a5':v==='istisna'?'#fcd34d':v?'#93c5fd':tel?'#f9a8d4':pr?'#5eead4':c.border;
-  const bg=v==='absent'?'#fef2f2':v==='istisna'?'#fffbeb':v?'#eff6ff':tel?'#fdf2f8':pr?'#f0fdfa':'#fff';
+  const lrr=(!tel&&!pr)?lrRestrictedOn(s,ds):null;
+  const bd=lrr?'#ea580c':v==='absent'?'#fca5a5':v==='istisna'?'#fcd34d':v?'#93c5fd':tel?'#f9a8d4':pr?'#5eead4':c.border;
+  const bg=lrr?'#fff7ed':v==='absent'?'#fef2f2':v==='istisna'?'#fffbeb':v?'#eff6ff':tel?'#fdf2f8':pr?'#f0fdfa':'#fff';
   const bs='flex:1;padding:14px 8px;border-radius:12px;font-family:\'Inter\',system-ui,sans-serif;font-weight:700;font-size:16px;cursor:pointer;border:1px solid ';
   const sm='width:100%;margin-top:8px;padding:10px;border-radius:10px;font-family:\'Inter\',system-ui,sans-serif;font-weight:700;font-size:14px;cursor:pointer;';
   const fnC=pr?'prosTrialMark(\''+it.pros+'\',\'came\')':tel?'telMark(\''+s.id+'\',\''+it.tel+'\',\'came\')':'ydMark(\''+s.id+'\',\'came\')';
@@ -6085,7 +6121,8 @@ function ydCardHtml(it,ds,canSkip){
       '<button onclick="istWaNotify(\''+s.id+'\',\''+ds+'\')" style="'+sm+'border:none;background:#25d366;color:#fff">📲 Veliye Bildir</button>';
   }
   const showBtns=v!=='istisna'||tel;
-  return '<div style="background:'+bg+';border:1px solid '+bd+';border-radius:16px;padding:12px;margin-bottom:10px">'+
+  return '<div style="background:'+bg+';border:'+(lrr?'2px solid ':'1px solid ')+bd+';border-radius:16px;padding:12px;margin-bottom:10px'+(lrr?';box-shadow:0 0 0 3px rgba(234,88,12,.15)':'')+'">'+
+    (lrr?'<div style="background:#ea580c;color:#fff;border-radius:9px;padding:5px 10px;margin:-2px 0 10px;font-size:12px;font-weight:800">'+lrRestrTag(lrr,ds)+'</div>':'')+
     '<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px"'+(pr?'':' onclick="openDet(\''+s.id+'\')"')+'>'+
       '<div class="avatar" style="width:40px;height:40px;background:'+c.border+';font-size:18px;flex-shrink:0">'+eduIcon(s.education)+'</div>'+
       '<div style="flex:1;min-width:0"><div style="font-weight:700;font-size:16px">'+hwEsc(s.name+' '+s.surname)+'</div>'+
