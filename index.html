@@ -233,7 +233,11 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
 .sum-card{border-radius:12px;padding:12px 10px;text-align:center;border:1px solid transparent;flex:1;min-width:0}
 .sum-n{font-size:18px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .sum-l{font-size:10px;margin-top:3px;font-weight:700;color:var(--text2)}
-.bar-wrap{display:flex;align-items:flex-end;gap:3px;height:120px;width:100%;min-width:240px}
+.bar-wrap{display:flex;align-items:flex-end;gap:3px;height:210px;width:100%;min-width:240px}
+.bar-r{position:relative;overflow:hidden}
+.bar-in{position:absolute;left:0;right:0;bottom:3px;top:3px;display:flex;align-items:flex-end;justify-content:center;writing-mode:vertical-rl;transform:rotate(180deg);font-size:9px;font-weight:800;line-height:1.1;white-space:nowrap;overflow:hidden}
+.mk-row summary{cursor:pointer;list-style:none}
+.mk-row summary::-webkit-details-marker{display:none}
 .bar-col{display:flex;flex-direction:column;align-items:center;flex:1;min-width:0;gap:2px;height:100%}
 .bar-lbl{font-size:9px;font-weight:700;color:var(--muted);margin-top:4px;text-align:center;white-space:nowrap;overflow:hidden;width:100%}
 .bar-val{font-size:8px;font-weight:700;color:var(--text2);text-align:center;min-height:10px}
@@ -1054,6 +1058,7 @@ summary::-webkit-details-marker{display:none}
   <div class="card mb14" id="ana-chart-card">
     <div style="font-weight:700;font-size:14px;color:var(--text);margin-bottom:14px" id="ana-chart-title">Aylık Gelir Grafiği</div>
     <div id="ana-chart" style="width:100%;overflow-x:auto"></div>
+    <div id="ana-month-kdv" style="margin-top:14px"></div>
     <div style="display:flex;gap:12px;margin-top:12px;flex-wrap:wrap">
       <div style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:700;color:var(--text2)"><span style="width:12px;height:12px;border-radius:3px;background:#059669;display:inline-block"></span>Alınan</div>
       <div style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:700;color:var(--text2)"><span style="width:12px;height:12px;border-radius:3px;background:#d0d5f5;display:inline-block"></span>Beklenen</div>
@@ -1070,6 +1075,9 @@ summary::-webkit-details-marker{display:none}
   <div class="card mb14" id="ana-kdv-card">
     <div style="font-weight:700;font-size:14px;color:var(--text);margin-bottom:14px">🧾 Branş Bazlı KDV (%20) — Bugüne Kadar <span style="font-size:11px;color:var(--muted);font-weight:600">· branşa dokun, isimler açılsın</span></div>
     <div id="ana-kdv"></div>
+    <div style="font-weight:800;font-size:14px;color:var(--text);margin:16px 0 8px">📅 Ay Bazlı — <span id="kdv-sel-title"></span></div>
+    <div id="kdv-month-pills" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px"></div>
+    <div id="ana-kdv-month"></div>
   </div>
 
   <!-- Per student payment table -->
@@ -4758,16 +4766,19 @@ function rcRender(){
   h+='<div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap"><button class="btn btn-sm" onclick="rcSelAll(true)">☑️ Gitmeyenleri seç</button><button class="btn btn-sm" onclick="rcSelAll(false)">⬜ Temizle</button></div>';
   rows.forEach(r=>{
     const sid=r.st.id,ph=rcPhones(r.st),cur=rcPhoneOf(r),chk=!!rcSel[sid];
-    let sel='';
-    if(ph.length){
-      sel='<select onchange="rcPickPhone(\''+sid+'\',this.value)" style="flex:1;min-width:0;padding:7px;border-radius:8px;border:1px solid var(--border);font-size:12px">'+ph.map(o=>'<option value="'+escHtml(o.v)+'"'+(o.v===cur?' selected':'')+'>'+escHtml(o.l)+'</option>').join('')+'<option value="__new">✏️ Başka numara…</option></select>';
-    }else{
-      sel='<input type="tel" placeholder="📱 Telefon ekle (05xx…)" value="'+escHtml(rcPhone[sid]||'')+'" onchange="rcAddPhone(\''+sid+'\',this.value)" style="flex:1;min-width:0;padding:7px;border-radius:8px;border:1px solid #fca5a5;font-size:12px">';
-    }
+    const known=ph.some(o=>o.v===cur);
+    const opts=ph.slice();
+    if(cur&&!known)opts.push({v:cur,l:'✏️ '+cur});
+    let sel='<div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px">'
+      +'<select onchange="rcPickPhone(\''+sid+'\',this.value)" style="width:100%;padding:8px;border-radius:8px;border:2px solid '+(cur?'#06b6d4':'#fca5a5')+';font-size:13px;font-weight:700;background:#ecfeff">'
+      +(cur?'':'<option value="" selected>📱 Numara seç…</option>')
+      +opts.map(o=>'<option value="'+escHtml(o.v)+'"'+(o.v===cur?' selected':'')+'>'+escHtml(o.l)+'</option>').join('')
+      +'<option value="__new">➕ Başka numara ekle…</option></select>'
+      +'<span style="font-size:11px;color:#0e7490;font-weight:700">'+(cur?'🧾 Makbuzda Veli: '+escHtml(rcptNameForPhone(r.st,cur)||r.st.momName||r.st.dadName||'—'):'⚠️ Numara seçilmedi')+'</span></div>';
     h+='<div style="background:#fff;border:1px solid '+(r.sent?'#86efac':'var(--border)')+';border-radius:12px;padding:10px 12px;margin-bottom:8px">'
       +'<label style="display:flex;align-items:center;gap:10px;cursor:pointer"><input type="checkbox" '+(chk?'checked ':'')+'onchange="rcToggle(\''+sid+'\',this.checked)" style="width:20px;height:20px">'
       +'<span style="flex:1;font-weight:800;font-size:14px">'+escHtml(r.st.name+' '+r.st.surname)+'</span><span style="font-weight:800">'+r.total.toLocaleString('tr-TR')+' ₺</span></label>'
-      +'<div style="display:flex;align-items:center;gap:8px;margin-top:7px">'+sel+'<span style="font-size:11px;font-weight:700;white-space:nowrap;color:'+(r.sent?'#166534':'#92400e')+'">'+(r.sent?'✅ '+r.sent.date.slice(8,10)+'.'+r.sent.date.slice(5,7)+' '+r.sent.via:'⏳ gitmedi')+'</span></div></div>';
+      +'<div style="display:flex;align-items:flex-start;gap:8px;margin-top:7px">'+sel+'<span style="font-size:11px;font-weight:700;white-space:nowrap;color:'+(r.sent?'#166534':'#92400e')+'">'+(r.sent?'✅ '+r.sent.date.slice(8,10)+'.'+r.sent.date.slice(5,7)+' '+r.sent.via:'⏳ gitmedi')+'</span></div></div>';
   });
   h+='<div style="position:sticky;bottom:10px;margin-top:12px"><button class="btn" style="width:100%;justify-content:center;padding:13px;font-size:15px;background:#00FFFF;color:#1e293b;font-weight:800;border:2px solid #00d0d0;box-shadow:0 4px 14px rgba(0,0,0,.2)" '+(selN?'':'disabled ')+'onclick="rcStart()">📤 Seçilenlere makbuz gönder ('+selN+')</button>'
     +(noPh?'<div style="text-align:center;font-size:12px;color:#b91c1c;font-weight:700;margin-top:6px">⚠️ '+noPh+' seçili kişide numara yok — atlanır</div>':'')+'</div>';
@@ -4781,7 +4792,7 @@ function rcToggle(sid,v){if(v)rcSel[sid]=1;else delete rcSel[sid];rcRender();}
 function rcSelAll(on){rcSel={};if(on)rcRows().forEach(r=>{if(!r.sent)rcSel[r.st.id]=1;});rcRender();}
 function rcPickPhone(sid,v){
   if(v==='__new'){const n=prompt('WhatsApp numarası (örn. 0532 000 00 00):','');const d=String(n||'').replace(/\D/g,'');if(d.length>=10)rcAddPhone(sid,d);else rcRender();return;}
-  rcPhone[sid]=v;rcRender();
+  rcPhone[sid]=v;if(v)rcSel[sid]=1;rcRender();
 }
 function rcAddPhone(sid,v){
   const d=String(v||'').replace(/\D/g,'');
@@ -5412,6 +5423,74 @@ function calcMonthData(mk){
   return{expected,received,music:g.music.rec,chess:g.chess.rec,ai:g.ai.rec,musicExp:g.music.exp,chessExp:g.chess.exp,aiExp:g.ai.exp};
 }
 
+
+// ── Ay bazlı KDV'li / KDV'siz ayrıntı (alınan + beklenen, branş bazında) ──
+function kdvOf(s,x){const k=s.kdvDahil?Math.round(x*20/120*100)/100:0;return{gross:x,kdv:k,net:Math.round((x-k)*100)/100};}
+function kdvAdd(a,b){return{gross:a.gross+b.gross,kdv:a.kdv+b.kdv,net:a.net+b.net};}
+function monthKdv(mk){
+  const z=()=>({gross:0,kdv:0,net:0});
+  const g={music:{rec:z(),exp:z(),rows:[]},chess:{rec:z(),exp:z(),rows:[]},ai:{rec:z(),exp:z(),rows:[]}};
+  const tot={rec:z(),exp:z()};
+  analysisStudents().forEach(st=>{
+    const m=stuMonthDue(st,mk);
+    if(!(m.rec>0)&&!(m.due>0))return;
+    const r=kdvOf(st,m.rec),e=kdvOf(st,m.due),k=g[eduGroup(st.education)];
+    k.rec=kdvAdd(k.rec,r);k.exp=kdvAdd(k.exp,e);k.rows.push({s:st,rec:r,exp:e});
+    tot.rec=kdvAdd(tot.rec,r);tot.exp=kdvAdd(tot.exp,e);
+  });
+  Object.values(g).forEach(k=>k.rows.sort((a,b)=>b.rec.gross-a.rec.gross));
+  return{g,tot};
+}
+const KDV_CATS=[{t:'🎵 Müzik',g:'music',color:'#1d4ed8',bg:'#eff6ff',bd:'#bfdbfe'},{t:'♟ Satranç',g:'chess',color:'#2f3f73',bg:'#f5f3ff',bd:'#d3d9ea'},{t:'🤖 Yapay Zeka',g:'ai',color:'#0e7490',bg:'#ecfeff',bd:'#a5f3fc'}];
+function kdvF2(n){return (Math.round(n*100)/100).toLocaleString('tr-TR',{maximumFractionDigits:2});}
+function kdvTrio(t,lbl){
+  return '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;text-align:center">'
+   +'<div><div style="font-weight:800;font-size:13px;color:var(--text)">'+kdvF2(t.gross)+' ₺</div><div style="font-size:10px;color:var(--muted);font-weight:700">'+lbl+' toplam</div></div>'
+   +'<div><div style="font-weight:800;font-size:13px;color:#dc2626">'+kdvF2(t.kdv)+' ₺</div><div style="font-size:10px;color:var(--muted);font-weight:700">Sadece KDV</div></div>'
+   +'<div><div style="font-weight:800;font-size:13px;color:#059669">'+kdvF2(t.net)+' ₺</div><div style="font-size:10px;color:var(--muted);font-weight:700">KDV\'siz</div></div></div>';
+}
+// tek ay: branş kartları (alınan = yeşil, beklenen = gri) + öğrenci listesi
+function monthKdvHtml(mk){
+  const d=monthKdv(mk);
+  const cards=KDV_CATS.map(c=>{
+    const k=d.g[c.g];
+    return '<details style="background:'+c.bg+';border:1px solid '+c.bd+';border-radius:11px;padding:10px 12px;margin-bottom:8px">'
+     +'<summary style="cursor:pointer;list-style:none"><div style="font-weight:800;font-size:14px;color:'+c.color+';margin-bottom:7px">'+c.t+' <span style="font-size:11px;color:var(--muted);font-weight:700">('+k.rows.length+' kişi) ▾</span></div>'
+     +'<div style="background:#ecfdf5;border-radius:8px;padding:7px 6px;margin-bottom:5px"><div style="font-size:10px;font-weight:800;color:#065f46;margin-bottom:3px">🟢 ALINAN</div>'+kdvTrio(k.rec,'Alınan')+'</div>'
+     +'<div style="background:#f1f5f9;border-radius:8px;padding:7px 6px"><div style="font-size:10px;font-weight:800;color:#475569;margin-bottom:3px">⚪ BEKLENEN</div>'+kdvTrio(k.exp,'Beklenen')+'</div></summary>'
+     +(k.rows.length?k.rows.map(r=>'<div style="display:flex;justify-content:space-between;gap:8px;padding:7px 0;border-top:1px solid var(--border);font-size:12px"><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600">'+eduIcon(r.s.education)+' '+repEsc(r.s.name+' '+r.s.surname)+' <span style="color:var(--muted);font-weight:600">'+(r.s.kdvDahil?'KDV dahil':'KDV yok')+'</span></span>'
+        +'<span style="flex-shrink:0;text-align:right;font-weight:700">'+kdvF2(r.rec.gross)+' ₺ <span style="color:#dc2626">· KDV '+kdvF2(r.rec.kdv)+'</span> <span style="color:#059669">· net '+kdvF2(r.rec.net)+'</span></span></div>').join(''):'<div style="font-size:12px;color:var(--muted);padding:6px 0">Bu ay kayıt yok.</div>')
+     +'</details>';
+  }).join('');
+  const all='<div style="background:#f0fdf4;border:1px solid #a7f3d0;border-radius:11px;padding:10px 12px"><div style="font-weight:800;font-size:14px;color:#065f46;margin-bottom:7px">📊 Ay Toplamı</div>'
+   +'<div style="background:#ecfdf5;border-radius:8px;padding:7px 6px;margin-bottom:5px"><div style="font-size:10px;font-weight:800;color:#065f46;margin-bottom:3px">🟢 ALINAN</div>'+kdvTrio(d.tot.rec,'Alınan')+'</div>'
+   +'<div style="background:#f1f5f9;border-radius:8px;padding:7px 6px"><div style="font-size:10px;font-weight:800;color:#475569;margin-bottom:3px">⚪ BEKLENEN</div>'+kdvTrio(d.tot.exp,'Beklenen')+'</div></div>';
+  return cards+all;
+}
+let kdvSelMk=null;
+function kdvPickMonth(mk){kdvSelMk=mk;renderKdvMonthCard();}
+function renderKdvMonthCard(){
+  const pills=document.getElementById('kdv-month-pills');if(!pills)return;
+  const ms=getMonthsBack(12).reverse();
+  if(!kdvSelMk||!ms.some(m=>m.key===kdvSelMk))kdvSelMk=ms[0].key;
+  pills.innerHTML=ms.map(m=>'<button class="per-btn'+(m.key===kdvSelMk?' sel':'')+'" onclick="kdvPickMonth(\''+m.key+'\')">'+MONTHS[m.m].slice(0,3)+' '+String(m.y).slice(2)+'</button>').join('');
+  const cur=ms.find(m=>m.key===kdvSelMk);
+  document.getElementById('kdv-sel-title').textContent=MONTHS[cur.m]+' '+cur.y;
+  document.getElementById('ana-kdv-month').innerHTML=monthKdvHtml(kdvSelMk);
+}
+// Grafik altı: seçili dönemdeki her ay için toplam / KDV / KDV'siz (dokununca branş ayrıntısı)
+function renderMonthKdv(monthData){
+  const box=document.getElementById('ana-month-kdv');if(!box)return;
+  const rows=monthData.slice().reverse().map(d=>{
+    const m=monthKdv(d.key),r=m.tot.rec,e=m.tot.exp;
+    const inner=KDV_CATS.map(c=>{const k=m.g[c.g];return '<div style="display:grid;grid-template-columns:78px 1fr 1fr;gap:6px;padding:6px 0;border-top:1px dashed var(--border);font-size:11px;font-weight:700"><span style="color:'+c.color+'">'+c.t+'</span><span style="color:#065f46">🟢 '+kdvF2(k.rec.gross)+' · KDV '+kdvF2(k.rec.kdv)+' · net '+kdvF2(k.rec.net)+'</span><span style="color:#475569">⚪ '+kdvF2(k.exp.gross)+' · net '+kdvF2(k.exp.net)+'</span></div>';}).join('');
+    return '<details class="mk-row" style="border:1px solid var(--border);border-radius:11px;padding:9px 11px;margin-bottom:7px;background:#fff"><summary>'
+      +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><span style="font-weight:800;font-size:13px">'+MONTHS[d.m]+' '+d.y+' <span style="color:var(--muted);font-size:11px">▾</span></span></div>'
+      +'<div style="background:#ecfdf5;border-radius:8px;padding:6px;margin-bottom:4px"><div style="font-size:10px;font-weight:800;color:#065f46;margin-bottom:2px">🟢 ALINAN</div>'+kdvTrio(r,'Alınan')+'</div>'
+      +'<div style="background:#f1f5f9;border-radius:8px;padding:6px"><div style="font-size:10px;font-weight:800;color:#475569;margin-bottom:2px">⚪ BEKLENEN</div>'+kdvTrio(e,'Beklenen')+'</div></summary>'+inner+'</details>';
+  }).join('');
+  box.innerHTML='<div style="font-weight:800;font-size:13px;margin-bottom:8px">🧾 Ay Ayrıntısı — KDV\'li / KDV\'siz <span style="font-size:11px;color:var(--muted);font-weight:600">· aya dokun, branşlar açılsın</span></div>'+rows;
+}
 function renderAnalysis(){
   const months=getMonthsBack(analysisPeriod);
   let totalExp=0,totalRec=0,totalChess=0,totalMusic=0,totalAi=0,totalChessExp=0,totalMusicExp=0,totalAiExp=0;
@@ -5423,6 +5502,7 @@ function renderAnalysis(){
     return{...mo,...d};
   });
   const fmtN=n=>n.toLocaleString('tr-TR');
+  const f0=n=>Math.round(n).toLocaleString('tr-TR');
 
   const pct=totalExp>0?Math.round(totalRec/totalExp*100):0;
   const missing=Math.max(0,totalExp-totalRec);
@@ -5452,13 +5532,17 @@ function renderAnalysis(){
   const maxVal=Math.max(...monthData.map(d=>Math.max(d.expected,d.received)),1);
   let chartHtml=`<div class="bar-wrap">`;
   monthData.forEach(d=>{
-    const hRec=Math.round((d.received/maxVal)*110);
-    const hExp=Math.round((d.expected/maxVal)*110);
+    const hRec=Math.round((d.received/maxVal)*150);
+    const hExp=Math.round((d.expected/maxVal)*150);
+    const mk=monthKdv(d.key),tr=mk.tot.rec,te=mk.tot.exp;
+    const barTxt=(h,x,col)=>{const full=f0(x.gross)+" ₺ · KDV'siz "+f0(x.net),short=f0(x.gross)+' ₺';const t=h>=full.length*5.4+8?full:(h>=short.length*5.4+8?short:'');return t?`<span class="bar-in" style="color:${col}">${t}</span>`:'';};
+    const inR=barTxt(hRec,tr,'#fff');
+    const inE=barTxt(hExp,te,'#475569');
     chartHtml+=`<div class="bar-col">
       <div class="bar-val">${d.received>0?Math.round(d.received/1000)+'K':''}</div>
       <div class="bar-pair">
-        <div class="bar-r" style="height:${hExp}px;background:#d0d5f5"></div>
-        <div class="bar-r" style="height:${hRec}px;background:#059669"></div>
+        <div class="bar-r" style="height:${hExp}px;background:#d0d5f5">${inE}</div>
+        <div class="bar-r" style="height:${hRec}px;background:#059669">${inR}</div>
       </div>
       <div class="bar-lbl">${d.label}</div>
     </div>`;
@@ -5466,6 +5550,7 @@ function renderAnalysis(){
   chartHtml+='</div>';
   document.getElementById('ana-chart-title').textContent=`Aylık Gelir — Son ${analysisPeriod} Ay`;
   document.getElementById('ana-chart').innerHTML=chartHtml;
+  try{renderMonthKdv(monthData);}catch(e){console.warn('monthKdv',e);}
 
   // Müzik / Satranç / Yapay Zeka karşılaştırması
   const cats=[
@@ -5565,6 +5650,8 @@ function renderAnalysis(){
       <div style="font-weight:800;font-size:14px;color:#065f46;margin-bottom:8px">📊 Genel Toplam</div>
       ${trio(sumOf(allTime))}
     </div>`;
+
+  try{renderKdvMonthCard();}catch(e){console.warn('kdvMonth',e);}
 
   const stuRowHtml=({s,discInfo,periodPays,periodExp,pct2,statusTxt,statusColor})=>`
     <div class="stu-pay-row"${discInfo&&discInfo.length?' title="'+repEsc('🤝 '+discInfo.join('\n'))+'" onclick="this.querySelector(\'.dsc-pop\')&&this.querySelector(\'.dsc-pop\').classList.toggle(\'on\')" style="cursor:help;position:relative"':''}>
