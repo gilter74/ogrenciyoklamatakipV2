@@ -990,6 +990,25 @@ summary::-webkit-details-marker{display:none}
       <span style="font-weight:600;font-size:14px;color:var(--text)">Bu öğrenci için erken ödeme indirim politikasını uygula</span>
     </label>
     <div style="background:#f5f3ff;border:1px solid #d3d9ea;border-radius:10px;padding:10px 13px;margin-bottom:12px;font-size:12px;font-weight:700;color:#26335e;line-height:1.5">📌 Kural (<b>1 Şubat 2027'den itibaren</b>): ödeme ayın <b>5'ine kadar → %10</b>, <b>6–10'u arası → %5</b> indirim kazandırır (bir sonraki ayki ders ücretine otomatik uygulanır). <b>10'undan sonra 20'sine kadar</b> indirim yoktur, normal fiyat. <i>Şubat 2027 öncesi ödemelerde eski kural geçerlidir: ayın 1–10'u arası → %7.</i> <b>Ayın 21'inden itibaren</b> ödeme yapılmamışsa, ödeme yapılana kadar ödev/not <b>WhatsApp'tan gönderilemez</b> ve ekstra destekler kısıtlanır (ödev ve not yazılabilir).</div>
+    <div id="disc-commit-box" style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:10px 13px;margin-bottom:12px;font-size:12px;font-weight:700;color:#1e3a8a;line-height:1.55"></div>
+    <div id="disc-grace" style="background:#fffbeb;border:1px solid #fcd34d;border-radius:10px;padding:10px 13px;margin-bottom:12px">
+      <label style="display:flex;align-items:center;gap:10px;cursor:pointer">
+        <input type="checkbox" id="grace-on" onchange="graceUi(true)" style="width:20px;height:20px;accent-color:#d97706;cursor:pointer;flex-shrink:0">
+        <span style="font-weight:800;font-size:14px;color:#92400e">🛡️ İstisna / Müsaade (bu öğrenciye özel)</span>
+      </label>
+      <div id="grace-fields" style="display:none;margin-top:10px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+          <div><label class="lbl">İndirim şu güne kadar geçerli</label><select id="grace-day" onchange="graceUi()"></select></div>
+          <div><label class="lbl">Uygulanacak indirim</label><select id="grace-pct" onchange="graceUi()"><option value="10">%10</option><option value="5">%5</option></select></div>
+        </div>
+        <label class="lbl">Geçerlilik bitişi (boş = süresiz)</label>
+        <input type="month" id="grace-to" onchange="graceUi()" style="margin-bottom:8px">
+        <label class="lbl">Müsaade notu</label>
+        <input type="text" id="grace-note" maxlength="120" placeholder="Örn: KDV'siz çalışıyor, ayın 20'sine kadar indirimli ödeyebilir" style="margin-bottom:8px">
+      </div>
+      <div id="grace-info" style="font-size:12px;font-weight:700;color:#78350f;line-height:1.55;margin-top:8px"></div>
+      <div style="font-size:11px;font-weight:700;color:#92400e;margin-top:6px;border-top:1px dashed #fcd34d;padding-top:6px">Öncelik sırası: <b>1) İstisna / müsaade</b> → 2) Taahhüt günü → 3) Standart kural. İstisna açıksa taahhüt ve standart kural bu öğrenci için devre dışı kalır; KDV'siz çalışma ayrı bir ayardır, karışmaz.</div>
+    </div>
     <div id="disc-reward-box" style="display:none;background:#f0fdf4;border:1px solid #a7f3d0;border-radius:10px;padding:10px 13px;margin-bottom:12px;font-weight:600;font-size:13px;color:#065f46;line-height:1.5"></div>
     <div id="disc-preview" style="display:none;background:#f0fdf4;border:1px solid #a7f3d0;border-radius:10px;padding:10px 13px;margin-bottom:12px;font-weight:600;font-size:13px;color:#065f46"></div>
     <label class="lbl">İndirim Notu (hatırlatma) <span style="font-weight:600;text-transform:none;font-size:11px;color:var(--dim)" id="disc-count">0/250</span></label>
@@ -2117,7 +2136,7 @@ function stuRow(s,dupSet){
           <div style="font-size:12px;color:var(--muted);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${s.education} · ${s.program}</div>
           ${eduBadge(s,true)}
           <div style="font-size:12px;color:var(--dim);margin-top:1px">${s.phone?'📞 '+s.phone:''}${s.momPhone?' · 👩 '+s.momPhone:''}${dup?' · Kayıt no: '+s.id:''}</div>
-          ${isFrozen(s)?'<span style="display:inline-block;background:#e0f2fe;color:#0369a1;border:1px solid #7dd3fc;border-radius:8px;padding:1px 8px;font-size:11px;font-weight:700;margin-top:3px">❄️ Donduruldu · '+frozenDaysPassed(s)+'. gün</span>':''}${brkInfo(s)?'<span style="display:inline-block;background:#f3e8ff;color:#6b21a8;border:1px solid #c084fc;border-radius:8px;padding:1px 8px;font-size:11px;font-weight:700;margin-top:3px">⏸️ Ara verdi · '+brkLabel(s.onBreak)+' · '+brkDateTr(s.onBreak.until)+'\'e kadar</span>':''}${recBadge(s.id)}${rcptBadge(s.id)}${chr?chronicBadge(s):''}
+          ${isFrozen(s)?'<span style="display:inline-block;background:#e0f2fe;color:#0369a1;border:1px solid #7dd3fc;border-radius:8px;padding:1px 8px;font-size:11px;font-weight:700;margin-top:3px">❄️ Donduruldu · '+frozenDaysPassed(s)+'. gün</span>':''}${brkInfo(s)?'<span style="display:inline-block;background:#f3e8ff;color:#6b21a8;border:1px solid #c084fc;border-radius:8px;padding:1px 8px;font-size:11px;font-weight:700;margin-top:3px">⏸️ Ara verdi · '+brkLabel(s.onBreak)+' · '+brkDateTr(s.onBreak.until)+'\'e kadar</span>':''}${(allDiscCache[s.id]&&allDiscCache[s.id].grace&&allDiscCache[s.id].grace.on)?'<span style="display:inline-block;background:#fffbeb;color:#92400e;border:1px solid #fcd34d;border-radius:8px;padding:1px 8px;font-size:11px;font-weight:700;margin-top:3px">🛡️ İndirim müsaadesi · ayın '+allDiscCache[s.id].grace.day+'\'ine kadar %'+allDiscCache[s.id].grace.pct+'</span>':''}${recBadge(s.id)}${rcptBadge(s.id)}${chr?chronicBadge(s):''}
         </div>
         <button class="btn-del" onclick="event.stopPropagation();delStudent('${s.id}')">Sil</button>
       </div>`;
@@ -3228,6 +3247,7 @@ function renderDetail(){
   renderRepCard();
   document.getElementById('disc-enabled').checked=!!discountData.enabled;
   document.getElementById('disc-note').value=discountData.note||'';
+  try{discGraceFill();}catch(e){}
   updateDiscCount();
   toggleDiscPreview();
   renderRefCard();
@@ -3277,22 +3297,79 @@ function discTags(disc,discApplied,mk,baseFee){
 }
 
 // Bir (y,m) ayında yapılan ödemelere göre kazanılan indirim yüzdesi: 1-5. gün %10 · 6-10. gün %5 · sonrası 0
-function earlyPctFor(pays,y,m){
-  const mk=mkey(y,m);let best=0;
+// Öncelik: 1) İstisna / müsaade (öğrenciye özel gün+yüzde)  2) Ödeme taahhüdü (taahhüt gününden geç ödeme → indirim yok)  3) Standart kural (gün aralığı)
+function earlyRaw(pays,y,m){
+  const mk=mkey(y,m);let best=0,first=99;
   (pays||[]).forEach(p=>{
     if(!p||p.recId||!p.date||!String(p.date).startsWith(mk))return;
     const pct=earlyPctForDate(p.date);if(pct>best)best=pct;
+    const d=parseInt(String(p.date).slice(8,10),10);if(d>=1&&d<first)first=d;
   });
-  return best;
+  return{best,first,mk};
 }
-function hadEarlyPayment(pays,y,m){return earlyPctFor(pays,y,m)>0;}
+function graceActiveFor(dd,mk){
+  const g=dd&&dd.grace;
+  if(!g||!g.on)return null;
+  if(mk<(g.from||EARLY_NEW_START.slice(0,7)))return null;
+  if(g.to&&mk>g.to)return null;
+  return g;
+}
+function earlyBroken(pays,y,m,st,dd){ // taahhüt gününden geç ödendiği için indirim kaçtı mı?
+  const r=earlyRaw(pays,y,m);
+  return r.best>0&&earlyPctFor(pays,y,m,st,dd)===0;
+}
+function earlyPctFor(pays,y,m,st,dd){
+  const r=earlyRaw(pays,y,m);
+  if(!st||r.first===99||r.mk<EARLY_NEW_START.slice(0,7))return r.best;   // öğrenci yok / eski kural dönemi
+  const g=graceActiveFor(dd,r.mk);
+  if(g&&r.first<=(parseInt(g.day,10)||20))return Math.max(r.best,parseInt(g.pct,10)||0);
+  const D=payDueDayIn(st,y,m);
+  if(D<=PAY_MAX_DAY&&r.first>D)return 0;                                   // taahhüt edilen günde ödenmedi → standart fiyat
+  return r.best;
+}
+function hadEarlyPayment(pays,y,m,st,dd){return earlyPctFor(pays,y,m,st,dd)>0;}
 // Politika açıksa ve BİR ÖNCEKİ ayki ödemenin gününe göre bu ay indirim yüzdesi (0 = indirim yok)
-function monthDiscountApplied(pays,policyOn,y,m){
+function monthDiscountApplied(pays,policyOn,y,m,st,dd){
   if(!policyOn)return 0;
   let py=y,pm=m-1;if(pm<0){pm=11;py--;}
-  return earlyPctFor(pays,py,pm);
+  return earlyPctFor(pays,py,pm,st,dd);
 }
 
+
+// ── Taahhüt bilgi kutusu + İstisna/Müsaade arayüzü
+function discGraceFill(){
+  const sel=document.getElementById('grace-day');if(!sel)return;
+  if(!sel.options.length){for(let d=1;d<=20;d++)sel.innerHTML+='<option value="'+d+'">Ayın '+d+'\'ine kadar</option>';}
+  const g=discountData.grace||{};
+  document.getElementById('grace-on').checked=!!g.on;
+  sel.value=String(g.day||20);
+  document.getElementById('grace-pct').value=String(g.pct||10);
+  document.getElementById('grace-to').value=g.to||'';
+  document.getElementById('grace-note').value=g.note||'';
+  graceUi();
+}
+function graceUi(fromToggle){
+  const on=document.getElementById('grace-on').checked;
+  document.getElementById('grace-fields').style.display=on?'block':'none';
+  if(on&&fromToggle){const e=document.getElementById('disc-enabled');if(e&&!e.checked){e.checked=true;toggleDiscPreview();}}
+  const day=document.getElementById('grace-day').value,pct=document.getElementById('grace-pct').value,to=document.getElementById('grace-to').value;
+  const s=students.find(x=>x.id===curId),fee=parseFloat(s&&s.fee||0);
+  const info=document.getElementById('grace-info');
+  if(!on){info.textContent='Kapalı: bu öğrenci standart kural + taahhüt gününe göre değerlendirilir.';return;}
+  info.innerHTML='✅ Ayın <b>'+day+'</b>\'ine kadar ödeme → bir sonraki ay <b>%'+pct+'</b> indirim'+(fee>0?' ('+fee.toLocaleString('tr-TR')+' ₺ → <b>'+effectiveFee(fee,+pct).toLocaleString('tr-TR')+' ₺</b>)':'')+' · '+(to?to.slice(5)+'/'+to.slice(0,4)+' ayına kadar geçerli':'süresiz')+' · '+EARLY_NEW_START.slice(8,10)+'.'+EARLY_NEW_START.slice(5,7)+'.'+EARLY_NEW_START.slice(0,4)+' sonrası ödemelerde.';
+}
+function renderDiscCommit(){
+  const box=document.getElementById('disc-commit-box');if(!box)return;
+  const s=students.find(x=>x.id===curId);if(!s){box.style.display='none';return;}
+  const D=payDueDay(s,EARLY_NEW_START.slice(0,7));
+  let tier,col;
+  if(D>PAY_MAX_DAY){tier='özel gün ('+D+'. gün) · indirim yok, standart fiyat';}
+  else if(D<=EARLY_DAY_HI)tier='<b>%'+EARLY_PCT+'</b> indirim hakkı (ayın '+D+'\'ine kadar ödenirse)';
+  else if(D<=EARLY_DAY_LO)tier='<b>%'+EARLY_PCT_LO+'</b> indirim hakkı (ayın '+D+'\'ine kadar ödenirse)';
+  else tier='indirim yok — normal fiyat (taahhüt 10\'undan sonra)';
+  box.style.display='block';
+  box.innerHTML='📅 <b>Ödeme taahhüdü ('+EARLY_NEW_START.slice(8,10)+'.'+EARLY_NEW_START.slice(5,7)+'.'+EARLY_NEW_START.slice(0,4)+' sonrası):</b> ayın <b>'+D+'</b>. günü → '+tier+'.<br>Taahhüt günü geçtikten sonra ödeme yapılırsa indirim <b>otomatik düşer</b>, standart fiyat geçerli olur. Taahhüt gününde veya önce ödenirse indirim <b>kendiliğinden</b> eklenir.';
+}
 function toggleDiscPreview(){
   const s=students.find(x=>x.id===curId);
   const on=document.getElementById('disc-enabled').checked;
@@ -3306,6 +3383,7 @@ function toggleDiscPreview(){
     box.style.display='none';
   }
   renderDiscReward();
+  try{renderDiscCommit();}catch(e){}
 }
 
 function renderDiscReward(){
@@ -3315,7 +3393,7 @@ function renderDiscReward(){
   const on=document.getElementById('disc-enabled')?document.getElementById('disc-enabled').checked:!!discountData.enabled;
   if(!s||!on){box.style.display='none';return;}
   const now=new Date();
-  const early=earlyPctFor(payData,now.getFullYear(),now.getMonth());
+  const early=earlyPctFor(payData,now.getFullYear(),now.getMonth(),s,discountData);
   if(early){
     box.style.display='block';
     box.innerHTML='🎉 <b>'+MONTHS[now.getMonth()]+' '+now.getFullYear()+'</b> ayında ödeme zamanında alındı: <b>%'+early+' indirim</b> kazandı. İndirim bir sonraki ay ödemesine yansıtılacaktır. Veliye bu bilgi ayrıca mesaj ile iletilecektir.';
@@ -3380,7 +3458,10 @@ function updateDiscCount(){
 async function saveDiscount(){
   const enabled=document.getElementById('disc-enabled').checked;
   const note=document.getElementById('disc-note').value.trim().slice(0,250);
-  discountData={...discountData,enabled,note,updatedAt:todays()};
+  const gOn=document.getElementById('grace-on').checked;
+  const grace=gOn?{on:true,day:parseInt(document.getElementById('grace-day').value,10)||20,pct:parseInt(document.getElementById('grace-pct').value,10)||10,to:document.getElementById('grace-to').value||'',note:document.getElementById('grace-note').value.trim().slice(0,120),from:(discountData.grace&&discountData.grace.from)||EARLY_NEW_START.slice(0,7)}:null;
+  discountData={...discountData,enabled:enabled||gOn,note,updatedAt:todays()};
+  if(grace)discountData.grace=grace;else delete discountData.grace;
   setSyncing(true);
   await fbSet('discount/'+curId,discountData);
   setSyncing(false);
@@ -3992,10 +4073,11 @@ function renderYearlyTable(){
     const moPaysAll=payData.filter(p=>p.date.startsWith(mk));
     const moPays=moPaysAll.filter(p=>!p.recId);
     if(isFuture&&moPaysAll.length===0)continue;
-    const discApplied=monthDiscountApplied(payData,policyOn,tableYear,m);
+    const discApplied=monthDiscountApplied(payData,policyOn,tableYear,m,s,discountData);
     const stuEx=stuExFor(s,mk);
     const fee=stuFeeMk(s,mk,discApplied,discountData);
-    const earlyPay=hadEarlyPayment(payData,tableYear,m);
+    const earlyPay=hadEarlyPayment(payData,tableYear,m,s,discountData);
+    const earlyLost=earlyBroken(payData,tableYear,m,s,discountData);
     const lPaid=moPays.reduce((a,p)=>a+parseFloat(p.amount||0),0);
     const desc=moPaysAll.map(p=>p.desc).filter(Boolean).join(', ');
     const exM=exMonth(moPaysAll);
@@ -4037,7 +4119,8 @@ function renderYearlyTable(){
     const tags=(stuEx?'<div style="font-size:10px;color:#92400e;background:#fef3c7;border-radius:6px;padding:2px 6px;font-weight:700;margin-top:3px;display:inline-block">🎫 İstisna: sadece bu ay '+fmtTL(stuEx.amount)+' ₺ (normal bedel '+fmtTL(baseFee)+' ₺)'+(stuEx.note?' — '+repEsc(stuEx.note):'')+'</div>':'')+
       (exM.on?'<div style="font-size:10px;color:#92400e;background:#fef3c7;border-radius:6px;padding:2px 6px;font-weight:700;margin-top:3px;display:inline-block">🎫 İstisna: '+repEsc(exM.notes||'Kısmi ay ücreti')+(exWaive>0?' (tam ücret '+fmtTL(fee)+' ₺, tam ödendi sayıldı)':'')+'</div>':'')+
       (stuEx?'':discTags(discountData,discApplied,mk,baseFee))+
-      (earlyPay?'<div style="font-size:10px;color:#059669;font-weight:600;margin-top:2px">⏱ Erken ödendi (sonraki ay %'+earlyPctFor(payData,tableYear,m)+' indirim kazandırır)</div>':'')+
+      (earlyPay?'<div style="font-size:10px;color:#059669;font-weight:600;margin-top:2px">⏱ Erken ödendi (sonraki ay %'+earlyPctFor(payData,tableYear,m,s,discountData)+' indirim kazandırır)</div>':'')+
+      (earlyLost&&policyOn?'<div style="font-size:10px;color:#b91c1c;font-weight:700;margin-top:2px">⚠️ Taahhüt gününden ('+payDueDayIn(s,tableYear,m)+') sonra ödendi → sonraki ay indirim yok</div>':'')+
       addLines.map(t=>'<div style="font-size:10px;color:#b45309;font-weight:600;margin-top:2px">➕ '+t+'</div>').join('')+
       ((iExp>0||iRem>0)&&balance>0?'<div style="font-size:10px;color:#991b1b;font-weight:600;margin-top:2px">Kalan: '+parts.join(' + ')+'</div>':'');
     html+='<tr style="border-bottom:1.5px solid var(--border);background:'+rowBg+'">'+
@@ -4578,7 +4661,7 @@ function openReceipt(){
   const moPays=payData.filter(p=>p.date.startsWith(mk));
   const lp=[...moPays].sort((a,b)=>b.date.localeCompare(a.date))[0];
   const totalPaid=moPays.filter(p=>!p.recId).reduce((a,p)=>a+parseFloat(p.amount||0),0);
-  const discApplied=monthDiscountApplied(payData,!!discountData.enabled,curY,curM);
+  const discApplied=monthDiscountApplied(payData,!!discountData.enabled,curY,curM,s,discountData);
   const fee=stuFeeMk(s,mk,discApplied,discountData);
   document.getElementById('rec-amount').value=lp?lp.amount:(fee||'');
   document.getElementById('rec-month').selectedIndex=curM;
@@ -4753,11 +4836,12 @@ function rcNote(st,mk,pays,y,m){
   let n='';
   try{
     const allPays=Object.values(lateAllPay[st.id]||{}).filter(x=>x&&x.date);
-    const disc=monthDiscountApplied(allPays,!!discountData.enabled,y,m);
-    const fee=stuFeeMk(st,mk,disc,discountData);
+    const dd=allDiscCache[st.id]||{};
+    const disc=monthDiscountApplied(allPays,!!dd.enabled,y,m,st,dd);
+    const fee=stuFeeMk(st,mk,disc,dd);
     const total=pays.reduce((a,x)=>a+(parseFloat(x.amount)||0),0);
     if(disc)n+='🏷️ Bir önceki ay ödeme zamanında yapıldığı için %'+(typeof disc==='number'?disc:EARLY_PCT)+' erken ödeme indirimi uygulanmıştır. ';
-    if(refPctFor(discountData,mk))n+='🤝 Öğrenci kazandırma hakkı kullanılmış, %'+refPctFor(discountData,mk)+' indirim uygulanmıştır. ';
+    if(refPctFor(dd,mk))n+='🤝 Öğrenci kazandırma hakkı kullanılmış, %'+refPctFor(dd,mk)+' indirim uygulanmıştır. ';
     if(fee>0&&total>0&&exMonth(pays).on){n+='🎫 İstisna: '+(exMonth(pays).notes||'Kısmi ay ücreti')+'. Bu ay ödemesi tam ödendi sayılmıştır.';}
     else if(fee>0&&total>0){const bal=fee-total;n+=bal<=0?'Tam ödeme alınmıştır.':MONTHS[m]+' ayından '+bal.toLocaleString('tr-TR')+' ₺ bakiyeniz kalmıştır.';}
   }catch(e){}
@@ -4768,8 +4852,10 @@ function rcPhoneOf(r){
   if(rcPhone[sid]!==undefined)return rcPhone[sid];
   const p=rcPhones(r.st);return p.length?p[0].v:'';
 }
+let rcDiscLoaded=false;
 function rcRender(){
   const box=document.getElementById('rcpt-body');if(!box)return;
+  if(!rcDiscLoaded){rcDiscLoaded=true;try{db.ref('discount').once('value').then(sn=>{allDiscCache=sn.val()||{};});}catch(e){}}
   rcInit();
   const rows=rcRows(),mk=mkey(rcY,rcM);
   const sentN=rows.filter(r=>r.sent).length,tot=rows.reduce((a,r)=>a+r.total,0);
@@ -5209,6 +5295,7 @@ function startPayRemWatch(){
   window.addEventListener('focus',()=>payRemTick());
 }
 function startLateWatch(){
+  try{db.ref('discount').on('value',sn=>{allDiscCache=sn.val()||{};try{const a=document.querySelector('.screen.active');if(a&&a.id==='s-list')renderList();}catch(e){}});}catch(e){}
   const refresh=()=>{
     renderLateBanner();
     const a=document.querySelector('.screen.active');
@@ -7888,14 +7975,14 @@ async function makeVeliUrl(id,loadMsg){
     const mk=mkey(cy,cm);
     const moPays=pays.filter(p=>p.date.startsWith(mk)&&!p.recId);
     const got=moPays.reduce((a,p)=>a+parseFloat(p.amount||0),0);
-    const discApplied=monthDiscountApplied(pays,policyOn,cy,cm);
+    const discApplied=monthDiscountApplied(pays,policyOn,cy,cm,s,disc);
     const monthFee=stuFeeMk(s,mk,discApplied,disc);
     const exM2=exMonth(pays.filter(p=>p.date.startsWith(mk)));
     const exWaive2=exM2.on?Math.max(0,monthFee-got):0;
     const expected=(monthFee>0?monthFee+carryover:carryover)-exWaive2;
     const balance=expected-got;
     carryover=balance>0?balance:0;
-    const earlyPay=earlyPctFor(pays,cy,cm);
+    const earlyPay=earlyPctFor(pays,cy,cm,s,disc);
     schedule.push({l:MONTHS[cm]+' '+cy,paid:monthFee>0&&balance<=0,exp:expected,got:got,discApplied:discApplied,refPct:refPctFor(disc,mk),earlyPay:earlyPay});
     cm++; if(cm>11){cm=0;cy++;}
   }
