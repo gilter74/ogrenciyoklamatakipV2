@@ -667,6 +667,653 @@ input:focus,select:focus,textarea:focus{border-color:#91a9c2;box-shadow:0 0 0 3p
 }
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
 </style>
+
+<style id="rockjazz-dashboard-spacing-v4">
+/* Dashboard density pass: remove empty layout rows and tighten actions. */
+#s-list.active{row-gap:8px!important}
+#s-list #home-sum:empty,
+#s-list #tel-remind:empty,
+#s-list #rec-banner:empty,
+#s-list #lvl-banner:empty,
+#s-list #um-banner:empty,
+#s-list #frozen-banner:empty{display:none!important}
+#s-list .search-row{
+  max-width:100%!important;width:100%!important;min-width:0!important;
+  padding:6px 8px!important;margin:0!important;gap:8px!important;
+  border-radius:11px!important
+}
+#s-list .search-row input{min-height:38px!important;height:38px!important;padding:0 12px!important;font-size:12px!important}
+#s-list .search-row .btn{min-height:38px!important;height:38px!important;padding:7px 14px!important;font-size:11px!important}
+#s-list #mini-row2{gap:8px!important;margin:0!important}
+#s-list #mini-row2 .mini-w{
+  min-height:36px!important;height:36px!important;padding:5px 9px!important;
+  border-radius:9px!important;font-size:10.5px!important
+}
+#s-list #mini-row2 .mini-w svg{width:16px!important;height:16px!important}
+#s-list #today-sched-card{margin:0!important}
+#s-list>.tile-grid{margin-top:0!important;align-self:start!important}
+#s-list>.tile-grid:before{padding:0 2px 1px!important}
+#s-list #late-banner button{padding:7px 10px!important;margin:0 0 5px!important;font-size:11px!important}
+@media(min-width:1100px){
+  #s-list.active{row-gap:8px!important}
+  #s-list>.search-row{grid-column:1/-1!important}
+  #s-list>#mini-row2{grid-column:1/-1!important}
+}
+@media(max-width:1099px){
+  #s-list.active{row-gap:8px!important}
+}
+@media(max-width:700px){
+  #s-list.active{gap:8px!important}
+  /* Telefonda hızlı modülleri arama/yoklama alanının hemen arkasına al. */
+  #s-list>.tile-grid{order:7!important}
+  #s-list>#bulk-panel{order:8!important}
+  #s-list>#today-sched-card{order:9!important}
+  #s-list>#stu-toggle{order:10!important}
+  #s-list>#stu-body{order:11!important}
+  #s-list>#frozen-banner{order:12!important}
+  #s-list .search-row{padding:6px!important;gap:6px!important}
+  #s-list .search-row input{min-height:36px!important;height:36px!important;padding:0 10px!important;font-size:12px!important}
+  #s-list .search-row .btn{min-height:36px!important;height:36px!important;padding:6px 10px!important;font-size:10px!important}
+  #s-list #mini-row2{gap:6px!important}
+  #s-list #mini-row2 .mini-w{min-height:35px!important;height:35px!important;font-size:9.5px!important}
+}
+</style>
+
+\n<style id="rockjazz-premium-v5-layout">
+/* Premium V5: compact dashboard + dedicated student directory */
+@media(min-width:1100px){
+  #s-list.active{display:flex!important;flex-direction:column!important;gap:10px!important;align-items:stretch!important}
+  #s-list>*{grid-column:auto!important;grid-row:auto!important;order:0!important;width:100%}
+  #s-list>.app-hdr{margin-bottom:0!important}
+  #s-list>.kpi-row{margin:0!important}
+  #s-list>.mini-row{margin:0!important}
+  #s-list>.search-row{max-width:none!important;margin:0!important;padding:0!important;gap:8px!important}
+  #s-list>.search-row input{height:42px!important;min-height:42px!important;font-size:13px!important}
+  #s-list>.search-row .btn{height:42px!important;min-height:42px!important;padding:0 18px!important;font-size:12px!important}
+  #s-list>#search-res{margin:0!important}
+  #s-list>#pay-remind{margin:0!important;max-height:200px!important}
+  #s-list>#mini-row2{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important;margin:0!important}
+  #s-list>#mini-row2 .mini-w{height:38px!important;min-height:38px!important;font-size:11px!important}
+  #s-list>#late-banner{margin:0!important}
+  #s-list>#late-banner:empty,#s-list>#tel-remind:empty,#s-list>#dup-name-warn:empty,#s-list>#rec-banner:empty,#s-list>#lvl-banner:empty,#s-list>#um-banner:empty{display:none!important}
+  #s-list>.tile-grid{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:10px!important;position:static!important;top:auto!important;margin:0!important;width:100%!important}
+  #s-list>.tile-grid:before{grid-column:1/-1;margin:0!important;padding:2px 2px 0!important}
+  #s-list>.tile-grid .tile{min-height:72px!important;padding:12px 14px!important}
+  #s-list>#bulk-panel{width:100%!important;margin:0!important}
+  #s-list>#today-sched-card{margin:0!important;width:100%!important}
+}
+#s-list .app-hdr{margin-bottom:0!important}
+#s-list .search-row{width:100%;max-width:none!important}
+#s-list .search-row input{height:42px;min-height:42px;padding:0 13px;font-size:13px}
+#s-list .search-row .btn{height:42px;min-height:42px;padding:0 16px;font-size:12px}
+#s-list #mini-row2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:0}
+#s-list #mini-row2 .mini-w{height:38px;min-height:38px;font-size:11px}
+#s-list #pay-remind:empty,#s-list #tel-remind:empty,#s-list #dup-name-warn:empty,#s-list #rec-banner:empty,#s-list #lvl-banner:empty,#s-list #um-banner:empty{display:none!important}
+#s-list>.tile-grid{position:static!important;top:auto!important;margin:0!important;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+#s-list>.tile-grid .tile{min-height:72px;padding:12px 13px}
+#s-list>#today-sched-card{margin:0!important}
+#s-students{max-width:1320px!important;margin-inline:auto!important;gap:16px}
+#s-students.active{display:flex!important;flex-direction:column!important;gap:16px!important;align-items:stretch!important}
+#s-students>*{width:100%}
+#s-students .students-page-hero{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:23px 26px;border-radius:17px;background:linear-gradient(115deg,#142944,#294b70);color:#fff;box-shadow:0 12px 28px rgba(20,41,68,.13)}
+#s-students .students-eyebrow{font-size:9px;font-weight:850;letter-spacing:.15em;color:#d9c18d;margin-bottom:7px}
+#s-students .students-page-hero h1{font-size:25px;margin:0 0 5px;color:#fff;font-weight:850;letter-spacing:-.04em}
+#s-students .students-page-hero p{font-size:12px;color:#d5dfeb;margin:0}
+#s-students .students-page-actions{display:flex;gap:8px;flex-shrink:0}
+#s-students .students-page-actions .btn{height:40px;min-height:40px;padding:0 15px}
+#s-students .students-page-actions .btn-ghost{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.22);color:#fff}
+#s-students .students-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 15px;border:1px solid var(--border);border-radius:14px;background:#fff;box-shadow:var(--shadow)}
+#s-students .students-search-wrap{display:flex;align-items:center;gap:10px;flex:1;min-width:0}
+#s-students .students-search-wrap svg{width:19px;height:19px;stroke:#7188a2;fill:none;stroke-width:1.8;flex-shrink:0}
+#s-students #students-search{width:100%;height:42px;min-height:42px;padding:0 12px;border:1px solid #dce4ee;border-radius:10px;background:#f9fbfd;font-size:13px}
+#s-students .students-count-chip{white-space:nowrap;padding:9px 12px;border-radius:10px;background:#eef3f8;color:#5b6e84;font-size:11px;font-weight:700}
+#s-students .students-count-chip b{color:#1d3557;font-size:13px;margin:0 2px}
+#s-students .students-list-body{display:block!important;padding:0!important}
+#s-students #list-el{display:flex;flex-direction:column;gap:0}
+#s-students #list-el .s-row{width:100%;margin:0 0 8px!important;padding:12px 15px!important;border-radius:12px!important;background:#fff!important;border:1px solid #e3e9f0!important;box-shadow:0 2px 8px rgba(20,39,67,.035)!important;cursor:pointer}
+#s-students #list-el .s-row:hover{border-color:#b9c9da!important;box-shadow:0 5px 14px rgba(20,39,67,.07)!important}
+#s-students .tot{padding:10px 3px;color:#7d8ba0;font-size:11px;font-weight:700}
+#s-students #frozen-banner:empty{display:none}
+@media(max-width:1099px){
+  #bnav .bn-in button{width:20%!important;flex:1 1 20%!important;min-width:0!important}
+  #bnav .bn-in button span{font-size:9px!important;white-space:nowrap}
+  #s-list.active{display:flex!important;flex-direction:column!important;gap:8px!important}
+  #s-list>*{order:0!important;width:100%}
+  #s-list>.app-hdr{order:0!important}
+  #s-list>.kpi-row{order:1!important}
+  #s-list>.mini-row{order:2!important}
+  #s-list>.search-row{order:3!important}
+  #s-list>#search-res{order:4!important}
+  #s-list>#pay-remind{order:5!important}
+  #s-list>#mini-row2{order:6!important}
+  #s-list>#late-banner,#s-list>#tel-remind,#s-list>#dup-name-warn,#s-list>#rec-banner,#s-list>#lvl-banner,#s-list>#um-banner{order:7!important}
+  #s-list>.tile-grid{order:8!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important}
+  #s-list>#bulk-panel{order:9!important}
+  #s-list>#today-sched-card{order:10!important}
+  #s-list .search-row{padding:0!important;gap:7px!important}
+  #s-list .search-row input{height:38px!important;min-height:38px!important;padding:0 11px!important;font-size:12px!important}
+  #s-list .search-row .btn{height:38px!important;min-height:38px!important;padding:0 12px!important;font-size:11px!important;white-space:nowrap}
+  #s-list #mini-row2{gap:7px!important}
+  #s-list #mini-row2 .mini-w{height:36px!important;min-height:36px!important;font-size:10px!important}
+  #s-list>.tile-grid .tile{min-height:66px!important;padding:10px!important;font-size:11px!important}
+  #s-students{padding-top:12px!important}
+  #s-students .students-page-hero{padding:17px 15px;border-radius:14px;align-items:flex-start}
+  #s-students .students-page-hero h1{font-size:21px}
+  #s-students .students-page-hero p{font-size:11px;line-height:1.4}
+  #s-students .students-page-actions{flex-direction:column;gap:6px}
+  #s-students .students-page-actions .btn{height:35px;min-height:35px;padding:0 11px;font-size:10px}
+  #s-students .students-toolbar{padding:10px;gap:8px}
+  #s-students .students-count-chip{font-size:10px;padding:8px}
+}
+@media(max-width:600px){
+  #s-list .mini-row{gap:5px!important}
+  #s-list .mini-t{min-height:55px!important;padding:6px 3px!important;font-size:9px!important}
+  #s-list .mini-t svg{width:17px!important;height:17px!important}
+  #s-list>.tile-grid .tile{min-height:64px!important}
+  #s-students .students-page-hero{display:block}
+  #s-students .students-page-actions{flex-direction:row;margin-top:13px}
+  #s-students .students-page-actions .btn{flex:1}
+  #s-students .students-toolbar{align-items:stretch;flex-direction:column}
+  #s-students .students-count-chip{align-self:flex-start}
+}
+</style>\n
+<style id="rockjazz-premium-v6-final">
+/* ROCKJAZZ PREMIUM V6 — dashboard order, color-coded actions and readable type */
+:root{
+  --rj-ink:#172b45; --rj-navy:#173657; --rj-gold:#c6a15b;
+  --rj-muted:#61738a; --rj-border:#dfe7f0; --rj-bg:#f3f6fa;
+}
+html{font-size:16px;overflow-x:hidden}
+body{font-size:15px!important;color:var(--rj-ink);overflow-x:hidden}
+.screen{font-size:15px!important;line-height:1.48;min-width:0;}
+.screen h1{font-size:clamp(24px,1.7vw,29px)!important;line-height:1.2}
+.screen h2{font-size:clamp(21px,1.25vw,24px)!important;line-height:1.25}
+.screen h3{font-size:18px!important;line-height:1.3}
+.screen :is(input,select,textarea){font-size:14.5px!important;min-height:42px}
+.screen :is(.btn,.btn-ghost){font-size:14px!important;min-height:39px}
+.screen :is(label,.lbl,.section-lbl,th,td){font-size:13.5px!important;line-height:1.4}
+.screen :is(p,li){font-size:14.5px;line-height:1.5}
+.screen small{font-size:12px!important;line-height:1.4}
+.screen .badge{font-size:12px!important}
+.screen :is(.s-row,.stu-row,.pay-row){font-size:14.5px}
+#bnav .nav-link{font-size:13.5px!important}
+#bnav .nav-caption{font-size:10.5px!important;letter-spacing:.13em}
+
+/* Dashboard: compact and predictable vertical flow at every screen size. */
+#s-list.active{
+  display:flex!important;flex-direction:column!important;align-items:stretch!important;
+  gap:10px!important;min-width:0;
+}
+#s-list>*{width:100%;min-width:0;order:0!important;grid-column:auto!important;grid-row:auto!important}
+#s-list>.app-hdr{order:0!important;margin:0!important}
+#s-list>#home-sum{order:1!important;margin:0!important}
+#s-list>.mini-row{order:2!important;margin:0!important}
+#s-list>.search-row{order:3!important;margin:0!important;padding:0!important}
+#s-list>#search-res{order:4!important;margin:0!important}
+#s-list>#pay-remind{order:5!important;margin:0!important}
+#s-list>#mini-row2{order:6!important;margin:0!important}
+#s-list>#today-sched-card{order:7!important;margin:0!important;width:100%!important}
+#s-list>#late-banner,#s-list>#tel-remind,#s-list>#dup-name-warn,
+#s-list>#rec-banner,#s-list>#lvl-banner,#s-list>#um-banner,#s-list>#frozen-banner{order:8!important;margin:0!important}
+#s-list>.tile-grid{order:9!important;margin:0!important;width:100%!important;position:static!important;top:auto!important}
+#s-list>#bulk-panel{order:10!important;margin:0!important;width:100%!important}
+#s-list :is(#home-sum:empty,#search-res:empty,#pay-remind:empty,#late-banner:empty,
+  #tel-remind:empty,#dup-name-warn:empty,#rec-banner:empty,#lvl-banner:empty,
+  #um-banner:empty,#frozen-banner:empty){display:none!important}
+
+/* Five primary shortcut buttons: individually color-coded for instant recognition. */
+#s-list>.mini-row{
+  display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr))!important;
+  gap:10px!important;width:100%!important;
+}
+#s-list>.mini-row .mini-t{
+  min-width:0;min-height:62px!important;height:auto!important;padding:10px 12px!important;
+  display:flex!important;flex-direction:row!important;align-items:center!important;
+  justify-content:flex-start!important;gap:10px!important;text-align:left!important;
+  border-radius:13px!important;font-size:13.5px!important;font-weight:800!important;
+  line-height:1.3!important;box-shadow:0 3px 10px rgba(22,43,69,.045)!important;
+  transition:transform .16s ease,box-shadow .16s ease,filter .16s ease!important;
+}
+#s-list>.mini-row .mini-t:hover{transform:translateY(-2px);box-shadow:0 7px 16px rgba(22,43,69,.09)!important;filter:saturate(1.08)}
+#s-list>.mini-row .mini-t svg{width:21px!important;height:21px!important;flex:0 0 21px!important}
+#s-list>.mini-row .mt-wa{background:#e8f7ef!important;border:1px solid #c8ead7!important;border-left:4px solid #1b9b68!important;color:#16764f!important}
+#s-list>.mini-row .mt-iban{background:#eaf2ff!important;border:1px solid #cdddf7!important;border-left:4px solid #3978ca!important;color:#285f9e!important}
+#s-list>.mini-row .mt-soz{background:#f1edff!important;border:1px solid #ded5ff!important;border-left:4px solid #8063cf!important;color:#6246a8!important}
+#s-list>.mini-row .mt-rul{background:#fff4df!important;border:1px solid #f2dfb7!important;border-left:4px solid #d18a20!important;color:#986112!important}
+#s-list>.mini-row .mt-kay{background:#e7f7f8!important;border:1px solid #c9eaec!important;border-left:4px solid #178b91!important;color:#126d73!important}
+#s-list>.mini-row .mini-t svg{stroke:currentColor!important}
+
+/* Attendance controls stay short, clear and touch-friendly. */
+#s-list>#mini-row2{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px!important}
+#s-list>#mini-row2 .mini-w{
+  min-width:0;height:42px!important;min-height:39px!important;height:39px!important;padding:6px 11px!important;
+  border:1px solid #d8e3ef!important;border-radius:11px!important;background:#fff!important;
+  color:#294e77!important;font-size:13.5px!important;font-weight:800!important;
+  box-shadow:0 2px 8px rgba(25,55,87,.035)!important;
+}
+#s-list>#mini-row2 .mini-w svg{width:18px!important;height:18px!important;stroke:#4778aa!important}
+
+/* Today's lesson card now sits directly below attendance, before quick modules. */
+#s-list>#today-sched-card{
+  padding:15px 18px!important;border:1px solid #d9e4ef!important;border-left:4px solid var(--rj-gold)!important;
+  border-radius:13px!important;background:#fff!important;box-shadow:0 3px 12px rgba(22,43,69,.045)!important;
+}
+#s-list>#today-sched-card #today-sched-title{font-size:15px!important;font-weight:850!important;color:#1b3858!important;margin-bottom:8px!important}
+#s-list>#today-sched-list{font-size:14px!important;line-height:1.5}
+
+/* A strong section banner makes the quick-module area easy to spot. */
+#s-list>.tile-grid{
+  display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;
+  gap:11px!important;align-items:stretch!important;
+}
+#s-list>.tile-grid:before{
+  content:"HIZLI MODÜLLER"!important;grid-column:1/-1!important;display:flex!important;
+  align-items:center!important;min-height:43px!important;padding:9px 15px!important;
+  margin:1px 0 1px!important;border-radius:11px!important;
+  border-left:5px solid var(--rj-gold)!important;
+  background:linear-gradient(100deg,#173657 0%,#294e75 100%)!important;
+  color:#fff!important;font-size:13.5px!important;font-weight:900!important;
+  letter-spacing:.12em!important;box-shadow:0 5px 13px rgba(23,54,87,.13)!important;
+}
+#s-list>.tile-grid>.tile{
+  min-width:0;min-height:78px!important;height:100%!important;padding:13px 15px!important;
+  display:flex!important;flex-direction:row!important;align-items:center!important;
+  justify-content:flex-start!important;gap:12px!important;text-align:left!important;
+  border-radius:13px!important;font-size:14px!important;font-weight:850!important;
+  line-height:1.35!important;box-shadow:0 3px 11px rgba(22,43,69,.055)!important;
+  transition:transform .16s ease,box-shadow .16s ease,filter .16s ease!important;
+}
+#s-list>.tile-grid>.tile:hover{transform:translateY(-2px);box-shadow:0 8px 18px rgba(22,43,69,.11)!important}
+#s-list>.tile-grid>.tile svg{width:23px!important;height:23px!important;flex:0 0 23px!important}
+#s-list>.tile-grid>.tile small{display:block!important;font-size:11.5px!important;line-height:1.35!important;margin-top:4px!important}
+/* Ön Görüşme: vivid orange; the most visible appointment action. */
+#s-list>.tile-grid>.tile:nth-child(1){background:linear-gradient(135deg,#f97316,#e85d0b)!important;border:1px solid #e85d0b!important;color:#fff!important}
+#s-list>.tile-grid>.tile:nth-child(1) svg{stroke:#fff!important}
+#s-list>.tile-grid>.tile:nth-child(1) small{color:rgba(255,255,255,.96)!important}
+/* Weekly plan: blue */
+#s-list>.tile-grid>.tile:nth-child(2){background:#eaf2ff!important;border:1px solid #ccdcf4!important;border-left:4px solid #3978ca!important;color:#285f9e!important}
+#s-list>.tile-grid>.tile:nth-child(2) svg{stroke:#3978ca!important}
+/* Homework: violet */
+#s-list>.tile-grid>.tile:nth-child(3){background:#f1edff!important;border:1px solid #ded5ff!important;border-left:4px solid #8063cf!important;color:#6246a8!important}
+#s-list>.tile-grid>.tile:nth-child(3) svg{stroke:#8063cf!important}
+/* Parent sharing: teal */
+#s-list>.tile-grid>.tile:nth-child(4){background:#e7f7f8!important;border:1px solid #c9eaec!important;border-left:4px solid #178b91!important;color:#126d73!important}
+#s-list>.tile-grid>.tile:nth-child(4) svg{stroke:#178b91!important}
+/* Analytics: green */
+#s-list>.tile-grid>.tile:nth-child(5){background:#e9f7ef!important;border:1px solid #ccebd8!important;border-left:4px solid #259565!important;color:#176c49!important}
+#s-list>.tile-grid>.tile:nth-child(5) svg{stroke:#259565!important}
+/* Price updater: vivid purple, clearly distinct from the orange appointment button. */
+#s-list>.tile-grid>.tile:nth-child(6){background:linear-gradient(135deg,#8555e9,#6336c7)!important;border:1px solid #6336c7!important;color:#fff!important}
+#s-list>.tile-grid>.tile:nth-child(6) svg{stroke:#fff!important}
+/* Receipts: sky blue */
+#s-list>.tile-grid>.tile:nth-child(7){background:#e9f5ff!important;border:1px solid #cde7fb!important;border-left:4px solid #2788c8!important;color:#246b9c!important}
+#s-list>.tile-grid>.tile:nth-child(7) svg{stroke:#2788c8!important}
+/* Monthly archive: warm sand */
+#s-list>.tile-grid>.tile:nth-child(8){background:#fff5e5!important;border:1px solid #f1e2c4!important;border-left:4px solid #c38b32!important;color:#8a6120!important}
+#s-list>.tile-grid>.tile:nth-child(8) svg{stroke:#c38b32!important}
+/* Former students archive: slate */
+#s-list>.tile-grid>.tile:nth-child(9){background:#eef2f6!important;border:1px solid #d9e1e9!important;border-left:4px solid #72849a!important;color:#4d6075!important}
+#s-list>.tile-grid>.tile:nth-child(9) svg{stroke:#72849a!important}
+
+/* Slightly larger, consistent reading sizes throughout the rest of the program. */
+.screen .card{font-size:15px}
+.screen .card :is(p,li,td,th){font-size:14px}
+.screen .card :is(input,select,textarea){font-size:14.5px!important}
+.screen .section-lbl{font-size:13.5px!important;letter-spacing:.055em}
+.screen .lbl{font-size:13px!important}
+.screen .btn-sm{font-size:13px!important;min-height:35px}
+.screen .s-row{padding:14px 16px!important}
+.screen .s-row :is(.sn,.s-name,.name){font-size:15px!important}
+.screen table{font-size:14px!important}
+.screen table :is(td,th){padding:9px 8px}
+
+@media(min-width:1100px){
+  .screen{max-width:1540px!important;padding:28px 34px 48px!important}
+  #s-list>.mini-row .mini-t{min-height:64px!important;font-size:14px!important;padding:11px 14px!important}
+  #s-list>.tile-grid>.tile{min-height:82px!important}
+}
+@media(min-width:701px) and (max-width:1099px){
+  #s-list>.mini-row{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+  #s-list>.tile-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  #s-list>.tile-grid:before{min-height:42px!important}
+}
+@media(max-width:700px){
+  body{font-size:14.5px!important}
+  .screen{font-size:14.5px!important;padding:12px 10px 92px!important}
+  .screen :is(input,select,textarea){font-size:14px!important;min-height:40px}
+  .screen :is(.btn,.btn-ghost){font-size:13.5px!important}
+  .screen :is(label,.lbl,.section-lbl,th,td){font-size:13px!important}
+  .screen :is(p,li){font-size:14px}
+  #s-list.active{gap:9px!important}
+  #s-list>.mini-row{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important}
+  #s-list>.mini-row .mini-t{min-height:58px!important;padding:10px 11px!important;font-size:13px!important;gap:9px!important}
+  #s-list>.mini-row .mini-t svg{width:20px!important;height:20px!important;flex-basis:20px!important}
+  #s-list>#mini-row2{gap:7px!important}
+  #s-list>#mini-row2 .mini-w{height:38px!important;min-height:38px!important;padding:5px 5px!important;font-size:12.5px!important;gap:6px!important}
+  #s-list>#today-sched-card{padding:13px 12px!important}
+  #s-list>#today-sched-card #today-sched-title{font-size:14px!important}
+  #s-list>.tile-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important}
+  #s-list>.tile-grid:before{min-height:42px!important;padding:9px 12px!important;font-size:12.5px!important}
+  #s-list>.tile-grid>.tile{min-height:74px!important;padding:11px 10px!important;gap:9px!important;font-size:13px!important}
+  #s-list>.tile-grid>.tile svg{width:21px!important;height:21px!important;flex-basis:21px!important}
+  #s-list>.tile-grid>.tile small{font-size:11px!important}
+  #bnav .bn-in button span{font-size:10.5px!important}
+}
+@media(prefers-reduced-motion:reduce){
+  #s-list>.mini-row .mini-t,#s-list>.tile-grid>.tile{transition:none!important}
+}
+</style>
+
+<
+<style id="rockjazz-analysis-dashboard-v7">
+/* Gelir analizi: compact finance dashboard. Calculation/data logic is unchanged. */
+#s-analysis{max-width:1640px!important}
+#s-analysis.active{display:grid!important;grid-template-columns:repeat(12,minmax(0,1fr));gap:12px;align-items:start}
+#s-analysis.active>*{min-width:0;margin:0!important}
+#s-analysis>.btn-ghost{grid-column:1/-1;justify-self:start}
+#s-analysis>.app-hdr{grid-column:1/-1;padding:16px 20px!important;min-height:82px}
+#s-analysis>.app-hdr>div:first-child{font-size:28px!important;float:left;margin:4px 14px 0 0}
+#s-analysis>.app-hdr h1{font-size:23px!important;margin:0 0 4px!important}
+#s-analysis>.app-hdr p{font-size:11px!important;margin:0}
+#ana-period-card{grid-column:1/-1;padding:10px 14px!important;margin:0!important}
+#ana-period-card>div:first-child{margin-bottom:7px!important}
+#ana-period-card .per-btn{padding:7px 13px;font-size:12px}
+#ana-summary{grid-column:1/-1}
+.analysis-kpi-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.ana-kpi{position:relative;text-align:left;padding:12px 14px!important;border-radius:13px!important;border:1px solid var(--border)!important;min-height:108px;overflow:hidden}
+.ana-kpi:after{content:"";position:absolute;width:80px;height:80px;border-radius:50%;right:-30px;top:-34px;background:var(--ana-bubble,rgba(255,255,255,.45))}
+.ana-kpi-rec{background:linear-gradient(135deg,#e8f7f0,#f8fffb)!important;--ana-bubble:rgba(14,159,110,.08)}
+.ana-kpi-exp{background:linear-gradient(135deg,#edf4ff,#fbfdff)!important;--ana-bubble:rgba(71,120,189,.09)}
+.ana-kpi-miss{background:linear-gradient(135deg,#fff0f0,#fffafa)!important;--ana-bubble:rgba(220,80,90,.07)}
+.ana-kpi-rate{background:linear-gradient(135deg,#fff7e8,#fffdf6)!important;--ana-bubble:rgba(217,154,34,.09)}
+.ana-kpi-top{display:flex;align-items:center;gap:7px;margin-bottom:6px;position:relative;z-index:1}
+.ana-kpi-icon{width:22px;height:22px;display:grid;place-items:center;border-radius:7px;background:rgba(255,255,255,.8);font-weight:900;color:var(--text2);font-size:13px}
+.ana-kpi .sum-l{font-size:11px!important;letter-spacing:.04em;text-transform:uppercase;margin:0;color:#64748b!important}
+.ana-kpi .sum-n{font-size:21px!important;line-height:1.15;font-weight:850!important;letter-spacing:-.035em;position:relative;z-index:1}
+.ana-kpi-rec .sum-n{color:#087a55}.ana-kpi-exp .sum-n{color:#285f9e}.ana-kpi-miss .sum-n{color:#c33f4b}.ana-kpi-rate .sum-n{color:#9b6a13}
+.ana-kpi-track{height:6px;background:rgba(30,50,75,.09);border-radius:99px;margin-top:9px;overflow:hidden;position:relative;z-index:1}
+.ana-kpi-track span{height:100%;display:block;border-radius:99px;min-width:0}
+.ana-kpi-foot{font-size:10px;color:#68788d;font-weight:650;margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;position:relative;z-index:1}
+#ana-chart-card{grid-column:span 7}
+#ana-compare-card{grid-column:span 5}
+#ana-kdv-card{grid-column:span 6}
+#ana-students-card{grid-column:span 6}
+#ana-export-card{grid-column:1/-1}
+#ana-chart-card,#ana-compare-card,#ana-kdv-card,#ana-students-card{padding:14px!important;border-radius:15px!important}
+.analysis-card-heading{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:10px;font-weight:850;font-size:14px;color:#203957;letter-spacing:-.02em}
+.analysis-card-heading small{font-size:10px;color:#8290a3;font-weight:650;text-align:right}
+.analysis-subheading{font-size:11px;font-weight:800;color:#64748b;letter-spacing:.045em;text-transform:uppercase;margin:0 0 8px}
+#ana-chart-card #ana-chart-title{font-weight:850!important;font-size:14px!important;margin-bottom:7px!important;color:#203957!important}
+#ana-chart .bar-wrap{height:142px;gap:6px;min-width:0;padding:4px 2px 0}
+#ana-chart .bar-col{gap:4px}
+#ana-chart .bar-pair{gap:3px;align-items:flex-end}
+#ana-chart .bar-r{border-radius:5px 5px 2px 2px;min-width:5px;box-shadow:0 2px 4px rgba(30,50,75,.08)}
+#ana-chart .bar-r[style*="#d0d5f5"]{background:linear-gradient(180deg,#b8c9e8,#718eb8)!important}
+#ana-chart .bar-r[style*="#059669"]{background:linear-gradient(180deg,#4bc99a,#0b8a61)!important}
+#ana-chart .bar-val{font-size:9px;min-height:11px;color:#52647b}
+#ana-chart .bar-lbl{font-size:10px;font-weight:800;color:#61748d;margin-top:3px}
+#ana-month-kdv{margin-top:8px!important;max-height:170px;overflow:auto;border-top:1px solid #edf0f5;padding-top:8px}
+#ana-month-kdv>div:first-child{font-size:11px!important}
+#ana-month-kdv .mk-row{padding:7px 9px!important;margin-bottom:5px!important}
+#ana-month-kdv .mk-row summary>div{margin-bottom:4px!important}
+#ana-month-kdv .mk-row summary>div[style*="background"]{padding:4px!important}
+#ana-compare{min-height:0}
+.analysis-compare-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+.ana-compare-item{background:var(--ana-tint);border:1px solid color-mix(in srgb,var(--ana-color) 20%,white);border-radius:12px;padding:10px 7px;text-align:center;min-width:0}
+.ana-donut{width:76px;height:76px;border-radius:50%;margin:0 auto 8px;background:conic-gradient(var(--ana-color) var(--ana-p),rgba(120,140,165,.16) 0);display:grid;place-items:center;position:relative}
+.ana-donut:before{content:"";position:absolute;inset:7px;background:#fff;border-radius:50%}
+.ana-donut>div{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;line-height:1.1}
+.ana-donut b{font-size:15px;color:var(--ana-color);font-weight:900}
+.ana-donut small{font-size:8px;color:#8492a5;font-weight:700;margin-top:3px}
+.ana-compare-name{font-weight:850;font-size:11px;color:#263c59;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ana-compare-amount{font-size:12px;font-weight:850;color:#1b795b;margin-top:5px;white-space:nowrap}
+.ana-compare-sub{font-size:9px;font-weight:650;color:#718096;margin-top:2px;white-space:nowrap}
+.ana-compare-count{display:inline-block;background:rgba(255,255,255,.75);border-radius:99px;padding:3px 7px;font-size:9px;font-weight:750;color:#53657a;margin-top:7px}
+.analysis-kdv-grid{display:grid;grid-template-columns:minmax(0,.92fr) minmax(0,1.08fr);gap:12px;align-items:start}
+#ana-kdv{display:grid;grid-template-columns:1fr;gap:7px}
+#ana-kdv>details{padding:8px 9px!important;margin:0!important;border-radius:10px!important}
+#ana-kdv>details summary{margin-bottom:4px!important}
+#ana-kdv>details summary>div:first-child{margin-bottom:5px!important}
+#ana-kdv>details summary span{font-size:12px!important}
+#ana-kdv .ana-kdv-trio{margin-top:5px}
+.ana-kdv-trio{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;text-align:center}
+.ana-kdv-trio>div{min-width:0}
+.ana-kdv-trio b{display:block;font-size:11px;font-weight:850;color:#263c59;white-space:nowrap}
+.ana-kdv-trio small{display:block;font-size:9px;color:#7b899b;font-weight:700;margin-top:2px}
+.ana-kdv-stack{display:flex;height:6px;border-radius:99px;overflow:hidden;background:#e9eef4;margin-top:7px}
+.ana-kdv-stack span,.ana-kdv-stack i{display:block;height:100%}
+#ana-kdv>div:last-child{padding:9px!important;border-radius:10px!important}
+.ana-kdv-month-wrap{min-width:0;border-left:1px solid #edf0f5;padding-left:11px}
+#kdv-month-pills{gap:4px!important;max-height:62px;overflow:auto;padding:1px 1px 5px}
+#kdv-month-pills .per-btn{font-size:10px;padding:5px 8px;border-radius:7px}
+#ana-kdv-month{max-height:390px;overflow:auto;padding-right:2px}
+#ana-kdv-month>details{padding:8px!important;margin-bottom:6px!important;border-radius:10px!important}
+#ana-kdv-month>details summary>div{padding:5px!important}
+#ana-kdv-month>details summary .ana-kdv-trio b{font-size:10px}
+#ana-students{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;align-items:start}
+.ana-stu-group{border:1px solid #e3eaf2;border-radius:11px;padding:8px;min-width:0;background:#fbfcfe}
+.ana-stu-kdv{background:#f5f9ff;border-color:#dce8f8}.ana-stu-nokdv{background:#f8fafc;border-color:#e2e8f0}
+.ana-stu-group-head{display:flex;align-items:center;justify-content:space-between;gap:7px;font-size:11px;font-weight:850;color:#285f9e;margin-bottom:6px}
+.ana-stu-nokdv .ana-stu-group-head{color:#566579}
+.ana-stu-group-head b{background:#fff;border:1px solid #dfe7f0;border-radius:99px;min-width:22px;padding:2px 6px;text-align:center;font-size:10px}
+.ana-stu-list{max-height:390px;overflow:auto;padding-right:3px}
+.ana-stu-list .stu-pay-row{gap:6px;padding:7px 2px;border-bottom:1px solid #e6ebf2}
+.ana-stu-list .stu-pay-row>div:first-child{font-size:14px!important}
+.ana-stu-list .stu-pay-row>div:nth-child(2)>div:first-child{font-size:11px!important}
+.ana-stu-list .stu-pay-row>div:nth-child(2)>div:nth-child(2){font-size:10px!important}
+.ana-stu-list .stu-pay-row>div:last-child{font-size:10px!important;max-width:94px}
+.ana-stu-list .prog-bar{height:5px}
+.ana-empty{font-size:11px;color:#8794a5;padding:10px 3px}
+.ana-stu-archive{grid-column:1/-1;background:#fffaf0;border:1px solid #f2dfb8;border-radius:11px;padding:9px}
+.ana-stu-archive .ana-stu-group-head{color:#94651b}
+.ana-stu-archive p{font-size:10px;color:#8b7857;margin:0 0 7px}
+.ana-stu-archive-list{max-height:170px;overflow:auto}
+#ana-export-card{padding:11px 14px!important;display:flex;align-items:center;justify-content:space-between;gap:12px}
+#ana-export-card>div:first-child{margin:0!important}
+#ana-export-card>div:last-child{width:min(520px,58%)}
+#ana-export-card .btn{padding:9px 10px!important;font-size:12px!important}
+#ana-students-card .dsc-pop{z-index:5}
+@media(max-width:1150px){
+  #ana-chart-card,#ana-compare-card{grid-column:span 6}
+  #ana-kdv-card,#ana-students-card{grid-column:1/-1}
+}
+@media(max-width:760px){
+  #s-analysis.active{display:flex!important;flex-direction:column;gap:10px}
+  #s-analysis.active>*{width:100%;max-width:100%}
+  #s-analysis>.app-hdr{min-height:74px}
+  .analysis-kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+  .ana-kpi{min-height:98px;padding:10px!important}
+  .ana-kpi .sum-n{font-size:18px!important}
+  #ana-chart-card,#ana-compare-card,#ana-kdv-card,#ana-students-card{padding:11px!important}
+  .analysis-compare-grid{gap:5px}
+  .ana-compare-item{padding:8px 4px}
+  .ana-donut{width:64px;height:64px}
+  .ana-donut b{font-size:13px}
+  .analysis-kdv-grid{grid-template-columns:1fr;gap:11px}
+  .ana-kdv-month-wrap{border-left:0;border-top:1px solid #edf0f5;padding:10px 0 0}
+  #ana-kdv-month{max-height:330px}
+  #ana-students{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+  .ana-stu-group{padding:6px}
+  .ana-stu-list{max-height:360px}
+  #ana-export-card{display:block}
+  #ana-export-card>div:last-child{width:100%;margin-top:9px!important}
+}
+@media(max-width:480px){
+  #ana-students{grid-template-columns:1fr}
+  .ana-stu-list{max-height:260px}
+  .analysis-card-heading{display:block}
+  .analysis-card-heading small{display:block;text-align:left;margin-top:3px}
+  .ana-compare-amount{font-size:10px}
+  .ana-compare-sub{font-size:8px}
+  #ana-chart .bar-wrap{gap:3px}
+}
+</style>
+
+
+<style id="rockjazz-v8-sidebar-reminder">
+/* V8: reminder panel moved into the sidebar's workspace card */
+@media (min-width:1100px){
+  .sidebar-workspace{
+    display:flex!important;flex-wrap:wrap!important;align-items:center!important;
+    gap:7px 9px!important;padding:10px 9px!important;margin:15px 2px 12px!important;
+    overflow:visible!important;
+  }
+  .sidebar-workspace>span:nth-child(2){flex:1 1 120px;min-width:0}
+  .sidebar-workspace #pay-remind{
+    display:flex!important;flex:0 0 100%!important;width:100%!important;min-width:0!important;
+    flex-direction:column!important;gap:5px!important;margin:3px 0 0!important;
+    max-height:170px!important;overflow-y:auto!important;overflow-x:hidden!important;
+    scrollbar-width:thin!important;grid-column:auto!important;
+  }
+  .sidebar-workspace #pay-remind:empty{display:none!important}
+  .sidebar-workspace #pay-remind .payrem-card{
+    flex:0 0 auto!important;min-width:0!important;margin:0!important;padding:5px 6px!important;
+    border-radius:8px!important;box-shadow:none!important;
+  }
+  .sidebar-workspace #pay-remind .payrem-post{
+    border:1px solid #f6b7bc!important;background:#fff0f1!important;
+    animation:sidebarOverduePulse 1.25s ease-in-out infinite!important;
+  }
+  .sidebar-workspace #pay-remind .payrem-pre{
+    border:1px solid #f4d4a7!important;background:#fff8eb!important;
+  }
+  .sidebar-workspace #pay-remind .payrem-hd{
+    min-height:20px!important;gap:4px!important;flex-wrap:wrap!important;
+  }
+  .sidebar-workspace #pay-remind .payrem-hd .ttl{
+    font-size:9.5px!important;line-height:1.2!important;white-space:normal!important;
+    font-weight:900!important;color:#b4232d!important;
+  }
+  .sidebar-workspace #pay-remind .payrem-pre .payrem-hd .ttl{color:#9a5a0a!important}
+  .sidebar-workspace #pay-remind .payrem-hd .cnt{
+    font-size:9px!important;line-height:15px!important;padding:0 5px!important;
+  }
+  .sidebar-workspace #pay-remind .payrem-hd .pv{
+    flex:1 1 100%!important;min-width:0!important;white-space:normal!important;
+    overflow:visible!important;text-overflow:clip!important;overflow-wrap:anywhere!important;
+    font-size:8.5px!important;line-height:1.3!important;color:#8f3038!important;opacity:1!important;
+  }
+  .sidebar-workspace #pay-remind .payrem-hd .chv{margin-left:auto!important;font-size:9px!important}
+  .sidebar-workspace #pay-remind .payrem-row{
+    display:grid!important;grid-template-columns:minmax(0,1fr) auto auto auto!important;
+    gap:3px!important;padding:4px!important;margin-top:4px!important;min-height:0!important;
+    border:1px solid #f0dadd!important;border-radius:7px!important;
+  }
+  .sidebar-workspace #pay-remind .payrem-row .nm{
+    grid-column:1/-1!important;white-space:normal!important;overflow:visible!important;
+    text-overflow:clip!important;font-size:10px!important;line-height:1.2!important;
+    font-weight:850!important;color:#9f1d29!important;
+  }
+  .sidebar-workspace #pay-remind .payrem-row .sb{
+    grid-column:1!important;font-size:8px!important;white-space:normal!important;
+    align-self:center!important;
+  }
+  .sidebar-workspace #pay-remind .payrem-row .am{
+    grid-column:2!important;font-size:9px!important;align-self:center!important;
+  }
+  .sidebar-workspace #pay-remind .payrem-row .payrem-btn{
+    width:21px!important;height:21px!important;min-width:21px!important;
+    border-radius:6px!important;font-size:11px!important;
+  }
+}
+@keyframes sidebarOverduePulse{
+  0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(220,38,38,0)}
+  50%{opacity:.70;box-shadow:0 0 0 2px rgba(220,38,38,.10)}
+}
+@media(prefers-reduced-motion:reduce){
+  .sidebar-workspace #pay-remind .payrem-post{animation:none!important}
+}
+/* Payment ranking: unpaid students are visually apparent in each side-by-side group. */
+#ana-students .stu-pay-row:has(span){min-width:0}
+</style>
+
+
+<style id="rockjazz-premium-v9-readability">
+/* V9: all-section typography and viewport fit */
+html{font-size:16px;overflow-x:hidden}
+body{font-size:16px!important;overflow-x:hidden}
+.screen{
+  width:100%!important;max-width:min(1600px,calc(100vw - 300px))!important;
+  min-width:0!important;box-sizing:border-box!important;
+  font-size:15.5px!important;line-height:1.48!important;
+}
+/* Readable text on every screen, without shrinking prominent totals and headings. */
+.screen :is(p,label,td,th,li,button,a,summary,strong,b,em){
+  font-size:15px!important;line-height:1.4!important;
+}
+.screen :is(span):not(.badge):not(.count):not(.sync-dot):not([style*="font-size:2"]):not([style*="font-size: 2"]):not([style*="font-size:3"]):not([style*="font-size: 3"]){
+  font-size:14.5px!important;line-height:1.4!important;
+}
+.screen :is(h1){font-size:clamp(24px,1.8vw,30px)!important;line-height:1.2!important}
+.screen :is(h2){font-size:clamp(21px,1.45vw,25px)!important;line-height:1.25!important}
+.screen :is(h3){font-size:19px!important;line-height:1.3!important}
+.screen :is(h4){font-size:16px!important;line-height:1.3!important}
+.screen :is(input,select,textarea){
+  font-size:15px!important;line-height:1.35!important;min-height:43px!important;
+  padding:9px 12px!important;max-width:100%;box-sizing:border-box!important;
+}
+.screen :is(.btn,.btn-ghost,.tile,.mini-t,.mini-w,.tab-btn){
+  font-size:14.5px!important;line-height:1.35!important;min-width:0;
+}
+.screen :is(.section-lbl,.lbl,.hint,.muted,.meta,.sub,.form-hint,.field-label,.form-label,.card-title,.row-title,.kpi .k,.tile small,small){
+  font-size:13px!important;line-height:1.4!important;
+}
+.screen :is(.badge,.count,.chip){font-size:12.5px!important;line-height:1.3!important}
+.screen .kpi .v{font-size:25px!important;font-weight:850!important}
+.screen .ana-kpi .sum-n{font-size:clamp(19px,1.5vw,25px)!important;font-weight:850!important}
+.screen :is(.value,.amount-strong,.big-number,.stat-value){font-size:19px!important;font-weight:800!important}
+.screen table{width:100%;max-width:100%;font-size:14.5px!important;border-collapse:separate}
+.screen table :is(td,th){font-size:14px!important;line-height:1.35!important;padding:8px 9px!important}
+.screen :is(.card,.panel,.section-card){min-width:0;box-sizing:border-box}
+.screen :is(.card,.panel){padding:15px!important}
+.screen img,.screen svg{max-width:100%}
+.screen :is(input,select,textarea,button){max-width:100%}
+/* The finance view keeps its two-column dashboard while increasing its labels. */
+#s-analysis :is(.ana-kpi,.ana-card,.analysis-card,.chart-card){min-width:0}
+#s-analysis :is(.ana-kpi,.ana-card,.analysis-card,.chart-card) :is(p,label,td,th){font-size:14px!important}
+#s-analysis :is(.ana-kpi .sum-n,.ana-kpi strong){font-size:clamp(19px,1.5vw,25px)!important;font-weight:850!important}
+#s-analysis :is(.ana-kpi .sum-l,.ana-card .sub,.ana-legend,.ana-note){font-size:12.5px!important}
+/* Sidebar stays compact but readable. */
+#bnav .nav-link,#bnav .bn-in button{font-size:13.5px!important}
+#bnav .nav-caption{font-size:10.5px!important}
+.sidebar-workspace b{font-size:11.5px!important}
+.sidebar-workspace small{font-size:9.5px!important}
+.sidebar-workspace #pay-remind .payrem-row .nm{font-size:11.5px!important;line-height:1.25!important}
+.sidebar-workspace #pay-remind .payrem-row .sb{font-size:9.5px!important}
+.sidebar-workspace #pay-remind .payrem-row .am{font-size:10.5px!important}
+.sidebar-workspace #pay-remind .payrem-hd .ttl{font-size:10.5px!important}
+.sidebar-workspace #pay-remind .payrem-hd .pv{font-size:9px!important}
+/* Long tables scroll within their own panel instead of pushing the full page sideways. */
+.screen :is(.table-wrap,.table-scroll,.table-responsive,.overflow-x-auto){max-width:100%;overflow-x:auto;overscroll-behavior-x:contain}
+@media(min-width:1100px){
+  .screen{padding:25px clamp(20px,2vw,34px) 44px!important}
+  .screen#s-reg,.screen#s-edit{max-width:min(1200px,calc(100vw - 300px))!important}
+  .screen#s-detail,.screen#s-daily,.screen#s-week,.screen#s-hw,.screen#s-pros,
+  .screen#s-msum,.screen#s-students,.screen#s-analysis,.screen#s-archive,
+  .screen#s-veli-share,.screen#s-rcpt,.screen#s-chronic{max-width:min(1600px,calc(100vw - 300px))!important}
+}
+@media(min-width:701px) and (max-width:1099px){
+  .screen{max-width:calc(100vw - 32px)!important;padding:20px 16px 38px!important}
+  .screen :is(p,label,td,th,li,button,a,summary,strong,b,em){font-size:14.5px!important}
+  .screen :is(span):not(.badge):not(.count):not(.sync-dot):not([style*="font-size:2"]):not([style*="font-size: 2"]):not([style*="font-size:3"]):not([style*="font-size: 3"]){font-size:14px!important}
+}
+@media(max-width:700px){
+  body{font-size:14.5px!important}
+  .screen{max-width:100vw!important;padding:12px 10px 94px!important;font-size:14px!important}
+  .screen :is(p,label,td,th,li,button,a,summary,strong,b,em){font-size:13.8px!important;line-height:1.38!important}
+  .screen :is(span):not(.badge):not(.count):not(.sync-dot):not([style*="font-size:2"]):not([style*="font-size: 2"]):not([style*="font-size:3"]):not([style*="font-size: 3"]){font-size:13.5px!important;line-height:1.38!important}
+  .screen :is(h1){font-size:23px!important}
+  .screen :is(h2){font-size:20px!important}
+  .screen :is(h3){font-size:17px!important}
+  .screen :is(input,select,textarea){font-size:14px!important;min-height:41px!important}
+  .screen :is(.btn,.btn-ghost,.tile,.mini-t,.mini-w,.tab-btn){font-size:13.5px!important}
+  .screen :is(.section-lbl,.lbl,.hint,.muted,.meta,.sub,.form-hint,.field-label,.form-label,.card-title,.row-title,.kpi .k,.tile small,small){font-size:12px!important}
+  .screen table :is(td,th){font-size:12.8px!important;padding:7px 7px!important}
+  .screen :is(.card,.panel){padding:12px!important}
+}
+@media(prefers-reduced-motion:reduce){.sidebar-workspace #pay-remind .payrem-post{animation:none!important}}
+</style>
+
 </head>
 <body>
 <div id="payrem-bar" onclick="payRemGoHome()"></div>
@@ -682,10 +1329,11 @@ input:focus,select:focus,textarea:focus{border-color:#91a9c2;box-shadow:0 0 0 3p
     <div class="brand-mark">RJ</div>
     <div class="brand-copy"><strong>ROCKJAZZ</strong><span>PREMIUM YÖNETİM</span></div>
   </div>
-  <div class="sidebar-workspace"><span class="workspace-dot"></span><span><b>Silifke Eğitim Merkezi</b><small>Yönetim çalışma alanı</small></span><span class="workspace-chevron">⌄</span></div>
+  <div class="sidebar-workspace"><span class="workspace-dot"></span><span><b>Silifke Eğitim Merkezi</b><small>Yönetim çalışma alanı</small></span><span class="workspace-chevron">⌄</span><div id="pay-remind"></div></div>
   <div class="nav-caption">GENEL</div>
   <div class="bn-in">
     <button id="bn-home" class="on" onclick="go('s-list')"><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8M5 10v10h14V10"/></svg><span>Ana Sayfa</span></button>
+    <button id="bn-students" onclick="go('s-students')"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6M16 11a3 3 0 1 0 0-6M18 14c1.8.8 3 2.6 3 5"/></svg><span>Öğrenciler</span></button>
     <button id="bn-daily" onclick="go('s-daily')"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg><span>Yoklama</span></button>
     <button id="bn-week" onclick="go('s-week')"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg><span>Program</span></button>
     <button id="bn-veli" onclick="go('s-veli-share')"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6M16 5a3 3 0 010 6M18 14c1.8.8 3 2.6 3 5"/></svg><span>Veli</span></button>
@@ -732,7 +1380,6 @@ input:focus,select:focus,textarea:focus{border-color:#91a9c2;box-shadow:0 0 0 3p
     <button class="btn btn-purple" onclick="go('s-reg')">+ Yeni Kayıt</button>
   </div>
   <div id="search-res" style="display:none;margin-top:10px"></div>
-  <div id="pay-remind"></div>
   <div class="mini-row2" id="mini-row2">
     <button class="mini-w mw-day" onclick="go('s-daily')"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg><span>Günlük Yoklama</span></button>
     <button class="mini-w mw-form" onclick="go('s-yform')"><svg viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4h6v3H9zM9 12h6M9 16h6"/></svg><span>Yoklama Formu</span></button>
@@ -743,10 +1390,6 @@ input:focus,select:focus,textarea:focus{border-color:#91a9c2;box-shadow:0 0 0 3p
   <div id="rec-banner"></div>
   <div id="lvl-banner"></div>
   <div id="um-banner"></div>
-  <div class="card mb14" id="today-sched-card">
-    <div style="font-weight:700;font-size:14px;color:var(--text);margin-bottom:10px" id="today-sched-title">📅 Bugün Dersi Olanlar</div>
-    <div id="today-sched-list"></div>
-  </div>
   <div class="tile-grid">
     <button class="tile teal tile-prospect-pink" onclick="go('s-pros')"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M9 15l2 2 4-4"/></svg><span style="min-width:0;flex:1">Ön Görüşme<small>Randevu · Hatırlatma · Deneme dersi</small><span id="pros-line" style="display:none;margin-top:6px;border-top:1px solid rgba(255,255,255,.35);padding-top:5px"></span></span></button>
     <button class="tile" onclick="go('s-week')"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg><span>Haftalık Program</span></button>
@@ -757,6 +1400,11 @@ input:focus,select:focus,textarea:focus{border-color:#91a9c2;box-shadow:0 0 0 3p
     <button class="tile" style="background:#00FFFF;border-color:#00e0e0;color:#1e293b" onclick="go('s-rcpt')"><svg viewBox="0 0 24 24"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/></svg><span>Ödemeler &amp; Makbuz<small>Toplu makbuz gönder</small></span></button>
     <button class="tile" onclick="toggleBulkPanel()"><svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg><span>Aylık Toplu Arşiv</span></button>
     <button class="tile" onclick="openArchive()"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v11a1 1 0 001 1h12a1 1 0 001-1V8M10 12h4"/></svg><span>Eski Kursiyer Arşivi</span></button>
+  </div>
+
+  <div class="card mb14" id="today-sched-card">
+    <div style="font-weight:700;font-size:14px;color:var(--text);margin-bottom:10px" id="today-sched-title">📅 Bugün Dersi Olanlar</div>
+    <div id="today-sched-list"></div>
   </div>
   <div id="bulk-panel" style="display:none;background:#fff;border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:14px;box-shadow:var(--shadow)">
     <div style="font-weight:700;font-size:14px;color:var(--purple);margin-bottom:12px">📊 Aylık Toplu Arşiv</div>
@@ -775,15 +1423,35 @@ input:focus,select:focus,textarea:focus{border-color:#91a9c2;box-shadow:0 0 0 3p
     </div>
     <div style="font-size:11px;color:var(--dim);margin-top:8px;font-weight:700;text-align:center">Tüm öğrenciler · Her öğrenci ayrı sekme · Yoklama + Ödeme + Özet</div>
   </div>
-  <button id="stu-toggle" onclick="toggleStuList()" style="width:100%;display:flex;align-items:center;justify-content:space-between;gap:10px;background:#fff;border:1px solid var(--border);border-radius:14px;padding:14px 16px;margin-bottom:6px;box-shadow:var(--shadow);cursor:pointer;font-family:'Inter',system-ui,sans-serif;font-weight:700;font-size:15px;color:var(--text)">
-    <span>👥 Öğrencilerimiz <span id="stu-count" style="color:var(--muted);font-size:13px"></span></span>
-    <span id="stu-arrow" style="font-size:18px;color:var(--purple);transition:transform .2s">▾</span>
-  </button>
-  <div id="stu-body" style="display:block">
+
+</div>
+
+
+<div id="s-students" class="screen">
+  <div class="students-page-hero">
+    <div>
+      <div class="students-eyebrow">ROCKJAZZ / ÖĞRENCİ YÖNETİMİ</div>
+      <h1>Kayıtlı Öğrenciler</h1>
+      <p>Aktif, dondurulmuş ve kayıtlı tüm öğrencilerinizi buradan yönetin.</p>
+    </div>
+    <div class="students-page-actions">
+      <button class="btn btn-ghost" onclick="go('s-list')">Ana Sayfa</button>
+      <button class="btn btn-purple" onclick="go('s-reg')">+ Yeni Kayıt</button>
+    </div>
+  </div>
+  <div class="students-toolbar">
+    <div class="students-search-wrap">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m16 16 4 4"/></svg>
+      <input id="students-search" type="search" placeholder="Öğrenci adı veya soyadı ara…" oninput="renderList()">
+    </div>
+    <div class="students-count-chip">Toplam <b id="stu-count">0</b> öğrenci</div>
+  </div>
+  <div id="stu-body" class="students-list-body">
     <div id="list-el"></div>
     <div class="tot" id="tot-el"></div>
   </div>
   <div id="frozen-banner"></div>
+  <div hidden><button id="stu-toggle" type="button"><span id="stu-arrow"></span></button></div>
 </div>
 
 <!-- REGISTER -->
@@ -1266,7 +1934,7 @@ input:focus,select:focus,textarea:focus{border-color:#91a9c2;box-shadow:0 0 0 3p
   </div>
 
   <!-- Period selector -->
-  <div style="background:#fff;border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:14px;box-shadow:var(--shadow)">
+  <div id="ana-period-card" class="analysis-filter-card" style="background:#fff;border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:14px;box-shadow:var(--shadow)">
     <div style="font-weight:700;font-size:13px;color:var(--text2);margin-bottom:10px">📅 Dönem Seçimi</div>
     <div style="display:flex;gap:6px;flex-wrap:wrap" id="period-btns">
       <button class="per-btn sel" data-p="1" onclick="setPeriod(1)">Bu Ay</button>
@@ -1293,27 +1961,31 @@ input:focus,select:focus,textarea:focus{border-color:#91a9c2;box-shadow:0 0 0 3p
 
   <!-- Music vs Chess -->
   <div class="card mb14" id="ana-compare-card">
-    <div style="font-weight:700;font-size:14px;color:var(--text);margin-bottom:14px">🎵 Müzik vs ♟ Satranç Karşılaştırması</div>
+    <div class="analysis-card-heading"><span>🎓 Branş Karşılaştırması</span><small>Müzik · Satranç · Yapay Zeka</small></div>
     <div id="ana-compare"></div>
   </div>
 
   <!-- KDV summary -->
   <div class="card mb14" id="ana-kdv-card">
-    <div style="font-weight:700;font-size:14px;color:var(--text);margin-bottom:14px">🧾 Branş Bazlı KDV (%20) — Bugüne Kadar <span style="font-size:11px;color:var(--muted);font-weight:600">· branşa dokun, isimler açılsın</span></div>
-    <div id="ana-kdv"></div>
-    <div style="font-weight:800;font-size:14px;color:var(--text);margin:16px 0 8px">📅 Ay Bazlı — <span id="kdv-sel-title"></span></div>
-    <div id="kdv-month-pills" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px"></div>
-    <div id="ana-kdv-month"></div>
+    <div class="analysis-card-heading"><span>🧾 Branş Bazlı KDV</span><small>Bugüne kadar · branşa dokun, ayrıntıyı aç</small></div>
+    <div class="analysis-kdv-grid">
+      <div class="analysis-kdv-branches"><div class="analysis-subheading">📊 Branşlara Göre</div><div id="ana-kdv"></div></div>
+      <div class="ana-kdv-month-wrap">
+        <div class="analysis-subheading">📅 Ay Bazlı — <span id="kdv-sel-title"></span></div>
+        <div id="kdv-month-pills" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px"></div>
+        <div id="ana-kdv-month"></div>
+      </div>
+    </div>
   </div>
 
   <!-- Per student payment table -->
-  <div class="card mb14">
-    <div style="font-weight:700;font-size:14px;color:var(--text);margin-bottom:12px">👤 Öğrenci Bazlı Ödeme Durumu</div>
-    <div id="ana-students"></div>
+  <div class="card mb14" id="ana-students-card">
+    <div class="analysis-card-heading"><span>👥 Öğrenci Bazlı Ödeme Durumu</span><small>Seçilen dönem · öğrenci bazında tahsilat ve durum</small></div>
+    <div id="ana-students" class="analysis-student-grid"></div>
   </div>
 
   <!-- Excel export -->
-  <div style="background:#fff;border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:20px;box-shadow:var(--shadow)">
+  <div id="ana-export-card" style="background:#fff;border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:20px;box-shadow:var(--shadow)">
     <div style="font-weight:700;font-size:14px;color:var(--purple);margin-bottom:10px">⬇️ Tüm Verileri Dışa Aktar</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
       <button class="btn btn-green" style="justify-content:center;padding:12px 8px;font-size:13px" onclick="exportAnalysisExcel()">📊 Gelir Raporu Excel</button>
@@ -2025,7 +2697,7 @@ function go(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
   window.scrollTo(0,0);
-  if(id==='s-list') renderList();
+  if(id==='s-list'||id==='s-students') renderList();
   if(id==='s-reg') resetReg();
   if(id==='s-detail') renderDetail();
   if(id==='s-edit') fillEdit();
@@ -2048,8 +2720,8 @@ function go(id){
   if(id==='s-msum') openMsum();
   if(id==='s-chronic') renderChronic();
   if(id==='s-rcpt') rcRender();
-  const bm={'s-list':'home','s-sozlesme':'home','s-daily':'daily','s-week':'week','s-veli-share':'veli'};
-  ['home','daily','week','veli'].forEach(k=>{const b=document.getElementById('bn-'+k);if(b)b.className=(bm[id]===k)?'on':'';});
+  const bm={'s-list':'home','s-sozlesme':'home','s-students':'students','s-daily':'daily','s-week':'week','s-veli-share':'veli'};
+  ['home','students','daily','week','veli'].forEach(k=>{const b=document.getElementById('bn-'+k);if(b)b.className=(bm[id]===k)?'on':'';});
 }
 function dtShow(t){
   ['cal','notes','level','ops','soz'].forEach(k=>{
@@ -2368,7 +3040,9 @@ function renderList(){
   try{renderPayRemind();}catch(e){}
   try{updateChronicTile();}catch(e){}
   renderDupNameWarning();
-  const q=(document.getElementById('search').value||'').toLowerCase();
+  const studentsView=!!document.getElementById('s-students')?.classList.contains('active');
+  const activeSearch=document.getElementById(studentsView?'students-search':'search');
+  const q=((activeSearch&&activeSearch.value)||'').trim().toLocaleLowerCase('tr');
   const shown=students.filter(s=>(s.name+' '+s.surname).toLowerCase().includes(q));
   const el=document.getElementById('list-el');
   const dupSet=fullNameDupSet();
@@ -2389,15 +3063,15 @@ function renderList(){
     }).join('');
   }
   document.getElementById('tot-el').textContent='Toplam '+students.length+' öğrenci';
-  const sc=document.getElementById('stu-count');if(sc)sc.textContent='('+students.length+')';
+  const sc=document.getElementById('stu-count');if(sc)sc.textContent=students.length;
   const sr=document.getElementById('search-res');
-  if(sr){
+  if(sr&&!studentsView){
     if(q){
       const sorted=shown.slice().sort((x,y)=>((x.name||'')+' '+(x.surname||'')).localeCompare((y.name||'')+' '+(y.surname||''),'tr',{sensitivity:'base'}));
       sr.innerHTML='<div style="font-size:12px;font-weight:700;color:var(--muted);margin:2px 2px 8px">🔎 '+sorted.length+' sonuç</div>'+(sorted.length?sorted.map(x=>stuRow(x,dupSet)).join(''):'<div class="card" style="text-align:center;color:var(--muted);font-weight:700;font-size:13px">Öğrenci bulunamadı.</div>');
       sr.style.display='block';
     }else{sr.innerHTML='';sr.style.display='none';}
-  }
+  }else if(sr){sr.innerHTML='';sr.style.display='none';}
 }
 let stuOpen=true;
 function setStuList(open){
@@ -5493,7 +6167,7 @@ function renderPayRemind(){
     payRemLastCount[id]=list.length;
     const cur=payRemCollapsed[id],col=(cur===undefined)?list.length>3:cur;   // 3'ten uzun liste varsayılan kapalı (yer kaplamasın)
     const c1=ph==='post'?'#991b1b':'#075985',bg=ph==='post'?'#dc2626':'#0284c7';
-    const names=list.slice(0,4).map(x=>x.s.name+' '+x.s.surname.charAt(0)+'.').join(', ')+(list.length>4?' +'+(list.length-4):'');
+    const names=list.slice(0,4).map(x=>x.s.name+' '+x.s.surname).join(', ')+(list.length>4?' +'+(list.length-4):'');
     return '<div class="payrem-card payrem-'+ph+(Date.now()<payFlashUntil[ph]?' payrem-flash':'')+'" id="'+id+'">'+
       '<div class="payrem-hd" onclick="payRemToggle(\''+id+'\')" style="color:'+c1+'"><span class="ttl">'+title+'</span><span class="cnt" style="background:'+bg+'">'+list.length+'</span>'+(col?'<span class="pv">'+repEsc(names)+'</span>':'')+'<span class="chv">'+(col?'▸':'▾')+'</span></div>'+
       (col?'':list.map(payRemRow).join(''))+'</div>';
@@ -5826,7 +6500,12 @@ function monthKdv(mk){
     k.rec=kdvAdd(k.rec,r);k.exp=kdvAdd(k.exp,e);k.miss=kdvAdd(k.miss,ms);k.rows.push({s:st,rec:r,exp:e,miss:ms});
     tot.rec=kdvAdd(tot.rec,r);tot.exp=kdvAdd(tot.exp,e);tot.miss=kdvAdd(tot.miss,ms);
   });
-  Object.values(g).forEach(k=>k.rows.sort((a,b)=>b.rec.gross-a.rec.gross));
+  Object.values(g).forEach(k=>k.rows.sort((a,b)=>
+    Number(b.miss.gross>0)-Number(a.miss.gross>0) ||
+    b.miss.gross-a.miss.gross ||
+    b.rec.gross-a.rec.gross ||
+    String(a.s.name+' '+a.s.surname).localeCompare(String(b.s.name+' '+b.s.surname),'tr')
+  ));
   return{g,tot};
 }
 const KDV_CATS=[{t:'🎵 Müzik',g:'music',color:'#1d4ed8',bg:'#eff6ff',bd:'#bfdbfe'},{t:'♟ Satranç',g:'chess',color:'#2f3f73',bg:'#f5f3ff',bd:'#d3d9ea'},{t:'🤖 Yapay Zeka',g:'ai',color:'#0e7490',bg:'#ecfeff',bd:'#a5f3fc'}];
@@ -5899,25 +6578,33 @@ function renderAnalysis(){
   const pct=totalExp>0?Math.round(totalRec/totalExp*100):0;
   const missing=Math.max(0,totalExp-totalRec);
 
-  // Summary cards
+  // Summary cards — presentation only; the source totals above remain unchanged.
+  const missPct=totalExp>0?Math.min(100,Math.round(missing/totalExp*100)):0;
   document.getElementById('ana-summary').innerHTML=`
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
-      <div class="sum-card" style="background:var(--green-l);border-color:#a7f3d0">
-        <div class="sum-n" style="color:var(--green);font-size:16px">${fmtN(totalRec)} ₺</div>
-        <div class="sum-l">Alınan</div>
+    <div class="analysis-kpi-grid">
+      <div class="sum-card ana-kpi ana-kpi-rec">
+        <div class="ana-kpi-top"><span class="ana-kpi-icon">✓</span><span class="sum-l">Alınan</span></div>
+        <div class="sum-n">${fmtN(totalRec)} ₺</div>
+        <div class="ana-kpi-track"><span style="width:${Math.max(0,Math.min(100,pct))}%;background:linear-gradient(90deg,#0e9f6e,#34c99a)"></span></div>
+        <div class="ana-kpi-foot">Beklenenin %${pct}'i tahsil edildi</div>
       </div>
-      <div class="sum-card" style="background:var(--purple-l);border-color:#d3d9ea">
-        <div class="sum-n" style="color:var(--purple);font-size:16px">${fmtN(totalExp)} ₺</div>
-        <div class="sum-l">Beklenen</div>
+      <div class="sum-card ana-kpi ana-kpi-exp">
+        <div class="ana-kpi-top"><span class="ana-kpi-icon">▤</span><span class="sum-l">Beklenen</span></div>
+        <div class="sum-n">${fmtN(totalExp)} ₺</div>
+        <div class="ana-kpi-track"><span style="width:100%;background:linear-gradient(90deg,#4778bd,#8eb7ec)"></span></div>
+        <div class="ana-kpi-foot">Seçilen ${analysisPeriod} aylık dönem</div>
       </div>
-      <div class="sum-card" style="background:${missing>0?'#fee2e2':'#f0fdf4'};border-color:${missing>0?'#fecaca':'#a7f3d0'}">
-        <div class="sum-n" style="color:${missing>0?'#dc2626':'#059669'};font-size:16px">${missing>0?fmtN(missing)+' ₺':'✅ Tam'}</div>
-        <div class="sum-l">${missing>0?'Eksik':'Tüm Ödemeler'}</div>
-        ${missing>0?`<div style="font-size:10px;font-weight:700;color:#b91c1c;margin-top:3px">KDV'siz ${f0(missNet)} ₺</div>`:''}
+      <div class="sum-card ana-kpi ana-kpi-miss">
+        <div class="ana-kpi-top"><span class="ana-kpi-icon">!</span><span class="sum-l">Eksik</span></div>
+        <div class="sum-n">${missing>0?fmtN(missing)+' ₺':'0 ₺'}</div>
+        <div class="ana-kpi-track"><span style="width:${missPct}%;background:linear-gradient(90deg,#ef6464,#f59a9a)"></span></div>
+        <div class="ana-kpi-foot">${missing>0?'Beklenen tutarın %'+missPct+'si':'Ödeme eksiği görünmüyor'}${missing>0?' · KDV’siz '+f0(missNet)+' ₺':''}</div>
       </div>
-      <div class="sum-card" style="background:${pct>=100?'#f0fdf4':pct>=70?'#fefce8':'#fee2e2'};border-color:${pct>=100?'#a7f3d0':pct>=70?'#fde047':'#fecaca'}">
-        <div class="sum-n" style="color:${pct>=100?'#059669':pct>=70?'#d97706':'#dc2626'}">${pct}%</div>
-        <div class="sum-l">Tahsilat Oranı</div>
+      <div class="sum-card ana-kpi ana-kpi-rate">
+        <div class="ana-kpi-top"><span class="ana-kpi-icon">％</span><span class="sum-l">Tahsilat Oranı</span></div>
+        <div class="sum-n">%${pct}</div>
+        <div class="ana-kpi-track"><span style="width:${Math.min(100,pct)}%;background:linear-gradient(90deg,${pct>=100?'#0e9f6e':pct>=70?'#d99a22':'#df5555'},${pct>=100?'#47c99a':pct>=70?'#f2c35d':'#f29a9a'})"></span></div>
+        <div class="ana-kpi-foot">${pct>=100?'Hedef tamamlandı':pct>=70?'Tahsilat iyi ilerliyor':'Tahsilat takibi gerekli'}</div>
       </div>
     </div>`;
 
@@ -5952,21 +6639,16 @@ function renderAnalysis(){
     {k:'ai',ico:'🤖',name:'Yapay Zeka',rec:totalAi,exp:totalAiExp,color:'#0891b2',bg:'#ecfeff',fg:'#0e7490'}
   ];
   cats.forEach(c=>{c.cnt=students.filter(s=>eduGroup(s.education)===c.k).length;c.pct=c.exp>0?Math.round(c.rec/c.exp*100):0;});
-  document.getElementById('ana-compare-card').firstElementChild.textContent='🎵 Müzik · ♟ Satranç · 🤖 Yapay Zeka Karşılaştırması';
-  document.getElementById('ana-compare').innerHTML=cats.map(c=>`
-    <div style="margin-bottom:14px">
-      <div style="display:flex;justify-content:space-between;margin-bottom:6px;gap:8px">
-        <span style="font-weight:600;font-size:13px">${c.ico} ${c.name}</span>
-        <span style="font-weight:700;font-size:13px;color:#059669;text-align:right">${fmtN(c.rec)} ₺ / ${fmtN(c.exp)} ₺ <span style="color:var(--muted)">(${c.pct}%)</span></span>
-      </div>
-      <div class="prog-bar"><div class="prog-fill" style="width:${Math.min(100,c.pct)}%;background:${c.color}"></div></div>
-    </div>`).join('')+`
-    <div style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;font-size:12px">
-      ${cats.map(c=>`<div style="background:${c.bg};border-radius:9px;padding:8px;text-align:center">
-        <div style="font-weight:700;color:${c.fg}">${c.cnt}</div>
-        <div style="color:var(--text2);font-weight:700">${c.name} Öğrencisi</div>
-      </div>`).join('')}
-    </div>`;
+  document.getElementById('ana-compare-card').querySelector('.analysis-card-heading').innerHTML='<span>🎓 Branş Karşılaştırması</span><small>Müzik · Satranç · Yapay Zeka</small>';
+  document.getElementById('ana-compare').innerHTML=`
+    <div class="analysis-compare-grid">${cats.map(c=>`
+      <div class="ana-compare-item" style="--ana-color:${c.color};--ana-tint:${c.bg}">
+        <div class="ana-donut" style="--ana-p:${Math.min(100,c.pct)}%"><div><b>%${c.pct}</b><small>tahsilat</small></div></div>
+        <div class="ana-compare-name">${c.ico} ${c.name}</div>
+        <div class="ana-compare-amount">${fmtN(c.rec)} ₺</div>
+        <div class="ana-compare-sub">Beklenen ${fmtN(c.exp)} ₺</div>
+        <div class="ana-compare-count">${c.cnt} öğrenci</div>
+      </div>`).join('')}</div>`;
 
   // Öğrenci bazlı tablo
   const now=new Date();
@@ -5983,6 +6665,8 @@ function renderAnalysis(){
     const cm=stuMonthDue(s,curMk);
     const diff=Math.round((cm.rec-cm.due)*100)/100; // + fazla, - eksik
     const pct2=periodExp>0?Math.min(100,Math.round(periodPays/periodExp*100)):null;
+    const outstanding=Math.max(0,Math.round((periodExp-periodPays)*100)/100);
+    const paymentPriority=periodExp>0?(periodPays<=0?0:(outstanding>0?1:2)):3;
     let statusTxt,statusColor;
     if(cm.ended){statusTxt='🗂️ Devam etmiyor';statusColor='#7a8399';}
     else if(cm.notStarted){const es=payStart(s);statusTxt='🗓️ '+MONTHS[+es.slice(5,7)-1]+' başlar';statusColor='#1d4ed8';}
@@ -5992,8 +6676,13 @@ function renderAnalysis(){
     else if(diff===0){statusTxt='✅ Tam';statusColor='#059669';}
     else if(diff<0){statusTxt='⚠ Eksik '+fmtN(-diff)+' ₺';statusColor='#dc2626';}
     else{statusTxt='➕ Fazla '+fmtN(diff)+' ₺';statusColor='#2563eb';}
-    return{s,discInfo,periodPays,periodExp,pct2,statusTxt,statusColor,kdvDahil:!!s.kdvDahil,grp:eduGroup(s.education),archived:!!s._archived};
-  }).filter(r=>!r.archived||r.periodPays>0||r.periodExp>0).sort((a,b)=>b.periodPays-a.periodPays);
+    return{s,discInfo,periodPays,periodExp,pct2,outstanding,paymentPriority,statusTxt,statusColor,kdvDahil:!!s.kdvDahil,grp:eduGroup(s.education),archived:!!s._archived};
+  }).filter(r=>!r.archived||r.periodPays>0||r.periodExp>0).sort((a,b)=>
+    a.paymentPriority-b.paymentPriority ||
+    b.outstanding-a.outstanding ||
+    b.periodExp-a.periodExp ||
+    String(a.s.name+' '+a.s.surname).localeCompare(String(b.s.name+' '+b.s.surname),'tr')
+  );
 
   // ── Branş bazlı sade KDV özeti (bugüne kadar alınan tüm ödemeler) ──
   // KDV dahil öğrenci: KDV = alınan × 20/120. KDV hariç öğrenci: KDV = 0.
@@ -6010,11 +6699,12 @@ function renderAnalysis(){
     {t:'🤖 Yapay Zeka',g:'ai',color:'#0e7490',bg:'#ecfeff',bd:'#a5f3fc'}
   ];
   const trio=t=>`
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;text-align:center">
-      <div><div style="font-weight:800;font-size:14px;color:var(--text)">${f2(t.gross)} ₺</div><div style="font-size:10px;color:var(--muted);font-weight:700">Toplam</div></div>
-      <div><div style="font-weight:800;font-size:14px;color:#dc2626">${f2(t.kdv)} ₺</div><div style="font-size:10px;color:var(--muted);font-weight:700">Sadece KDV</div></div>
-      <div><div style="font-weight:800;font-size:14px;color:#059669">${f2(t.net)} ₺</div><div style="font-size:10px;color:var(--muted);font-weight:700">KDV'siz</div></div>
-    </div>`;
+    <div class="ana-kdv-trio">
+      <div><b>${f2(t.gross)} ₺</b><small>Toplam</small></div>
+      <div><b style="color:#d64d57">${f2(t.kdv)} ₺</b><small>Sadece KDV</small></div>
+      <div><b style="color:#168765">${f2(t.net)} ₺</b><small>KDV'siz</small></div>
+    </div>
+    <div class="ana-kdv-stack" aria-label="KDV ve KDV'siz dağılım"><span style="width:${t.gross>0?Math.max(0,Math.min(100,t.net/t.gross*100)):0}%;background:linear-gradient(90deg,#0e9f6e,#48c79a)"></span><i style="width:${t.gross>0?Math.max(0,Math.min(100,t.kdv/t.gross*100)):0}%;background:linear-gradient(90deg,#e05b64,#f3a0a5)"></i></div>`;
   const payerRow=r=>`
     <div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-top:1px solid var(--border)">
       <div style="flex:1;min-width:0">
@@ -6046,12 +6736,12 @@ function renderAnalysis(){
 
   try{renderKdvMonthCard();}catch(e){console.warn('kdvMonth',e);}
 
-  const stuRowHtml=({s,discInfo,periodPays,periodExp,pct2,statusTxt,statusColor})=>`
+  const stuRowHtml=({s,discInfo,periodPays,periodExp,pct2,outstanding,statusTxt,statusColor})=>`
     <div class="stu-pay-row"${discInfo&&discInfo.length?' title="'+repEsc('🤝 '+discInfo.join('\n'))+'" onclick="this.querySelector(\'.dsc-pop\')&&this.querySelector(\'.dsc-pop\').classList.toggle(\'on\')" style="cursor:help;position:relative"':''}>
       <div style="font-size:18px;flex-shrink:0">${eduIcon(s.education)}</div>
       <div style="flex:1;min-width:0">
         <div style="font-weight:600;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${s.name} ${s.surname}${s._archived?' <span style="font-size:10px;font-weight:700;color:#92400e;background:#fef3c7;border-radius:6px;padding:1px 6px">kaydı silindi'+(s.deletedAt?' · '+s.deletedAt.split('-').reverse().join('.'):'')+'</span>':''}</div>
-        <div style="font-size:11px;color:var(--muted);margin-top:2px">${fmtN(periodPays)} ₺ / ${fmtN(periodExp)} ₺${discInfo&&discInfo.length?' <span style="color:#7c3aed;font-weight:700">🤝 indirimli</span>':''}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px">${fmtN(periodPays)} ₺ / ${fmtN(periodExp)} ₺${outstanding>0?' <span style="color:#c62828;font-weight:850">· '+(periodPays<=0?'ÖDEME YOK':'EKSİK ÖDEME')+'</span>':''}${discInfo&&discInfo.length?' <span style="color:#7c3aed;font-weight:700">🤝 indirimli</span>':''}</div>
         ${discInfo&&discInfo.length?'<div class="dsc-pop">'+discInfo.map(x=>'🤝 '+repEsc(x)).join('<br>')+'</div>':''}
         ${pct2!==null?`<div class="prog-bar" style="margin-top:4px"><div class="prog-fill" style="width:${pct2}%;background:${pct2>=100?'#059669':pct2>=50?'#d97706':'#dc2626'}"></div></div>`:''}
       </div>
@@ -6061,11 +6751,15 @@ function renderAnalysis(){
   const arcRows=stuRows.filter(r=>r.archived);
   const kdvRows=stuRows.filter(r=>!r.archived&&r.kdvDahil),nonKdvRows=stuRows.filter(r=>!r.archived&&!r.kdvDahil);
   document.getElementById('ana-students').innerHTML=`
-    <div style="font-weight:700;font-size:12px;color:#1d4ed8;margin:6px 0 8px">✅ KDV Dahil Öğrenciler (${kdvRows.length})</div>
-    ${kdvRows.length?kdvRows.map(stuRowHtml).join(''):'<div style="font-size:12px;color:var(--muted);padding:6px 0">KDV dahil öğrenci yok.</div>'}
-    <div style="font-weight:700;font-size:12px;color:#4b5563;margin:14px 0 8px">🚫 KDV Hariç Öğrenciler (${nonKdvRows.length})</div>
-    ${nonKdvRows.length?nonKdvRows.map(stuRowHtml).join(''):'<div style="font-size:12px;color:var(--muted);padding:6px 0">KDV hariç öğrenci yok.</div>'}
-    ${arcRows.length?`<div style="font-weight:700;font-size:12px;color:#92400e;margin:14px 0 4px">🗂️ Kaydı Silinenler / Devam Etmeyenler (${arcRows.length})</div><div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:8px">Seçili dönemde ödemesi alınan veya ücreti beklenen öğrenciler. Kayıt silindikten sonraki aylarda listede ve beklenen tutarda yer almazlar.</div>${arcRows.map(stuRowHtml).join('')}`:''}`;
+    <section class="ana-stu-group ana-stu-kdv">
+      <div class="ana-stu-group-head"><span>✅ KDV Dahil</span><b>${kdvRows.length}</b></div>
+      <div class="ana-stu-list">${kdvRows.length?kdvRows.map(stuRowHtml).join(''):'<div class="ana-empty">KDV dahil öğrenci yok.</div>'}</div>
+    </section>
+    <section class="ana-stu-group ana-stu-nokdv">
+      <div class="ana-stu-group-head"><span>🚫 KDV Hariç</span><b>${nonKdvRows.length}</b></div>
+      <div class="ana-stu-list">${nonKdvRows.length?nonKdvRows.map(stuRowHtml).join(''):'<div class="ana-empty">KDV hariç öğrenci yok.</div>'}</div>
+    </section>
+    ${arcRows.length?`<section class="ana-stu-archive"><div class="ana-stu-group-head"><span>🗂️ Kaydı Silinenler / Devam Etmeyenler</span><b>${arcRows.length}</b></div><p>Seçili dönemde ödemesi alınan veya ücreti beklenen öğrenciler. Kayıt silindikten sonraki aylarda listede ve beklenen tutarda yer almazlar.</p><div class="ana-stu-archive-list">${arcRows.map(stuRowHtml).join('')}</div></section>`:''}`;
 }
 
 function exportAnalysisExcel(){
@@ -8943,28 +9637,41 @@ if(location.hash.indexOf('#vid=')===0){
 })();
 </script>
 <script>
-// Ödeme hatırlatma listesi: mobilde Günlük Yoklama butonlarının üstünde; web (masaüstü) görünümünde sağ sütunda Ön Görüşme / Haftalık Program kutucuklarının üstünde
+// V9: Masaüstünde ödeme hatırlatması sol menüdeki kurum kartının altında kalır.
+// Mobil/tablet görünümünde sol menü gizli olduğundan hatırlatma yoklama düğmelerinin üstüne alınır.
 (function(){
   try{
     const mq=window.matchMedia('(min-width:1100px)');
     const place=()=>{
-      const el=document.getElementById('pay-remind'),g=document.querySelector('#s-list>.tile-grid'),mini=document.getElementById('mini-row2'),lb=document.getElementById('late-banner');
-      if(!el||!g||!mini)return;
+      const el=document.getElementById('pay-remind');
+      const mini=document.getElementById('mini-row2');
+      const sidebar=document.querySelector('.sidebar-workspace');
+      const lb=document.getElementById('late-banner');
+      if(!el||!mini)return;
       if(mq.matches){
-        el.style.gridColumn='1 / -1';
-        if(el.parentNode!==g||g.firstElementChild!==el)g.insertBefore(el,g.firstElementChild);
-        if(lb&&lb.previousElementSibling!==el)g.insertBefore(lb,el.nextSibling);   // Geç Ödeyenler şeridi: kartın altında
+        if(sidebar && el.parentNode!==sidebar) sidebar.appendChild(el);
+        el.style.gridColumn='';
+        el.style.margin='';
       }else{
         el.style.gridColumn='';
-        if(el.nextElementSibling!==mini)mini.parentNode.insertBefore(el,mini);
+        if(el.parentNode!==mini.parentNode || el.nextElementSibling!==mini){
+          mini.parentNode.insertBefore(el,mini);
+        }
         const tel=document.getElementById('tel-remind');
-        if(lb&&tel&&lb.nextElementSibling!==tel)tel.parentNode.insertBefore(lb,tel);
+        if(lb && tel && lb.nextElementSibling!==tel){
+          tel.parentNode.insertBefore(lb,tel);
+        }
       }
     };
-    const run=()=>{place();try{renderPayRemind();}catch(e){}try{payRemFit();}catch(e){}};
+    const run=()=>{
+      place();
+      try{renderPayRemind();}catch(e){}
+      try{payRemFit();}catch(e){}
+    };
     place();
-    (mq.addEventListener?mq.addEventListener('change',run):mq.addListener(run));
-    window.addEventListener('load',place);
+    if(mq.addEventListener) mq.addEventListener('change',run); else mq.addListener(run);
+    window.addEventListener('load',run);
+    window.addEventListener('resize',place);
   }catch(e){}
 })();
 </script>
