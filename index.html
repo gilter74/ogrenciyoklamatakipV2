@@ -1311,6 +1311,93 @@ body{font-size:16px!important;overflow-x:hidden}
 @media(prefers-reduced-motion:reduce){.sidebar-workspace #pay-remind .payrem-post{animation:none!important}}
 </style>
 
+
+<style id="rockjazz-student-cards-v11">
+/* Shared student profile: one consistent layout for every branch and every student. */
+#s-detail #det-hdr{padding:20px!important;border:1px solid #e1e8f0!important;border-radius:18px!important;background:#fff!important;box-shadow:0 5px 18px rgba(20,41,68,.055)!important}
+#s-detail .student-profile-shell{display:flex;flex-direction:column;gap:16px;min-width:0}
+#s-detail .student-profile-top{display:flex;align-items:center;justify-content:space-between;gap:16px;padding-bottom:14px;border-bottom:1px solid #edf1f5;min-width:0}
+#s-detail .student-identity{display:flex;align-items:center;gap:14px;min-width:0;flex:1}
+#s-detail .student-avatar{width:52px!important;height:52px!important;min-width:52px;border-radius:15px!important;font-size:25px!important;display:flex;align-items:center;justify-content:center;background:linear-gradient(145deg,#203957,#31577d)!important;box-shadow:0 5px 12px rgba(29,53,87,.14)}
+#s-detail .student-identity-copy{min-width:0;flex:1}
+#s-detail .student-name{font-size:clamp(21px,1.7vw,26px);font-weight:850;letter-spacing:-.04em;color:#172b45;line-height:1.2;overflow-wrap:anywhere}
+#s-detail .student-identity-meta{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:7px;min-width:0}
+#s-detail .student-identity-meta>div{display:inline-flex!important;align-items:center;flex-wrap:wrap;gap:5px;margin:0!important;font-size:11.5px!important}
+#s-detail .student-identity-meta .badge{font-size:11.5px!important;padding:5px 9px!important;border-radius:7px!important;font-weight:700!important;line-height:1.25!important}
+#s-detail .student-edit-action{white-space:nowrap;flex:0 0 auto;padding:9px 15px!important;border-radius:10px!important;background:#f5f7fa!important;color:#294968!important;border:1px solid #dce5ee!important;font-size:13.5px!important}
+#s-detail .student-edit-action:hover{background:#eaf0f6!important;border-color:#bdccdc!important}
+#s-detail .student-overview-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;min-width:0}
+#s-detail .student-overview-item{background:#f7f9fc;border:1px solid #e7edf3;border-radius:11px;padding:11px 13px;min-width:0;display:flex;flex-direction:column;justify-content:center;gap:5px}
+#s-detail .student-overview-label{font-size:10px!important;font-weight:800!important;letter-spacing:.075em;color:#8290a2;line-height:1.25;text-transform:uppercase}
+#s-detail .student-overview-item>strong,#s-detail .student-overview-value>strong{font-size:14px!important;line-height:1.35;color:#243c59;font-weight:800;overflow-wrap:anywhere}
+#s-detail .student-overview-fee{background:#eff8f3;border-color:#d8ecdf}
+#s-detail .student-fee-value{font-size:19px!important;color:#167451!important;letter-spacing:-.025em}
+#s-detail .student-fee-value small{font-size:11px!important;color:#668977;font-weight:700}
+#s-detail .student-overview-value{display:flex;align-items:center;gap:5px;flex-wrap:wrap;min-width:0}
+#s-detail .student-overview-value .badge{font-size:11.5px!important;padding:4px 8px!important;white-space:normal;max-width:100%;line-height:1.25!important}
+#s-detail .student-vat-value{display:inline-flex;align-items:center;width:max-content;max-width:100%;padding:5px 9px;border-radius:7px;font-size:12px!important}
+#s-detail .student-vat-value.is-included{background:#e8f3fb;color:#285d89}
+#s-detail .student-vat-value.is-excluded{background:#f0f2f5;color:#5e6b7b}
+#s-detail .student-extra-info{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px}
+#s-detail .student-extra-item{display:flex;flex-direction:column;gap:4px;border-radius:10px;padding:10px 12px;border:1px solid #e5eaf0;min-width:0}
+#s-detail .student-extra-title{font-size:9.5px;font-weight:850;letter-spacing:.075em;color:#79879a}
+#s-detail .student-extra-item strong{font-size:12.5px;line-height:1.4;overflow-wrap:anywhere}
+#s-detail .student-extra-item small{font-size:11px;line-height:1.4;overflow-wrap:anywhere}
+#s-detail .extra-gold{background:#fff9ec;border-color:#f2e4c2;color:#8b641f}
+#s-detail .extra-blue{background:#f1f6fc;border-color:#dce7f3;color:#315f8c}
+#s-detail .extra-green{background:#eff7f2;border-color:#dcece2;color:#246749}
+#s-detail .student-contact-section{border-top:1px solid #edf1f5;padding-top:12px}
+#s-detail .student-contact-title{font-size:10px;font-weight:850;letter-spacing:.09em;color:#8290a2;margin-bottom:8px}
+#s-detail .student-contact-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+#s-detail .student-contact-item{display:flex;align-items:center;gap:9px;padding:9px 11px;border-radius:10px;background:#f7f9fc;border:1px solid #e8edf3;min-width:0}
+#s-detail .student-contact-icon{width:28px;height:28px;flex:0 0 28px;display:grid;place-items:center;border-radius:8px;background:#e9eff6;color:#345879;font-size:12px;font-weight:850}
+#s-detail .student-contact-item>span:last-child{min-width:0;display:flex;flex-direction:column;gap:2px}
+#s-detail .student-contact-item small{font-size:9px!important;font-weight:800;letter-spacing:.065em;color:#8592a3}
+#s-detail .student-contact-item strong{font-size:12px!important;line-height:1.35;color:#344a63;overflow-wrap:anywhere}
+
+/* Shared, compact form system for new registrations and editing, regardless of branch. */
+#s-reg .card,#s-edit .card{max-width:1240px!important;margin-inline:auto;padding:22px!important;border:1px solid #e2e9f0!important;border-radius:17px!important;background:#fff!important;box-shadow:0 7px 22px rgba(20,41,68,.055)!important}
+#s-reg .card>h2,#s-edit .card>h2{font-size:24px!important;font-weight:850!important;letter-spacing:-.035em!important;color:#203957!important;text-align:left!important;margin:0 0 18px!important;padding-bottom:14px;border-bottom:1px solid #edf1f5}
+#s-reg .card>.section-lbl,#s-edit .card>.section-lbl{font-size:12px!important;font-weight:850!important;letter-spacing:.055em!important;color:#294968!important;margin:9px 0 3px!important;padding:9px 0 8px 10px!important;border-bottom:0!important;border-left:3px solid #c5a15d;border-radius:2px 0 0 2px;background:linear-gradient(90deg,#f5f7fa,transparent)}
+#s-reg .card>.g2,#s-edit .card>.g2{grid-column:1/-1;gap:14px}
+#s-reg .card>.mb14,#s-edit .card>.mb14,#s-reg .card>.mb20,#s-edit .card>.mb20{margin-bottom:5px!important;min-width:0}
+#s-reg .card input,#s-reg .card select,#s-reg .card textarea,#s-edit .card input,#s-edit .card select,#s-edit .card textarea{min-height:44px!important;border-radius:9px!important;border-color:#dce4ed!important;font-size:15px!important;color:#263b55!important;padding:10px 12px!important}
+#s-reg .card .lbl,#s-edit .card .lbl{font-size:11.5px!important;color:#697b90!important;font-weight:800!important;letter-spacing:.025em!important;margin-bottom:6px}
+#s-reg .card>div[style*="background:#f0fdf4"],#s-edit .card>div[style*="background:#f0fdf4"],#s-reg .card>div[style*="background:#fefce8"],#s-edit .card>div[style*="background:#fefce8"]{grid-column:1/-1;border-radius:13px!important;padding:16px!important}
+#s-reg .card>.pg,#s-edit .card>.pg{grid-column:1/-1;gap:13px}
+#s-reg .card .pay-grid,#s-edit .card .pay-grid{gap:7px}
+#s-reg .card .pr-btn,#s-edit .card .pr-btn{border-radius:9px!important;min-height:39px!important;font-size:13px!important;font-weight:750!important}
+#s-reg .card .pay-info,#s-edit .card .pay-info{font-size:11.5px!important;line-height:1.45!important}
+#s-reg .card>button[onclick="saveReg()"],#s-edit .card>button[onclick="saveEdit()"]{grid-column:1/-1;min-height:48px!important;border-radius:11px!important;font-size:15px!important;font-weight:800!important;margin-top:5px}
+@media(min-width:800px){
+ #s-reg .card,#s-edit .card{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:18px;row-gap:8px;align-items:start}
+ #s-reg .card>h2,#s-edit .card>h2,#s-reg .card>.section-lbl,#s-edit .card>.section-lbl,#s-reg .card>.g2,#s-edit .card>.g2,#s-reg .card>.pg,#s-edit .card>.pg,#s-reg .card>button[onclick="saveReg()"],#s-edit .card>button[onclick="saveEdit()"]{grid-column:1/-1}
+ #s-reg .card>div[style*="background:#f0fdf4"],#s-edit .card>div[style*="background:#f0fdf4"],#s-reg .card>div[style*="background:#fefce8"],#s-edit .card>div[style*="background:#fefce8"]{grid-column:1/-1}
+}
+@media(max-width:799px){
+ #s-detail #det-hdr{padding:14px!important}
+ #s-detail .student-profile-shell{gap:12px}
+ #s-detail .student-profile-top{align-items:flex-start;gap:8px}
+ #s-detail .student-overview-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+ #s-detail .student-contact-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ #s-detail .student-name{font-size:21px}
+ #s-detail .student-edit-action{font-size:12px!important;padding:7px 10px!important}
+ #s-reg .card,#s-edit .card{padding:14px!important}
+ #s-reg .card>h2,#s-edit .card>h2{font-size:21px!important}
+}
+@media(max-width:480px){
+ #s-detail .student-profile-top{flex-wrap:wrap}
+ #s-detail .student-edit-action{margin-left:auto}
+ #s-detail .student-avatar{width:44px!important;height:44px!important;min-width:44px;font-size:21px!important}
+ #s-detail .student-identity{gap:10px}
+ #s-detail .student-overview-item{padding:9px 10px}
+ #s-detail .student-overview-label{font-size:9px!important}
+ #s-detail .student-overview-item>strong,#s-detail .student-overview-value>strong{font-size:12.5px!important}
+ #s-detail .student-contact-grid{grid-template-columns:1fr}
+ #s-detail .student-extra-info{grid-template-columns:1fr}
+}
+</style>
+
 </head>
 <body>
 <div id="payrem-bar" onclick="payRemGoHome()"></div>
@@ -4090,30 +4177,54 @@ function renderDetail(){
   }
   regBadge+=eduBadge(s);
   document.getElementById('det-hdr').innerHTML=`
-    <div style="display:flex;align-items:flex-start;gap:13px">
-      <div class="avatar" style="width:54px;height:54px;font-size:26px;border-radius:16px">${eduIcon(s.education)}</div>
-      <div style="flex:1;min-width:0">
-        <div style="font-weight:700;font-size:19px">${s.name} ${s.surname}</div>
-        ${regBadge}
-        <div style="display:flex;gap:6px;margin-top:7px;flex-wrap:wrap">
-          <span class="badge" style="background:var(--purple-l);color:var(--purple);border:1px solid #d3d9ea">${s.education}</span>
-          <span class="badge" style="background:var(--green-l);color:var(--green);border:1px solid #a7f3d0">⏱ ${s.program}</span>
-          ${pkgBadge(s.pkg)}
-          ${s.fee?'<span class="badge" style="background:var(--green-l);color:var(--green);border:1px solid #a7f3d0">💰 '+parseFloat(s.fee).toLocaleString('tr-TR')+' ₺/ay</span>':''}
-          ${s.lessonFee?'<span class="badge" style="background:#f0fdf4;color:#166534;border:1px solid #86efac">📚 '+parseFloat(s.lessonFee).toLocaleString('tr-TR')+' ₺/ders</span>':''}
-          ${s.fee?(s.kdvDahil?'<span class="badge" style="background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe">✅ KDV Dahil</span>':'<span class="badge" style="background:#f3f4f6;color:#4b5563;border:1px solid #d1d5db">🚫 KDV Hariç</span>'):''}
-          ${payBadge(s)}
-          ${s.exMonth?'<span class="badge" style="background:#fef3c7;color:#92400e;border:1px solid #fcd34d;white-space:normal">🎫 İstisna: yalnızca '+MONTHS[+s.exMonth.ym.split('-')[1]-1]+' '+s.exMonth.ym.split('-')[0]+' ayı '+parseFloat(s.exMonth.amount).toLocaleString('tr-TR')+' ₺'+(s.fee?' — sonraki aylar '+parseFloat(s.fee).toLocaleString('tr-TR')+' ₺':'')+(s.exMonth.note?' ('+repEsc(s.exMonth.note)+')':'')+'</span>':''}
-          ${s.pendingSchedule&&s.startMonth?'<span class="badge" style="background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;white-space:normal">⏳ Başlangıç: '+MONTHS[+s.startMonth.split('-')[1]-1]+' '+s.startMonth.split('-')[0]+(s.pendingSchedule.length?' — saatler o ay eklenecek: '+s.pendingSchedule.map(sl=>SCHED_DAYS[sl.day]+' '+sl.time).join(' · '):'')+'</span>':''}
-          ${s.schedule&&s.schedule.length?'<span class="badge" style="background:#ecfdf5;color:#15803d;border:1px solid #86efac">📅 '+s.schedule.map(sl=>SCHED_DAYS[sl.day]+' '+sl.time).join(' · ')+'</span>':''}
+    <div class="student-profile-shell">
+      <div class="student-profile-top">
+        <div class="student-identity">
+          <div class="avatar student-avatar">${eduIcon(s.education)}</div>
+          <div class="student-identity-copy">
+            <div class="student-name">${s.name} ${s.surname}</div>
+            <div class="student-identity-meta">
+              <span class="badge student-contract-anchor" style="display:none">Kart</span>
+              ${regBadge}
+            </div>
+          </div>
         </div>
-        <div style="margin-top:10px;display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12px;font-weight:700">
-          ${s.phone?'<div style="background:var(--bg);padding:6px 9px;border-radius:7px;color:var(--text2)">📞 '+s.phone+'</div>':''}
-          ${s.momName||s.momPhone?'<div style="background:#fdf4ff;padding:6px 9px;border-radius:7px;color:var(--text2)">👩 '+(s.momName||'Anne')+': '+(s.momPhone||'—')+'</div>':''}
-          ${s.dadName||s.dadPhone?'<div style="background:#eff6ff;padding:6px 9px;border-radius:7px;color:var(--text2)">👨 '+(s.dadName||'Baba')+': '+(s.dadPhone||'—')+'</div>':''}
-        </div>
+        <button class="btn-edit2 student-edit-action" onclick="go('s-edit')">✏️ Düzenle</button>
       </div>
-      <button class="btn-edit2" onclick="go('s-edit')">✏️ Düzenle</button>
+
+      <div class="student-overview-grid">
+        <div class="student-overview-item student-overview-branch">
+          <span class="student-overview-label">BRANŞ</span>
+          <strong>${s.education||'Belirtilmedi'}</strong>
+        </div>
+        <div class="student-overview-item">
+          <span class="student-overview-label">DERS PROGRAMI</span>
+          <strong>${s.program||'Belirtilmedi'}</strong>
+        </div>
+        <div class="student-overview-item">
+          <span class="student-overview-label">KATILIM PAKETİ</span>
+          <div class="student-overview-value">${pkgBadge(s.pkg)||'<strong>Belirtilmedi</strong>'}</div>
+        </div>
+        ${s.fee?`<div class="student-overview-item student-overview-fee"><span class="student-overview-label">AYLIK ÜCRET</span><strong class="student-fee-value">${parseFloat(s.fee).toLocaleString('tr-TR')} ₺ <small>/ ay</small></strong></div>`:''}
+        ${s.lessonFee?`<div class="student-overview-item"><span class="student-overview-label">DERS BAŞI ÜCRET</span><strong>${parseFloat(s.lessonFee).toLocaleString('tr-TR')} ₺</strong></div>`:''}
+        ${s.fee?`<div class="student-overview-item"><span class="student-overview-label">KDV DURUMU</span><strong class="student-vat-value ${s.kdvDahil?'is-included':'is-excluded'}">${s.kdvDahil?'KDV Dahil':'KDV Hariç'}</strong></div>`:''}
+        <div class="student-overview-item student-overview-payment"><span class="student-overview-label">ÖDEME GÜNÜ</span><div class="student-overview-value">${payBadge(s)||'<strong>Belirtilmedi</strong>'}</div></div>
+      </div>
+
+      ${(s.exMonth||(s.pendingSchedule&&s.startMonth)||(s.schedule&&s.schedule.length))?`<div class="student-extra-info">
+        ${s.exMonth?`<div class="student-extra-item extra-gold"><span class="student-extra-title">ÜCRETE ÖZEL DURUM</span><strong>${MONTHS[+s.exMonth.ym.split('-')[1]-1]} ${s.exMonth.ym.split('-')[0]} · ${parseFloat(s.exMonth.amount).toLocaleString('tr-TR')} ₺</strong>${s.exMonth.note?`<small>${repEsc(s.exMonth.note)}</small>`:''}</div>`:''}
+        ${s.pendingSchedule&&s.startMonth?`<div class="student-extra-item extra-blue"><span class="student-extra-title">BAŞLANGIÇ PROGRAMI</span><strong>${MONTHS[+s.startMonth.split('-')[1]-1]} ${s.startMonth.split('-')[0]}</strong>${s.pendingSchedule.length?`<small>Eklenmesi beklenen saatler: ${s.pendingSchedule.map(sl=>SCHED_DAYS[sl.day]+' '+sl.time).join(' · ')}</small>`:''}</div>`:''}
+        ${s.schedule&&s.schedule.length?`<div class="student-extra-item extra-green"><span class="student-extra-title">HAFTALIK DERS SAATLERİ</span><strong>${s.schedule.map(sl=>SCHED_DAYS[sl.day]+' '+sl.time).join(' · ')}</strong></div>`:''}
+      </div>`:''}
+
+      ${(s.phone||s.momName||s.momPhone||s.dadName||s.dadPhone)?`<div class="student-contact-section">
+        <div class="student-contact-title">İLETİŞİM BİLGİLERİ</div>
+        <div class="student-contact-grid">
+          ${s.phone?`<div class="student-contact-item"><span class="student-contact-icon">☎</span><span><small>ÖĞRENCİ TELEFONU</small><strong>${s.phone}</strong></span></div>`:''}
+          ${s.momName||s.momPhone?`<div class="student-contact-item"><span class="student-contact-icon">A</span><span><small>ANNE</small><strong>${s.momName||'Belirtilmedi'} · ${s.momPhone||'Telefon yok'}</strong></span></div>`:''}
+          ${s.dadName||s.dadPhone?`<div class="student-contact-item"><span class="student-contact-icon">B</span><span><small>BABA</small><strong>${s.dadName||'Belirtilmedi'} · ${s.dadPhone||'Telefon yok'}</strong></span></div>`:''}
+        </div>
+      </div>`:''}
     </div>`;
   document.getElementById('n-hw').value=notesData.homework||'';
   document.getElementById('n-grade').value=notesData.grade||'';
