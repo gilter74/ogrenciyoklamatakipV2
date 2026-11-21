@@ -830,6 +830,7 @@ summary::-webkit-details-marker{display:none}
   <button class="btn-ghost mb14" onclick="go('s-list')">← Geri</button>
   <div class="card mb12" id="det-hdr"></div>
   <div id="det-late"></div>
+  <div id="det-lr-cfg"></div>
   <div class="overdue" id="overdue-box"></div>
   <div class="dt-nav" id="dt-nav">
     <button class="dt-btn on" id="dtb-cal" onclick="dtShow('cal')">Takvim</button>
@@ -4450,17 +4451,27 @@ const LR_SVC=[
   ['track','📈 Bireysel gelişim takibi',false],
   ['feedback','💬 Özel geri bildirimler',false]
 ];
+let lrStu={};   // öğrenciye özel kısıtlama ayarı: lateRestrictStu/<id> = {per?,svc?:{k:bool},fixedEnd?:'YYYY-MM-DD',note?}
 let lrCfg=JSON.parse(JSON.stringify(LR_DEF)),lrExempt={},lrLast=null,lrSynced={},lrSyncT=null,lrPanelOpen=false;
 function lrAdd(ds,n){const d=new Date(ds+'T12:00:00');d.setDate(d.getDate()+n);return fmt(d.getFullYear(),d.getMonth(),d.getDate());}
 function lrDiff(a,b){return Math.round((new Date(b+'T12:00:00')-new Date(a+'T12:00:00'))/86400000);}
 function lrDL(ds){const d=new Date(ds+'T12:00:00');return d.getDate()+' '+MONTHS[d.getMonth()]+' '+d.getFullYear();}
 function lrDS(ds){const d=new Date(ds+'T12:00:00');return d.getDate()+' '+MONTHS[d.getMonth()].slice(0,3);}
 function lrSvcOn(k){return !!(lrCfg.on&&lrCfg.svc&&lrCfg.svc[k]!==false);}
+// Öğrenciye özel değerler (yoksa genel ayar)
+function lrPerFor(s){const o=s&&lrStu[s.id];const p=o&&parseInt(o.per,10);return Math.max(1,p||parseInt(lrCfg.per,10)||7);}
+function lrSvcOnFor(s,k){
+  if(!lrCfg.on)return false;
+  const o=s&&lrStu[s.id];
+  if(o&&o.svc&&typeof o.svc[k]==='boolean')return o.svc[k];
+  return !!(lrCfg.svc&&lrCfg.svc[k]!==false);
+}
+function lrHasCustom(s){const o=s&&lrStu[s.id];return !!(o&&(o.per||o.fixedEnd||(o.svc&&Object.keys(o.svc).length)));}
 function lrCalc(s,pays){
   try{
     if(!s||isFrozen(s))return null;
     if(!(parseFloat(String(s.fee||'').replace(',','.'))>0||parseFloat(String(s.lessonFee||'').replace(',','.'))>0))return null; // ücreti tanımsız öğrenciye uygulanmaz
-    const per=Math.max(1,parseInt(lrCfg.per,10)||7);
+    const per=lrPerFor(s);
     const today=todays(),now=new Date();
     const all=(pays||Object.values(lateAllPay[s.id]||{})).filter(p=>p&&p.date&&!p.recId);
     const reg=(payStart(s)||'').slice(0,7);
@@ -4492,6 +4503,8 @@ function lrCalc(s,pays){
     const sorted=[...dates].sort();
     let end=null;
     sorted.forEach(dd=>{const base=(end&&end>dd)?end:dd;end=lrAdd(base,per);});
+    const fx=lrStu[s.id]&&lrStu[s.id].fixedEnd;   // elle verilen bitiş tarihi hesaplananı geçersiz kılar
+    if(fx&&/^\d{4}-\d{2}-\d{2}$/.test(fx))end=fx;
     const remaining=Math.max(0,lrDiff(today,end));
     return {n:sorted.length,per,accrued:sorted.length*per,since:sorted[0],end,remaining,active:today<end,unpaidNow,months};
   }catch(e){return null;}
@@ -4499,7 +4512,7 @@ function lrCalc(s,pays){
 function payRestriction(s,pays,svc){
   try{
     svc=svc||'hw';
-    if(!s||!lrSvcOn(svc)||lrExempt[s.id])return false;
+    if(!s||!lrSvcOnFor(s,svc)||lrExempt[s.id])return false;
     const r=lrCalc(s,pays);
     if(r&&r.active){lrLast=r;return r;}
     return false;
@@ -5001,7 +5014,7 @@ function lrRestrTag(r,ds){
   return '⛔ KISITLI · '+left+' gün kaldı · '+lrDS(r.end)+' tarihine kadar';
 }
 function lrActiveCount(){return lrCfg.on?lrWho().filter(x=>x.r.active&&!x.ex).length:0;}
-function lrSvcChips(){return LR_SVC.filter(x=>lrSvcOn(x[0])).map(x=>'<span style="background:#fee2e2;color:#991b1b;border:1px solid #fecaca;border-radius:8px;padding:2px 7px;font-size:10.5px;font-weight:700">'+x[1].replace(/^\S+\s/,'')+'</span>').join(' ');}
+function lrSvcChips(st){return LR_SVC.filter(x=>st?lrSvcOnFor(st,x[0]):lrSvcOn(x[0])).map(x=>'<span style="background:#fee2e2;color:#991b1b;border:1px solid #fecaca;border-radius:8px;padding:2px 7px;font-size:10.5px;font-weight:700">'+x[1].replace(/^\S+\s/,'')+'</span>').join(' ');}
 function lrPayStatus(r){const u=r.months.find(m=>m.unpaid);if(u)return '❌ Ödenmedi ('+u.label+')';const l=r.months.filter(m=>m.done).sort((a,b)=>a.done<b.done?1:-1)[0];return l?('✅ Ödendi · '+lrDS(l.done)):'—';}
 async function lrToggleExempt(sid){
   const on=!lrExempt[sid];
@@ -5009,7 +5022,59 @@ async function lrToggleExempt(sid){
   try{await fbSet('lateRestrictExempt/'+sid,on?true:null);}catch(e){}
   lrRefreshAll();
 }
+
+// ── Öğrenciye özel kısıtlama ayarı (detay kartı)
+let lrCfgOpen=false;
+function lrRenderCfg(){
+  const box=document.getElementById('det-lr-cfg');if(!box)return;
+  const st=students.find(x=>x.id===curId);if(!st){box.innerHTML='';return;}
+  const o=lrStu[st.id]||{},custom=lrHasCustom(st),ex=!!lrExempt[st.id];
+  const gPer=parseInt(lrCfg.per,10)||7;
+  let sum;
+  if(ex)sum='⚪ Muaf — kısıtlama uygulanmaz';
+  else if(custom)sum='⚙️ Özel: gecikilen her gün için <b>'+lrPerFor(st)+' gün</b>'+(o.fixedEnd?' · elle bitiş <b>'+lrDL(o.fixedEnd)+'</b>':'')+(o.svc&&Object.keys(o.svc).length?' · hizmet seçimi özel':'');
+  else sum='Genel ayar: her gecikilen gün için <b>'+gPer+' gün</b>';
+  let h='<div class="card mb12" style="border:1px solid '+(custom?'#f59e0b':'#fecaca')+';background:'+(custom?'#fffbeb':'#fff')+';padding:11px 14px">'+
+    '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><div style="flex:1;min-width:160px"><div style="font-weight:800;font-size:13px;color:#991b1b">🚫 Geç Ödeme Kısıtlaması — bu öğrenci</div><div style="font-size:12px;font-weight:600;color:#7f1d1d;margin-top:2px">'+sum+'</div></div>'+
+    '<button class="btn btn-ghost btn-sm" onclick="lrCfgOpen=!lrCfgOpen;lrRenderCfg()">'+(lrCfgOpen?'Kapat':'⚙️ Ayarla')+'</button></div>';
+  if(lrCfgOpen){
+    h+='<div style="margin-top:10px;border-top:1px dashed #fecaca;padding-top:10px">'+
+     '<label style="display:flex;gap:8px;align-items:center;font-size:13px;font-weight:800;color:#4b5563;cursor:pointer;margin-bottom:10px"><input type="checkbox" id="lrs-ex" '+(ex?'checked':'')+' style="width:18px;height:18px"> ⚪ Bu öğrenci için kısıtlama hiç uygulanmasın (muaf)</label>'+
+     '<div style="font-size:12px;font-weight:700;color:#7f1d1d;display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:8px">Gecikilen her takvim günü için: <input type="number" id="lrs-per" min="1" max="60" placeholder="'+gPer+'" value="'+(o.per||'')+'" style="width:64px;padding:6px;border:1px solid #fca5a5;border-radius:8px;font-weight:800"> gün <span style="font-weight:600;color:#9a3412">(boş = genel ayar: '+gPer+')</span></div>'+
+     '<div style="font-size:12px;font-weight:700;color:#7f1d1d;margin-bottom:8px">Elle bitiş tarihi (isteğe bağlı): <input type="date" id="lrs-end" value="'+(o.fixedEnd||'')+'" style="padding:6px;border:1px solid #fca5a5;border-radius:8px;font-weight:700"> <span style="font-weight:600;color:#9a3412">Dolu ise hesaplanan bitişin yerine bu tarih geçerli</span></div>'+
+     '<div style="font-size:12px;font-weight:800;color:#7f1d1d;margin:8px 0 4px">Kısıtlanacak hizmetler (işaretli = kısıtlanır):</div>'+
+     LR_SVC.map(x=>{const on=lrSvcOnFor(st,x[0])||(!lrCfg.on&&(lrCfg.svc[x[0]]!==false));const sp=o.svc&&typeof o.svc[x[0]]==='boolean';
+       return '<label style="display:flex;gap:8px;align-items:flex-start;padding:4px 0;font-size:12.5px;font-weight:700;color:#334155;cursor:pointer"><input type="checkbox" class="lrs-svc" data-k="'+x[0]+'" '+((o.svc&&typeof o.svc[x[0]]==='boolean'?o.svc[x[0]]:(lrCfg.svc[x[0]]!==false))?'checked':'')+' style="width:17px;height:17px;margin-top:1px"><span>'+x[1]+(sp?' <small style="color:#b45309">• özel</small>':'')+'</span></label>';}).join('')+
+     '<label class="lbl" style="margin-top:8px">Not</label><input type="text" id="lrs-note" maxlength="140" value="'+repEsc(o.note||'')+'" placeholder="Örn: Veli ile anlaşıldı, 3 gün tolerans" style="margin-bottom:10px">'+
+     '<div style="display:flex;gap:8px"><button class="btn btn-sm" style="background:#dc2626;color:#fff;font-weight:800" onclick="lrCfgSave()">💾 Kaydet</button><button class="btn btn-ghost btn-sm" onclick="lrCfgReset()">↩️ Genel ayara dön</button></div></div>';
+  }
+  box.innerHTML=h+'</div>';
+}
+async function lrCfgSave(){
+  const st=students.find(x=>x.id===curId);if(!st)return;
+  const per=parseInt(document.getElementById('lrs-per').value,10);
+  const fe=document.getElementById('lrs-end').value;
+  const svc={};
+  document.querySelectorAll('.lrs-svc').forEach(c=>{const k=c.dataset.k,g=lrCfg.svc[k]!==false;if(c.checked!==g)svc[k]=c.checked;});   // yalnız genelden farklı olanlar kaydedilir
+  const o={};
+  if(per>0&&per!==(parseInt(lrCfg.per,10)||7))o.per=Math.min(60,per);
+  if(fe)o.fixedEnd=fe;
+  if(Object.keys(svc).length)o.svc=svc;
+  const note=document.getElementById('lrs-note').value.trim();if(note)o.note=note;
+  const ex=document.getElementById('lrs-ex').checked;
+  if(Object.keys(o).length)lrStu[st.id]=o;else delete lrStu[st.id];
+  try{await fbSet('lateRestrictStu/'+st.id,Object.keys(o).length?o:null);}catch(e){}
+  if(ex!==!!lrExempt[st.id]){if(ex)lrExempt[st.id]=true;else delete lrExempt[st.id];try{await fbSet('lateRestrictExempt/'+st.id,ex?true:null);}catch(e){}}
+  lrCfgOpen=false;lrRefreshAll();
+}
+async function lrCfgReset(){
+  const st=students.find(x=>x.id===curId);if(!st)return;
+  delete lrStu[st.id];
+  try{await fbSet('lateRestrictStu/'+st.id,null);}catch(e){}
+  lrCfgOpen=false;lrRefreshAll();
+}
 function lrRenderDet(){
+  try{lrRenderCfg();}catch(e){console.warn('lrCfg',e);}
   const box=document.getElementById('det-late');if(!box)return;
   const st=students.find(x=>x.id===curId);if(!st||!lrCfg.on){box.innerHTML='';return;}
   const r=lrCalc(st);
@@ -5021,8 +5086,8 @@ function lrRenderDet(){
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;margin:10px 0;font-size:12.5px;font-weight:700;color:#7f1d1d">'+
       '<div>Ödeme: <b>'+lrPayStatus(r)+'</b></div><div>Gecikme: <b>'+r.n+' gün</b></div>'+
       '<div>Biriken süre: <b>'+r.accrued+' gün'+wk+'</b></div><div>Kalan süre: <b>'+r.remaining+' gün</b></div>'+
-      '<div style="grid-column:1/-1">Ek hizmetler <b>'+lrDL(r.end)+'</b> tarihinde açılır'+(r.unpaidNow?' (ödeme yapılmazsa her gün 7 gün eklenir)':'')+'</div></div>'+
-    '<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px">'+lrSvcChips()+'</div>'+
+      '<div style="grid-column:1/-1">Ek hizmetler <b>'+lrDL(r.end)+'</b> tarihinde açılır'+(r.unpaidNow?' (ödeme yapılmazsa her gün '+r.per+' gün eklenir)':'')+'</div></div>'+
+    '<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px">'+lrSvcChips(st)+'</div>'+
     '<div style="text-align:center"><button class="btn btn-ghost btn-sm" onclick="lrToggleExempt(\''+st.id+'\')">⚪ Bu öğrenci için kısıtlamayı kapat (muaf)</button></div></div>';
 }
 function lrSectionHtml(){
@@ -5044,11 +5109,11 @@ function lrSectionHtml(){
   else h+=list.map(x=>{const r=x.r,st=x.s;
     return '<div style="border-top:1px solid #fecaca;padding:9px 0;'+(x.ex?'opacity:.6':'')+'">'+
       '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><div style="font-weight:800;font-size:13.5px;cursor:pointer;min-width:0" onclick="openDetNewWin(\''+st.id+'\')">'+repEsc(st.name+' '+st.surname)+'</div>'+
-      '<span style="background:'+(x.ex?'#9ca3af':(r.active?'#dc2626':'#f59e0b'))+';color:#fff;border-radius:20px;padding:3px 10px;font-size:10.5px;font-weight:800;white-space:nowrap">'+(x.ex?'MUAF':(r.active?'KISITLI':'SÜRE DOLDU'))+'</span></div>'+
+      '<span style="display:flex;gap:5px;align-items:center">'+(lrHasCustom(st)?'<span style="background:#fef3c7;color:#92400e;border:1px solid #fcd34d;border-radius:20px;padding:2px 8px;font-size:10px;font-weight:800;white-space:nowrap">⚙️ özel</span>':'')+'<span style="background:'+(x.ex?'#9ca3af':(r.active?'#dc2626':'#f59e0b'))+';color:#fff;border-radius:20px;padding:3px 10px;font-size:10.5px;font-weight:800;white-space:nowrap">'+(x.ex?'MUAF':(r.active?'KISITLI':'SÜRE DOLDU'))+'</span></span></div>'+
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:3px 10px;margin-top:5px;font-size:11.5px;font-weight:700;color:#7f1d1d">'+
       '<div>Ödeme: '+lrPayStatus(r)+'</div><div>Gecikme: '+r.n+' gün</div><div>Biriken: '+r.accrued+' gün</div><div>Kalan: '+r.remaining+' gün</div>'+
       '<div style="grid-column:1/-1">Ek hizmetler açılış: <b>'+lrDL(r.end)+'</b></div></div>'+
-      '<div style="margin-top:6px"><button class="btn btn-ghost btn-sm" onclick="lrToggleExempt(\''+st.id+'\')">'+(x.ex?'Kısıtlamayı yeniden aç':'⚪ Muaf tut')+'</button></div></div>';}).join('');
+      '<div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap"><button class="btn btn-ghost btn-sm" onclick="lrToggleExempt(\''+st.id+'\')">'+(x.ex?'Kısıtlamayı yeniden aç':'⚪ Muaf tut')+'</button><button class="btn btn-ghost btn-sm" onclick="lrCfgOpen=true;openDet(\''+st.id+'\')">⚙️ Bu öğrenciye özel</button></div></div>';}).join('');
   return h+'</div>';
 }
 function lrTogglePanel(){lrPanelOpen=!lrPanelOpen;try{renderChronic();}catch(e){}}
@@ -5071,7 +5136,7 @@ async function lrSync(){
   try{
     if(!students||!students.length||!db)return;
     for(const st of students){
-      const r=lrCfg.on&&lrSvcOn('parent')&&!lrExempt[st.id]?lrCalc(st):null;
+      const r=lrCfg.on&&lrSvcOnFor(st,'parent')&&!lrExempt[st.id]?lrCalc(st):null;
       const val=(r&&r.active)?{until:r.end,n:r.n}:null;
       const sig=val?val.until+'|'+val.n:'';
       if((lrSynced[st.id]||'')===sig)continue;
@@ -5309,6 +5374,7 @@ function startLateWatch(){
     db.ref('latePaid').on('value',sn=>{latePaid=sn.val()||{};payRemReady.l=true;payRemSig='';refresh();lrRefreshAll();try{payRemTick();}catch(e){}});
     db.ref('settings/lateRestrict').on('value',sn=>{const v=sn.val();lrCfg=JSON.parse(JSON.stringify(LR_DEF));if(v&&typeof v==='object'){if(typeof v.on==='boolean')lrCfg.on=v.on;if(v.per)lrCfg.per=v.per;if(v.svc)Object.assign(lrCfg.svc,v.svc);}lrRefreshAll();});
     db.ref('lateRestrictExempt').on('value',sn=>{lrExempt=sn.val()||{};lrRefreshAll();});
+    db.ref('lateRestrictStu').on('value',sn=>{lrStu=sn.val()||{};lrRefreshAll();});
   }catch(e){}
   try{startPayRemWatch();}catch(e){}
   setTimeout(()=>{const c=document.getElementById('late-card');if(c){c.classList.add('pulse');setTimeout(()=>c.classList.remove('pulse'),3500);}},1500);
