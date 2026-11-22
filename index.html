@@ -74,6 +74,10 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
 #yf-table td{border:1px solid var(--border);padding:0;vertical-align:top}
 #yf-month{width:auto}
 #yf-year{width:80px}
+#yf-table.yf-narrow{max-width:none!important;width:calc(7 * var(--yf-col,128px))!important}
+#yf-table.yf-narrow th{min-width:128px;font-size:12px;padding:8px 2px;white-space:nowrap}
+#yf-table.yf-narrow .yf-cell{font-size:14px;line-height:1.3;padding:6px;overflow-wrap:break-word;word-break:normal}
+#yf-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain}
 #yf-table.yf-fit{width:100%!important}
 #yf-table.yf-fit th{min-width:0}
 #yf-table.yf-fit col{width:15.38%}
@@ -3406,19 +3410,24 @@ function yfToggleSettings(){
   sc.classList.toggle('yf-showset',on);yfWStore('yfShowSet',on?'1':'0');
   setTimeout(yfApplyWidth,0);
 }
+function yfIsNarrow(){return window.innerWidth<700;} // dikey telefon: 7 sütun sığmaz, yatay kaydırma
 function yfApplyWidth(){
   const t=document.getElementById('yf-table');if(!t)return;
-  t.classList.toggle('yf-fit',yfFitMode);
-  const sc=document.getElementById('s-yform');if(sc)sc.classList.toggle('yf-fitmode',yfFitMode);
-  const tsc=document.getElementById('yf-topscroll');if(tsc)tsc.classList.toggle('yf-hid',yfFitMode);
-  const rhNow=(yfFitMode&&yfRowAuto)?yfAutoRowH():yfRowH;
+  const narrow=yfIsNarrow();
+  const fit=yfFitMode&&!narrow;            // dar ekranda "sığdır" yerine okunaklı sütun genişliği
+  const colW=(yfFitMode&&narrow)?128:yfColW;
+  t.classList.toggle('yf-fit',fit);
+  t.classList.toggle('yf-narrow',narrow);
+  const sc=document.getElementById('s-yform');if(sc)sc.classList.toggle('yf-fitmode',fit);
+  const tsc=document.getElementById('yf-topscroll');if(tsc)tsc.classList.toggle('yf-hid',fit||narrow);
+  const rhNow=(fit&&yfRowAuto)?yfAutoRowH():yfRowH;
   t.style.setProperty('--yf-rowh',rhNow+'px');
-  const rr=document.getElementById('yf-h-range');if(rr){rr.value=rhNow;document.getElementById('yf-h-val').textContent=(yfFitMode&&yfRowAuto)?'Otomatik':yfRowH+' px';}
+  const rr=document.getElementById('yf-h-range');if(rr){rr.value=rhNow;document.getElementById('yf-h-val').textContent=(fit&&yfRowAuto)?'Otomatik':yfRowH+' px';}
   const fb=document.getElementById('yf-w-fit');if(fb)fb.classList.toggle('active',yfFitMode);
-  t.style.setProperty('--yf-col',yfColW+'px');
-  const tsi=document.getElementById('yf-topscroll-in');if(tsi)tsi.style.setProperty('--yf-col',yfColW+'px');
-  document.getElementById('yf-w-range').value=yfColW;
-  document.getElementById('yf-w-val').textContent=yfFitMode?'Sığdır':yfColW+' px';
+  t.style.setProperty('--yf-col',colW+'px');
+  const tsi=document.getElementById('yf-topscroll-in');if(tsi)tsi.style.setProperty('--yf-col',colW+'px');
+  document.getElementById('yf-w-range').value=colW;
+  document.getElementById('yf-w-val').textContent=yfFitMode?(narrow?'Otomatik':'Sığdır'):yfColW+' px';
   document.getElementById('yf-width').classList.toggle('locked',yfWLocked);
   document.getElementById('yf-w-range').disabled=yfWLocked;
   document.getElementById('yf-w-lock').textContent=yfWLocked?'🔒 Kilitli (aç)':'🔓 Kilitle';
