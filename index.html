@@ -1562,6 +1562,55 @@ body{font-size:16px!important;overflow-x:hidden}
 /* ═══ END YOKLAMA PREMIUM + EXCEL LAYOUT ═══ */
 
 </style>
+<style id="rockjazz-yoklama-scroll-fix">
+
+/* ═══ MOBİL DİKEY KAYDIRMA DÜZELTMESİ ═══
+   Yatay çizelge kendi içinde kayar; dikey hareket ana sayfaya bırakılır. */
+html{
+  height:auto!important;
+  min-height:100%!important;
+  overflow-x:hidden!important;
+  overflow-y:auto!important;
+  overscroll-behavior-y:auto!important;
+  scroll-behavior:auto!important;
+}
+body{
+  height:auto!important;
+  min-height:100vh!important;
+  overflow-x:hidden!important;
+  overflow-y:auto!important;
+  overscroll-behavior-y:auto!important;
+  position:static!important;
+}
+.screen.active,
+#s-yform,
+#s-yform>div:first-child{
+  height:auto!important;
+  min-height:0!important;
+  max-height:none!important;
+  overflow:visible!important;
+  overscroll-behavior-y:auto!important;
+}
+#s-yform #yf-wrap{
+  overflow-x:auto!important;
+  overflow-y:hidden!important;
+  overscroll-behavior-x:contain!important;
+  overscroll-behavior-y:auto!important;
+  touch-action:pan-x pan-y pinch-zoom!important;
+  -webkit-overflow-scrolling:touch!important;
+}
+#s-yform #yf-table{touch-action:pan-x pan-y pinch-zoom!important}
+#s-yform .yf-width,#s-yform .yf-toolbar,#s-yform .yf-hint{
+  touch-action:pan-y pinch-zoom!important
+}
+@media(max-width:700px){
+  html,body{overflow-y:auto!important}
+  #s-yform{padding-bottom:110px!important}
+  #s-yform #yf-wrap{overscroll-behavior-y:auto!important}
+}
+/* ═══ END MOBİL DİKEY KAYDIRMA DÜZELTMESİ ═══ */
+
+</style>
 </head>
 <body>
 <div id="payrem-bar" onclick="payRemGoHome()"></div>
