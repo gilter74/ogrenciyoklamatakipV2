@@ -581,6 +581,28 @@ body.vj-public-mode .vj-public-footer{font-size:10px}
  body.vj-public-mode .vj-public-head{padding:22px 18px!important}
  body.vj-public-mode .vj-public-body{padding:18px!important}
 }
+
+/* Takvimde planlanan telafi dersi */
+.day-cell.telafi-planned{
+  position:relative;
+  background:#fff7ed!important;
+  border:1.5px solid #f59e0b!important;
+  color:#92400e!important;
+  min-height:58px;
+  padding-bottom:19px!important;
+}
+.day-cell.telafi-planned .telafi-day-label{
+  position:absolute;left:4px;right:4px;bottom:3px;
+  display:block;text-align:center;
+  border-radius:5px;background:#f59e0b;color:#fff;
+  font-size:10px;font-weight:900;line-height:15px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.day-cell.telafi-planned .telafi-day-time{
+  display:block;font-size:9px;font-weight:800;color:#92400e;
+  line-height:11px;text-align:center;margin-top:1px;
+}
+
 </style>
 
 
@@ -2483,6 +2505,7 @@ body{
 <!-- GÜNLÜK YOKLAMA -->
 <div id="s-daily" class="screen">
   <button class="btn-ghost mb14" onclick="go('s-list')">← Geri</button>
+  <div id="yd-tel-banner" style="margin:0 0 12px"></div>
   <div class="card mb14">
     <div class="section-lbl">✅ Günlük Yoklama</div>
     <div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:12px">
@@ -5182,11 +5205,16 @@ function renderCal(){
     const paid=payData.find(p=>p.date===ds);
     const paidSum=payData.filter(p=>p.date===ds).reduce((a,p)=>a+parseFloat(p.amount||0),0);
     let cls='day-cell',extra='';
+    const scheduledTel=curTab==='att'?telScheduledForDate(curId,ds):null;
     if(curTab==='att'){
       if(att==='came'){ cls+=' came'; if(telDone)extra='<span class="pay-amt" title="Telafi dersi yapıldı">🩷</span>'; }
       else if(att==='absent') cls+=' absent';
       else if(att==='istisna') cls+=' istisna';
       else if(rng&&d>=rng.a&&d<=rng.b&&!(payStart(s)&&payStart(s).slice(0,7)>mkey(curY,curM))) cls+=' payday';
+      if(scheduledTel){
+        cls+=' telafi-planned';
+        extra+='<span class="telafi-day-label">TELAFİ</span>'+(scheduledTel.r.tTime?'<span class="telafi-day-time">'+hwEsc(scheduledTel.r.tTime)+'</span>':'');
+      }
       if(ds===today&&!att) cls+=' today-r';
     } else {
       if(paid){ cls+=' paid'; extra='<span class="pay-amt">₺'+paidSum+(payData.some(p=>p.date===ds&&p.exception)?' 🎫':'')+'</span>'; }
@@ -7449,8 +7477,41 @@ function itSt(it,ds){
   if(it.pros){const p=prosAll[it.pros];return (p&&p.tStatus)||'';}
   return ydSt(it.s.id,ds);
 }
+// Günlük Yoklama formunun üstünde, seçili güne planlanan telafileri göster.
+const ydTelBannerDismissed={};
+function ydRenderTelBanner(ds){
+  const el=document.getElementById('yd-tel-banner');
+  if(!el)return;
+  const rows=[];
+  Object.keys(telAll||{}).forEach(id=>{
+    const st=students.find(x=>x.id===id);
+    if(!st)return;
+    Object.keys(telAll[id]||{}).forEach(sourceDate=>{
+      const r=telAll[id][sourceDate];
+      if(r&&r.grant&&r.tDate===ds&&r.tStatus!=='absent'){
+        const key=ds+'|'+id+'|'+sourceDate;
+        if(!ydTelBannerDismissed[key])rows.push({key,st,r});
+      }
+    });
+  });
+  if(!rows.length){el.innerHTML='';return;}
+  el.innerHTML=rows.map(x=>{
+    const name=hwEsc((x.st.name||'')+' '+(x.st.surname||''));
+    const time=x.r.tTime?hwEsc(x.r.tTime):'Saat belirtilmedi';
+    return '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;border:1.5px dashed #f59e0b;background:#fffbeb;color:#92400e;border-radius:13px;padding:10px 12px;margin-bottom:7px;font-size:13px;font-weight:800;box-shadow:0 2px 8px rgba(245,158,11,.08)">'+
+      '<span style="flex:1;min-width:180px">🔔 Telafi · '+name+' · Planlandı · '+telDShort(ds)+' · '+time+'</span>'+
+      '<button type="button" onclick="ydDismissTelBanner('+JSON.stringify(x.key).replace(/"/g,'&quot;')+')" style="border:1px solid #f59e0b;background:#fff;border-radius:9px;padding:6px 10px;color:#92400e;font:800 12px inherit;cursor:pointer">✕ Kapat</button>'+
+    '</div>';
+  }).join('');
+}
+function ydDismissTelBanner(key){
+  ydTelBannerDismissed[key]=true;
+  const ds=document.getElementById('yd-date')?.value||todays();
+  ydRenderTelBanner(ds);
+}
 async function renderDaily(){
   const ds=document.getElementById('yd-date').value||todays();
+  ydRenderTelBanner(ds);
   if(ydDate!==ds){ydDate=ds;ydExtra=[];}
   const items=ydLessons(ds);
   const d=ydDateObj(ds);
@@ -7540,6 +7601,7 @@ function umRender(){
   const a=document.querySelector('.screen.active');
   if(a&&a.id==='s-daily'){
     const ds=ydDate||document.getElementById('yd-date').value||todays();
+    ydRenderTelBanner(ds);
     drawDaily(ydLessons(ds),ds);
   }
 }
@@ -7606,14 +7668,22 @@ function ydCardHtml(it,ds,canSkip){
   const s=it.s,v=itSt(it,ds),c=eduColor(s.education),tel=!!it.tel,pr=!!it.pros;
   const mk=v&&v!=='came'&&v!=='absent'&&v!=='istisna'; // diğer
   const lrr=(!tel&&!pr)?lrRestrictedOn(s,ds):null;
-  const bd=lrr?'#ea580c':v==='absent'?'#fca5a5':v==='istisna'?'#fcd34d':v?'#93c5fd':tel?'#f9a8d4':pr?'#5eead4':c.border;
-  const bg=lrr?'#fff7ed':v==='absent'?'#fef2f2':v==='istisna'?'#fffbeb':v?'#eff6ff':tel?'#fdf2f8':pr?'#f0fdfa':'#fff';
+  // Planlanmış telafi dersi Günlük Yoklama'da dolu, ayrı ve kolay fark edilir kart olarak gösterilir.
+  const bd=tel?'#be185d':lrr?'#ea580c':v==='absent'?'#fca5a5':v==='istisna'?'#fcd34d':v?'#93c5fd':pr?'#5eead4':c.border;
+  const bg=tel?'linear-gradient(135deg,#be185d 0%,#db2777 58%,#ec4899 100%)':lrr?'#fff7ed':v==='absent'?'#fef2f2':v==='istisna'?'#fffbeb':v?'#eff6ff':pr?'#f0fdfa':'#fff';
+  const fg=tel?'#fff':'inherit';
   const bs='flex:1;padding:14px 8px;border-radius:12px;font-family:\'Inter\',system-ui,sans-serif;font-weight:700;font-size:16px;cursor:pointer;border:1px solid ';
   const sm='width:100%;margin-top:8px;padding:10px;border-radius:10px;font-family:\'Inter\',system-ui,sans-serif;font-weight:700;font-size:14px;cursor:pointer;';
   const fnC=pr?'prosTrialMark(\''+it.pros+'\',\'came\')':tel?'telMark(\''+s.id+'\',\''+it.tel+'\',\'came\')':'ydMark(\''+s.id+'\',\'came\')';
   const fnA=pr?'prosTrialMark(\''+it.pros+'\',\'absent\')':tel?'telMark(\''+s.id+'\',\''+it.tel+'\',\'absent\')':'ydMark(\''+s.id+'\',\'absent\')';
   const rec=!tel?(telAll[s.id]||{})[ds]:null;
   let extra='';
+  if(tel){
+    extra='<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.28);border-radius:10px;padding:8px 10px;margin:0 0 10px;color:#fff">'+
+      '<span style="font-size:12px;font-weight:900;letter-spacing:.5px">🩷 PLANLANMIŞ TELAFİ DERSİ</span>'+
+      '<span style="font-size:13px;font-weight:900">🕒 '+(it.times.length?it.times.join(' · '):'Saat belirtilmedi')+'</span></div>'+
+      '<div style="font-size:11px;color:#fff;opacity:.92;margin:-3px 0 9px">Yerine yapıldığı ders: '+telDShort(it.tel)+'</div>';
+  }
   if(v==='istisna'&&!tel){
     extra='<div style="background:#fef3c7;border-radius:10px;padding:8px 10px;margin-bottom:8px;font-size:12px;font-weight:700;color:#92400e">⚠️ İstisna · '+(rec?(rec.kind==='kurum'?'🏢 Kurum nedeniyle':'🧒 Öğrenci mazereti')+' · '+hwEsc(rec.reason||''):'')+(rec&&rec.grant?'<br>🩷 Telafi hakkı var · son tarih '+telDShort(rec.exp):'')+(rec&&rec.tDate?'<br>📅 Telafi: '+telDLong(rec.tDate)+(rec.tTime?' '+rec.tTime:''):'')+'</div>'+
       '<div style="display:flex;gap:8px"><button onclick="istOpen(\''+s.id+'\',\''+ds+'\')" style="flex:1;'+sm+'margin-top:0;border:1px solid #fcd34d;background:#fff;color:#92400e">✏️ Düzenle</button>'+
@@ -7621,20 +7691,20 @@ function ydCardHtml(it,ds,canSkip){
       '<button onclick="istWaNotify(\''+s.id+'\',\''+ds+'\')" style="'+sm+'border:none;background:#25d366;color:#fff">📲 Veliye Bildir</button>';
   }
   const showBtns=v!=='istisna'||tel;
-  return '<div style="background:'+bg+';border:'+(lrr?'2px solid ':'1px solid ')+bd+';border-radius:16px;padding:12px;margin-bottom:10px'+(lrr?';box-shadow:0 0 0 3px rgba(234,88,12,.15)':'')+'">'+
+  return '<div style="background:'+bg+';border:'+(tel?'2px solid ':'1px solid ')+bd+';border-radius:16px;padding:12px;margin-bottom:10px;color:'+fg+';'+(tel?'box-shadow:0 7px 18px rgba(190,24,93,.22);':'')+(lrr?'box-shadow:0 0 0 3px rgba(234,88,4,.15)':'')+'">'+
     (lrr?'<div style="background:#ea580c;color:#fff;border-radius:9px;padding:5px 10px;margin:-2px 0 10px;font-size:12px;font-weight:800">'+lrRestrTag(lrr,ds)+'</div>':'')+
     '<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px"'+(pr?'':' onclick="openDet(\''+s.id+'\')"')+'>'+
-      '<div class="avatar" style="width:40px;height:40px;background:'+c.border+';font-size:18px;flex-shrink:0">'+eduIcon(s.education)+'</div>'+
-      '<div style="flex:1;min-width:0"><div style="font-weight:700;font-size:16px">'+hwEsc(s.name+' '+s.surname)+'</div>'+
-      '<div style="font-size:12px;color:var(--muted);font-weight:700">'+(it.times.length?'🕒 '+it.times.join(' · ')+' · ':'➕ Ek ders · ')+hwEsc(s.education||'')+(pr?' · 🌱 Deneme dersi (ön görüşme adayı)':tel?' · 🩷 Telafi dersi ('+telDShort(it.tel)+' dersi yerine)':mk?' · 🩷 Telafi':'')+'</div></div>'+
+      '<div class="avatar" style="width:40px;height:40px;background:'+(tel?'rgba(255,255,255,.22)':c.border)+';color:'+(tel?'#fff':'inherit')+';font-size:18px;flex-shrink:0">'+eduIcon(s.education)+'</div>'+
+      '<div style="flex:1;min-width:0"><div style="font-weight:800;font-size:16px;color:'+(tel?'#fff':'inherit')+'">'+hwEsc(s.name+' '+s.surname)+'</div>'+
+      '<div style="font-size:12px;color:'+(tel?'rgba(255,255,255,.94)':'var(--muted)')+';font-weight:700">'+(tel?'📅 '+telDLong(ds)+' · 🕒 '+(it.times.join(' · ')||'Saat belirtilmedi'):(it.times.length?'🕒 '+it.times.join(' · ')+' · ':'➕ Ek ders · ')+hwEsc(s.education||'')+(pr?' · 🌱 Deneme dersi':mk?' · 🩷 Telafi':''))+'</div></div>'+
     '</div>'+
     (showBtns?'<div style="display:flex;gap:8px">'+
-      '<button onclick="'+fnC+'" style="'+bs+(v==='came'?'#1d4ed8;background:#1d4ed8;color:#fff':'#bfdbfe;background:#fff;color:#1d4ed8')+'">✅ Geldi</button>'+
-      '<button onclick="'+fnA+'" style="'+bs+(v==='absent'?'#dc2626;background:#dc2626;color:#fff':'#fecaca;background:#fff;color:#dc2626')+'">❌ Gelmedi</button>'+
+      '<button onclick="'+fnC+'" style="'+bs+(v==='came'?'#1d4ed8;background:#1d4ed8;color:#fff':'#fff;background:#fff;color:#1d4ed8')+'">✅ Geldi</button>'+
+      '<button onclick="'+fnA+'" style="'+bs+(v==='absent'?'#dc2626;background:#dc2626;color:#fff':'#fff;background:#fff;color:#dc2626')+'">❌ Gelmedi</button>'+
     '</div>':'')+
     extra+
     (v==='absent'&&!tel&&!pr?'<button onclick="ydNotify(\''+s.id+'\')" style="'+sm+'border:none;background:#25d366;color:#fff">📲 Veliye Bildir</button>':'')+
-    (tel&&!v&&ds===todays()?'<button onclick="telWaNotify(\''+s.id+'\',\''+it.tel+'\',true)" style="'+sm+'border:none;background:#25d366;color:#fff">📲 Veliye Hatırlat</button>':'')+
+    (tel&&!v&&ds===todays()?'<button onclick="telWaNotify(\''+s.id+'\',\''+it.tel+'\',true)" style="'+sm+'border:none;background:#fff;color:#be185d">📲 Veliye Hatırlat</button>':'')+
     (pr&&!v&&ds===todays()?'<button onclick="prosSend(\''+it.pros+'\',\'trial\')" style="'+sm+'border:none;background:#25d366;color:#fff">📲 Veliye Hatırlat</button>':'')+
     (!tel&&!pr&&!v?'<button onclick="istOpen(\''+s.id+'\',\''+ds+'\')" style="'+sm+'border:1px solid #fcd34d;background:#fffbeb;color:#92400e">⚠️ İstisna (ders yapılamadı)</button>':'')+
     (canSkip&&!tel&&!pr?'<button onclick="ydSkipDay(\''+s.id+'\',\''+ds+'\')" style="width:100%;margin-top:8px;padding:8px;border-radius:10px;border:1px dashed #d1d5db;background:transparent;color:#6b7280;font-family:\'Inter\',system-ui,sans-serif;font-weight:700;font-size:12px;cursor:pointer">🚫 Bugün ders yok (listeden kaldır)</button>':'')+
@@ -7743,6 +7813,15 @@ const WA_SIGN='\n\nSaygılarımla,\nRockJazz Müzik Aletleri ve Silifke Satranç
 function telAddMonths(ds,n){const p=ds.split('-').map(Number);const d=new Date(p[0],p[1]-1+n,p[2]);return fmt(d.getFullYear(),d.getMonth(),d.getDate());}
 function telDLong(ds){const d=ydDateObj(ds);return d.getDate()+' '+MONTHS[d.getMonth()]+' '+d.getFullYear()+' '+YD_DAYS[(d.getDay()+6)%7];}
 function telDShort(ds){const d=ydDateObj(ds);return d.getDate()+' '+MONTHS[d.getMonth()];}
+// Seçili öğrenci için bu tarihe planlanmış telafi dersini bul.
+function telScheduledForDate(id,ds){
+  const o=telAll[id]||{};
+  for(const sourceDate of Object.keys(o)){
+    const r=o[sourceDate];
+    if(r&&r.grant&&r.tDate===ds&&r.tStatus!=='absent')return {sourceDate:sourceDate,r:r};
+  }
+  return null;
+}
 function telDaysLeft(exp){return Math.round((ydDateObj(exp)-ydDateObj(todays()))/864e5);}
 function telRecs(id){
   const o=telAll[id]||{};
@@ -7903,21 +7982,41 @@ async function telSchedSave(){
   if(d>r.exp){snack('⚠ Hak süresi '+telDLong(r.exp)+' tarihinde bitiyor; bu tarihe kadar seçin.');return;}
   istClose();
   setSyncing(true);
-  try{await telClearMark(c.id,r);}catch(e){}
+  // Telafi tarihi ve saati, ilgili istisna kaydında saklanır.
+  // Böylece takvim her açıldığında aynı kayıt üzerinden etiketi gösterebilir.
+  const previousDate=r.tDate||'';
   r.tDate=d;r.tTime=t;delete r.tStatus;
-  try{await telPlaceMark(c.id,r);}catch(e){}
-  try{await fbSet('istisna/'+c.id+'/'+c.ds,r);}catch(e){showConf('Kaydedilemedi: '+e.message,'⚠️','Tamam',()=>{});}
+  try{
+    await fbSet('istisna/'+c.id+'/'+c.ds,r);
+    if(!telAll[c.id])telAll[c.id]={};
+    telAll[c.id][c.ds]=r;
+  }catch(e){
+    setSyncing(false);
+    showConf('Kaydedilemedi: '+e.message,'⚠️','Tamam',()=>{});
+    return;
+  }
   setSyncing(false);
-  telRefresh();try{if(document.getElementById('cal-grid'))renderCal();}catch(e){}
-  showConf('Telafi dersi '+telDLong(d)+' · '+t+' olarak ayarlandı. Veliye WhatsApp ile bildirilsin mi?','📲','Evet, Gönder',()=>telWaNotify(c.id,c.ds,false));
+  telRefresh();
+  try{
+    if(curId===c.id&&document.getElementById('cal-grid')){
+      const dp=d.split('-').map(Number);
+      curY=dp[0];curM=dp[1]-1;
+      renderCal();
+    }
+  }catch(e){}
+  showConf('Telafi dersi '+telDLong(d)+' · '+t+' olarak takvime eklendi. Veliye WhatsApp ile bildirilsin mi?','📲','Evet, Gönder',()=>telWaNotify(c.id,c.ds,false));
 }
 async function telSchedClear(id,ds){
   istClose();
   const r=(telAll[id]||{})[ds];if(!r)return;
-  try{await telClearMark(id,r);}catch(e){}
   delete r.tDate;delete r.tTime;delete r.tStatus;
-  try{await fbSet('istisna/'+id+'/'+ds,r);}catch(e){}
-  telRefresh();try{if(document.getElementById('cal-grid'))renderCal();}catch(e){}
+  try{
+    await fbSet('istisna/'+id+'/'+ds,r);
+    if(!telAll[id])telAll[id]={};
+    telAll[id][ds]=r;
+  }catch(e){showConf('Telafi tarihi kaldırılamadı: '+e.message,'⚠️','Tamam',()=>{});return;}
+  telRefresh();
+  try{if(curId===id&&document.getElementById('cal-grid'))renderCal();}catch(e){}
 }
 async function telMark(id,ds,mark){
   const r=(telAll[id]||{})[ds];if(!r)return;
