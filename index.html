@@ -623,6 +623,39 @@ body.vj-public-mode .vj-public-footer{font-size:10px}
   color:#8a3d00!important;line-height:11px!important;text-align:center!important;
   margin-top:2px!important;white-space:nowrap!important;
 }
+
+/* Telafi kayıtları doğrudan haftalık Yoklama Formu hücresinde görünür */
+#s-yform #yf-table .yf-telafi-chip{
+  display:block!important;width:100%!important;box-sizing:border-box!important;
+  margin:5px 0 7px!important;padding:7px 8px!important;
+  border:1.5px solid #f59e0b!important;border-left:5px solid #ea580c!important;
+  border-radius:8px!important;background:#fff0d9!important;color:#7c2d12!important;
+  font-family:'Inter',system-ui,sans-serif!important;line-height:1.25!important;
+  white-space:normal!important;overflow-wrap:anywhere!important;
+  box-shadow:0 2px 6px rgba(234,106,12,.12)!important;
+}
+#s-yform #yf-table .yf-telafi-chip-top{
+  display:flex!important;align-items:center!important;justify-content:space-between!important;
+  gap:4px!important;font-size:9px!important;font-weight:900!important;color:#9a3412!important;
+}
+#s-yform #yf-table .yf-telafi-chip-top b{
+  display:inline-block!important;background:#ea580c!important;color:#fff!important;
+  border-radius:4px!important;padding:2px 5px!important;font-size:9px!important;
+  letter-spacing:.3px!important;
+}
+#s-yform #yf-table .yf-telafi-chip-name{
+  margin-top:4px!important;font-size:12px!important;font-weight:900!important;
+  color:#7c2d12!important;line-height:1.25!important;
+}
+#s-yform #yf-table .yf-telafi-chip-time{
+  display:flex!important;justify-content:space-between!important;gap:4px!important;
+  margin-top:3px!important;font-size:10px!important;font-weight:850!important;color:#92400e!important;
+}
+#s-yform #yf-table .yf-telafi-chip-time span{
+  font-size:8px!important;font-weight:900!important;color:#9a3412!important;
+}
+#s-yform #yf-table .yf-telafi-overflow-row td{padding:4px!important;background:#fffaf2!important}
+
 </style>
 
 
@@ -4050,15 +4083,13 @@ function yfCellInnerHTML(r,c){
   }).join('')+'</div>'):'';
   return `<div class="yf-cell" contenteditable="true" onfocus="yfCellFocus(this)" oninput="yfCellInput(this,${r},${c})" onblur="yfCellBlur(this,${r},${c})">${yfCellDisplayHTML(raw)}</div>${controls}`;
 }
-function yfRenderTelafi(){
-  const box=document.getElementById('yf-telafi-list');
-  if(!box)return;
+function yfTelafiAssignments(){
   const m=parseInt(document.getElementById('yf-month')?.value,10);
   const y=parseInt(document.getElementById('yf-year')?.value,10);
-  if(!Number.isFinite(m)||!Number.isFinite(y)){box.innerHTML='';return;}
+  const out={cells:{},overflow:[]};
+  if(!Number.isFinite(m)||!Number.isFinite(y))return out;
   const prefix=y+'-'+String(m+1).padStart(2,'0');
-  const days=['Pazar','Pazartesi','Salı','Çarşamba','Perşembe','Cuma','Cumartesi'];
-  const rows=[];
+  const items=[];
   Object.keys(telAll||{}).forEach(id=>{
     const st=students.find(x=>x.id===id);
     if(!st)return;
@@ -4067,39 +4098,71 @@ function yfRenderTelafi(){
       const ds=String(r&&r.tDate||'').slice(0,10);
       if(!r||!r.grant||!/^\\d{4}-\\d{2}-\\d{2}$/.test(ds)||!ds.startsWith(prefix))return;
       const dt=ydDateObj(ds);
-      rows.push({st,r,ds,day:days[dt.getDay()]});
+      const col=(dt.getDay()+6)%7; // YF_DAYS: Monday first
+      items.push({id,st,r,ds,col,time:String(r.tTime||'').slice(0,5),sourceDate});
     });
   });
-  rows.sort((a,b)=>(a.ds+(a.r.tTime||'')).localeCompare(b.ds+(b.r.tTime||''))||((a.st.name||'').localeCompare(b.st.name||'','tr')));
-  if(!rows.length){
-    box.innerHTML='';
-    return;
-  }
-  box.innerHTML='<div style="border:1px solid #f59e0b;background:#fffaf0;border-radius:12px;padding:10px 12px">'+
-    '<div style="font-size:12px;font-weight:900;color:#92400e;margin-bottom:8px">🟠 BU AYIN PLANLANMIŞ TELAFİLERİ</div>'+
-    rows.map(x=>{
-      const name=hwEsc((x.st.name||'')+' '+(x.st.surname||''));
-      const date=telDLong(x.ds);
-      const time=hwEsc(x.r.tTime||'Saat belirtilmedi');
-      const status=x.r.tStatus==='came'?' · Geldi':x.r.tStatus==='absent'?' · Gelmedi':' · Planlandı';
-      return '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:#ffedd5;border:1.5px solid #f59e0b;border-left:5px solid #ea580c;border-radius:9px;padding:9px 10px;margin-top:6px;color:#7c2d12">'+
-        '<span style="font-size:12px;font-weight:900;white-space:nowrap">📅 '+hwEsc(date)+' · '+hwEsc(x.day)+'</span>'+
-        '<span style="font-size:12px;font-weight:900;white-space:nowrap">🕒 '+time+'</span>'+
-        '<span style="flex:1;min-width:120px;font-size:14px;font-weight:900;color:#7c2d12">'+name+'</span>'+
-        '<span style="background:#ea580c;color:#fff;border-radius:6px;padding:3px 8px;font-size:10px;font-weight:900;letter-spacing:.4px">TELAFİ</span>'+
-        '<span style="font-size:10px;font-weight:800;color:#9a3412">'+status+'</span>'+
-      '</div>';
-    }).join('')+
+  items.sort((a,b)=>(a.ds+a.time).localeCompare(b.ds+b.time)||((a.st.name||'').localeCompare(b.st.name||'','tr')));
+  items.forEach(item=>{
+    const target=tmin(item.time||'00:00');
+    let bestRow=-1,bestDiff=Infinity;
+    yfData.rows.forEach((row,ri)=>{
+      const raw=yfPlainText(row[item.col]||'');
+      const re=/(?:^|\\D)(\\d{1,2}):([0-5]\\d)(?!\\d)/g;
+      let mt;
+      while((mt=re.exec(raw))){
+        const mins=Number(mt[1])*60+Number(mt[2]);
+        const diff=Math.abs(mins-target);
+        if(diff<bestDiff){bestDiff=diff;bestRow=ri;}
+      }
+    });
+    // Match the telafi to the closest existing lesson-time row for that weekday.
+    // If that weekday has no time at all, create a dedicated read-only row at the bottom.
+    if(bestRow>=0&&bestDiff<=90){
+      const key=bestRow+','+item.col;
+      (out.cells[key]||(out.cells[key]=[])).push(item);
+    }else{
+      out.overflow.push(item);
+    }
+  });
+  return out;
+}
+function yfTelafiBadgeHtml(item){
+  const name=hwEsc((item.st.name||'')+' '+(item.st.surname||''));
+  const date=hwEsc(telDShort(item.ds));
+  const day=YF_DAYS[item.col];
+  const time=hwEsc(item.time||'Saat belirtilmedi');
+  const status=item.r.tStatus==='came'?'GELDİ':item.r.tStatus==='absent'?'GELMEDİ':'PLANLANDI';
+  return '<div class="yf-telafi-chip" title="'+name+' · '+date+' '+day+' · '+time+'">'+
+    '<div class="yf-telafi-chip-top"><span>📅 '+date+' · '+day+'</span><b>TELAFİ</b></div>'+
+    '<div class="yf-telafi-chip-name">'+name+'</div>'+
+    '<div class="yf-telafi-chip-time">🕒 '+time+' <span>'+status+'</span></div>'+
   '</div>';
+}
+function yfTelafiCellHtml(r,c,assignments){
+  const map=assignments||yfTelafiAssignments();
+  return (map.cells[r+','+c]||[]).map(yfTelafiBadgeHtml).join('');
+}
+function yfRenderTelafi(){
+  // Eski bağımsız turuncu kutu kaldırıldı. Telafi kayıtları artık doğrudan
+  // haftalık Yoklama Formu tablosunda, doğru gün ve saat hücresinde gösterilir.
+  const box=document.getElementById('yf-telafi-list');
+  if(box){box.innerHTML='';box.style.display='none';}
 }
 function yfRender(){
   const table=document.getElementById('yf-table');
   const mName=MONTHS[parseInt(document.getElementById('yf-month').value,10)].toUpperCase();
   const yVal=document.getElementById('yf-year').value;
+  const telAssignments=yfTelafiAssignments();
   let html='<colgroup>'+YF_DAYS.map(()=>'<col>').join('')+'</colgroup><tr><th colspan="7" style="font-size:14px;padding:8px">'+mName+' '+yVal+' YOKLAMA</th></tr>';
   html+='<tr>'+YF_DAYS.map(d=>'<th>'+d+'</th>').join('')+'</tr>';
   yfData.rows.forEach((row,r)=>{
-    html+='<tr>'+row.map((cell,c)=>{const bg=(yfData.bg&&yfData.bg[r+','+c])||'';return `<td data-r="${r}" data-c="${c}" class="${yfCellClass(r,c)}"${bg?` style="background:${bg}"`:''}>${yfCellInnerHTML(r,c)}</td>`;}).join('')+'</tr>';
+    html+='<tr>'+row.map((cell,c)=>{const bg=(yfData.bg&&yfData.bg[r+','+c])||'';return `<td data-r="${r}" data-c="${c}" class="${yfCellClass(r,c)}"${bg?` style="background:${bg}"`:''}>${yfCellInnerHTML(r,c)}${yfTelafiCellHtml(r,c,telAssignments)}</td>`;}).join('')+'</tr>';
+  });
+  // O haftanın gününde eşleşen bir ders saati yoksa telafiyi kaybetme:
+  // formun altına yalnızca o telafiler için ayrı, okunaklı hücre satırı ekle.
+  telAssignments.overflow.forEach(item=>{
+    html+='<tr class="yf-telafi-overflow-row">'+YF_DAYS.map((d,c)=>'<td>'+(c===item.col?yfTelafiBadgeHtml(item):'')+'</td>').join('')+'</tr>';
   });
   table.innerHTML=html;
   yfInitToolbar();
@@ -4110,7 +4173,7 @@ function yfRender(){
 function yfRenderCell(r,c){
   const td=table_yfTd(r,c);
   if(td){
-    td.innerHTML=yfCellInnerHTML(r,c);
+    td.innerHTML=yfCellInnerHTML(r,c)+yfTelafiCellHtml(r,c);
     td.className=yfCellClass(r,c);
   }
 }
@@ -8262,7 +8325,7 @@ function telRefresh(){
   try{
     const a=document.querySelector('.screen.active');
     if(a&&a.id==='s-list')renderList();
-    if(a&&a.id==='s-yform')yfRenderTelafi();
+    if(a&&a.id==='s-yform')yfRender();
     // Firebase telafi verisi geç geldiyse günlük formu yeniden kur; planlı telafi
     // öğrencisi, doğru tarih ve saatiyle listeye otomatik eklenir.
     if(a&&a.id==='s-daily'){
