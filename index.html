@@ -7340,17 +7340,10 @@ function renderLevelHistory(){
 }
 // Ay sonuna 5 gün kala: seviyesi girilmemiş öğrencileri hatırlat
 async function renderLevelBanner(){
-  const el=document.getElementById('lvl-banner');if(!el)return;
-  const now=new Date();
-  const last=new Date(now.getFullYear(),now.getMonth()+1,0).getDate();
-  if(now.getDate()<last-4||!students.length){el.innerHTML='';return;}
-  if(!allLevelsLoaded){allLevels=(await fbGet('levels'))||{};allLevelsLoaded=true;}
-  const k=lvlMonthKey(now.getFullYear(),now.getMonth());
-  const missing=students.filter(s=>!(allLevels[s.id]&&allLevels[s.id][k]));
-  if(!missing.length){el.innerHTML='';return;}
-  el.innerHTML='<div class="card mb14" style="border:1px solid #b4bddb;background:#f5f6fb">'+
-    '<div style="font-weight:700;font-size:14px;color:#26335e;margin-bottom:6px">🎯 Ay sonu: '+missing.length+' öğrencinin seviye &amp; ilerlemesi girilmedi</div>'+
-    '<div style="display:flex;flex-wrap:wrap;gap:6px">'+missing.map(s=>'<span onclick="openLvlFor(\''+s.id+'\')" style="cursor:pointer;background:#e9ecf5;color:#26335e;border-radius:20px;padding:4px 11px;font-size:12px;font-weight:600">'+hwEsc(s.name+' '+s.surname)+'</span>').join('')+'</div></div>';
+  // Veli raporları üç aylık dönemler halinde hazırlanır.
+  // Ay sonunda tüm öğrencileri listeleyen seviye hatırlatma bandı bu akışta gösterilmez.
+  const el=document.getElementById('lvl-banner');
+  if(el)el.innerHTML='';
 }
 async function openLvlFor(id){
   await openDet(id);
@@ -9677,24 +9670,62 @@ function repApplyScoreToText(txt,nm,newScore){
   }
   return (t?t.trimEnd()+'\n\n':'')+repScoreSection(nm,newScore);
 }
+function repFullSentence(t){
+  return String(t||'').replace(/\s+/g,' ').replace(/^[\s•\-–—]+/,'').trim();
+}
+function repImportance(t,kind){
+  const x=String(t||'').toLocaleLowerCase('tr-TR');
+  let score=Math.min(4,Math.floor(x.length/90));
+  const important=kind==='hw'
+    ? ['ödev','çalış','tekrar','parça','eser','etüt','nota','ritim','gam','akor','teknik','sınav','performans','sunum','ezber','metronom','problem','bulmaca','açılış','final','hedef']
+    : ['geliş','ilerle','başar','zorlan','eksik','dikkat','düzen','devam','devamsız','katılım','teknik','ritim','nota','konsantrasyon','odak','çalışma','ödev','motivasyon','performans','bağımsız','akıcı','doğru','hata','güçlü','iyileş','hedef','sorumluluk'];
+  important.forEach(w=>{if(x.includes(w))score+=2});
+  if(/[.!?]/.test(x))score+=1;
+  if(x.length<24)score-=3;
+  return score;
+}
+function repSelectImportant(items,kind,limit){
+  const seen=new Set();
+  return (items||[]).map((item,i)=>{
+    const text=repFullSentence(kind==='hw'?item.hw:item.gr);
+    const key=text.toLocaleLowerCase('tr-TR').replace(/[^\p{L}\p{N}]+/gu,' ').trim();
+    if(!text||seen.has(key))return null;seen.add(key);
+    return {item,text,score:repImportance(text,kind),i};
+  }).filter(Boolean).sort((a,b)=>b.score-a.score||b.i-a.i).slice(0,limit).sort((a,b)=>a.i-b.i);
+}
 function repText(s,d,st,score){
   const nm=s.name||'Öğrencimiz';
   const parts=[];
+  const start=new Date(d.logs?.[0]?.date+'T12:00:00');
+  const months={};
+  (d.logs||[]).forEach(l=>{
+    const key=(l.date||'').slice(0,7);
+    if(!key)return;
+    if(!months[key])months[key]={hw:0,note:0};
+    if(l.hw)months[key].hw++;
+    if(l.gr)months[key].note++;
+  });
   if(st.total>0){
     let sen;
-    if(st.rate>=90)sen='Derslere düzenli katılımı gelişimini olumlu destekliyor.';
-    else if(st.rate>=80)sen='Devamlılığı genel olarak iyi; bu düzenin korunması önemli.';
-    else if(st.rate>=65)sen='Devamsızlıklar öğrenme sürekliliğini etkileyebiliyor; düzenli katılımı destekleyebilirsiniz.';
-    else sen='Sık devamsızlık gelişimi yavaşlatıyor; düzenli katılım için desteğinizi rica ederiz.';
-    parts.push('📅 Devam Durumu\n'+nm+' bu dönemde '+st.came+' derse katıldı, '+st.absent+' derse gelmedi (devam oranı %'+st.rate+'). '+sen);
+    if(st.rate>=90)sen='Derslere düzenli katılımı öğrenme sürekliliğini güçlü biçimde destekledi.';
+    else if(st.rate>=80)sen='Derse devamı genel olarak iyiydi; aynı düzenin sürdürülmesi önemlidir.';
+    else if(st.rate>=65)sen='Devamsızlıklar bazı konularda öğrenme sürekliliğini etkiledi. Düzenli katılım gelişimini destekleyecektir.';
+    else sen='Devamsızlıklar öğrenme sürekliliğini belirgin biçimde etkiledi. Düzenli katılım için aile desteği önemlidir.';
+    parts.push('📅 DEVAM VE KATILIM ÖZETİ\n'+nm+' rapor döneminde '+st.came+' derse katıldı, '+st.absent+' derse katılmadı. Devam oranı %'+st.rate+'. '+sen);
+  }else{
+    parts.push('📅 DEVAM VE KATILIM ÖZETİ\nRapor döneminde yoklama kaydı bulunamadı.');
   }
-  if(st.hwCount>0){
-    const hws=d.logs.filter(l=>l.hw).slice(-3).map(l=>repTrim(l.hw,90));
-    parts.push('📚 Ödev ve Çalışma\nDönem boyunca '+st.hwCount+' ödev/çalışma kaydı verildi. Son verilen çalışmalar: '+hws.join('; ')+'.');
+  const hws=repSelectImportant(d.logs,'hw',6);
+  if(hws.length){
+    parts.push('📚 DÖNEMİN ÖNEMLİ ÖDEV VE ÇALIŞMALARI\n'+hws.map((x,i)=>(i+1)+'. '+repDL(x.item.date)+': '+x.text).join('\n'));
+  }else{
+    parts.push('📚 DÖNEMİN ÖNEMLİ ÖDEV VE ÇALIŞMALARI\nBu dönemde kaydedilmiş ödev bulunmuyor.');
   }
-  if(st.noteCount>0){
-    const grs=d.logs.filter(l=>l.gr).slice(-3).map(l=>'• '+repDL(l.date)+': '+repTrim(l.gr,160));
-    parts.push('📝 Öğretmen Gözlemleri\n'+grs.join('\n'));
+  const notes=repSelectImportant(d.logs,'gr',7);
+  if(notes.length){
+    parts.push('📝 ÖĞRETMENİN ÖNEMLİ GÖZLEMLERİ\n'+notes.map((x,i)=>(i+1)+'. '+repDL(x.item.date)+': '+x.text).join('\n'));
+  }else{
+    parts.push('📝 ÖĞRETMENİN ÖNEMLİ GÖZLEMLERİ\nBu dönem için öğretmen değerlendirme notu girilmemiş.');
   }
   parts.push(repScoreSection(nm,score));
   return parts.join('\n\n');
@@ -9829,11 +9860,18 @@ async function repPrepare(id){
     repOpenModal(id,rep);
   }catch(err){hideLoad();showConf('Rapor hazırlanamadı: '+err.message,'⚠️','Tamam',()=>{});}
 }
-function repPrepareFromVeli(){
+async function repPrepareFromVeli(){
   const id=document.getElementById('veli-select').value;
   if(!id){showConf('Lütfen önce bir öğrenci seçin.','⚠️','Tamam',()=>{});return;}
   curId=id;
-  repPrepare(id);
+  showLoad('Öğrenci raporu kontrol ediliyor…');
+  try{
+    repCache[id]=(await fbGet('reports/'+id))||{};
+    const latest=repLatest(repCache[id]);
+    hideLoad();
+    if(latest)repOpenModal(id,JSON.parse(JSON.stringify(latest)));
+    else repPrepare(id);
+  }catch(e){hideLoad();showConf('Rapor bilgisi alınamadı: '+e.message,'⚠️','Tamam',()=>{});}
 }
 function repEditLatest(){
   const r=repLatest(repCache[curId]);if(!r)return;
@@ -11133,6 +11171,7 @@ document.addEventListener('DOMContentLoaded',homeIbanLoad);
     const r=await makeVeliUrl(id,'Tek sayfalık rapor hazırlanıyor…');if(!r)return;
     const vis=vjReadVisibility();r.data.vis=vis;
     const sid=(r.url.split('#vid=')[1]||'').trim();
+    r.data.vis=vjReadVisibility();
     try{await fbSet('veliShare/'+sid,r.data)}catch(e){showConf('Rapor kaydedildi ancak görünürlük ayarı yazılamadı: '+e.message,'⚠️','Tamam',()=>{});return}
     window._veliUrl=r.url;window._veliName=r.name;vjCurrentData=r.data;
     $('veli-link-box').style.display='block';$('veli-link-input').value=r.url;
@@ -11151,20 +11190,32 @@ document.addEventListener('DOMContentLoaded',homeIbanLoad);
   function vjBuildPublicHtml(d,vis,printMode){
     const sec=(title,body)=>`<section class="vj-public-section"><h3>${title}</h3>${body}</section>`;
     let body='';
-    if(vis.report&&d.rep){body+=sec('3 AYLIK GELİŞİM RAPORU',`<div class="vj-public-metrics"><div class="vj-public-metric"><b>${esc(d.rep.score||'—')}/5</b><span>Genel gelişim puanı</span></div><div class="vj-public-metric"><b>${esc(repDL(d.rep.from))}</b><span>Başlangıç</span></div><div class="vj-public-metric"><b>${esc(repDL(d.rep.to))}</b><span>Rapor bitişi</span></div></div><div class="vj-public-note" style="margin-top:12px">${esc(d.rep.text||'')}</div>`)}
-    if(vis.att&&d.att?.length){body+=sec('DERS DEVAM ÖZETİ',d.att.map(a=>`<div class="vj-public-row"><b>${esc(a.l)}</b><span>Geldi: ${a.c} · Gelmedi: ${a.a}</span></div>`).join(''))}
-    if(vis.homework&&(d.hwLog?.length||d.hw||d.gr)){const logs=(d.hwLog||[]).map(x=>`<div class="vj-public-row"><span><b>${esc(x.dl)}</b><br>${esc(x.hw||'')}${x.gr?'<br>'+esc(x.gr):''}</span><span>${esc(x.tm||'')}</span></div>`).join('');body+=sec('ÖDEV VE ÖĞRETMEN NOTLARI',logs||`<div class="vj-public-note">${esc(d.hw||d.gr||'Kayıt bulunmuyor.')}</div>`)}
-    if(vis.level&&d.lvl?.length){body+=sec('SEVİYE VE İLERLEME',(d.lvl||[]).map(x=>`<div class="vj-public-row"><span><b>${esc(x.ml)}</b><br>${esc(x.ln||'')} · ${esc(x.topics||'')}</span><b>${esc(x.pr||0)}/5</b></div>${x.note?`<div class="vj-public-note">${esc(x.note)}</div>`:''}`).join(''))}
-    if(vis.payments&&d.pay3?.length){body+=sec('SON ÜÇ AYIN ÖDEMELERİ',d.pay3.map(x=>`<div class="vj-public-row"><span>${esc(x.dl)} ${x.desc?'· '+esc(x.desc):''}</span><b>${Number(x.amt||0).toLocaleString('tr-TR')} ₺</b></div>`).join(''))}
-    if(vis.balance){body+=sec('GÜNCEL BAKİYE',`<div class="vj-public-metric"><b>${Number(d.bal||0).toLocaleString('tr-TR')} ₺</b><span>Güncel bakiye</span></div>`)}
+    const rep=d.rep||null;
+    if(vis.report&&rep){
+      body+=sec('ÜÇ AYLIK GELİŞİM DEĞERLENDİRMESİ',`<div class="vj-public-metrics"><div class="vj-public-metric"><b>${esc(rep.score||'—')}/5</b><span>Genel gelişim puanı</span></div><div class="vj-public-metric"><b>${esc(repDL(rep.from))}</b><span>Dönem başlangıcı</span></div><div class="vj-public-metric"><b>${esc(repDL(rep.to))}</b><span>Dönem sonu</span></div></div><div class="vj-public-note" style="margin-top:12px">${esc(rep.text||'Rapor metni henüz hazırlanmadı.')}</div>`);
+    }else if(vis.report){
+      body+=sec('ÜÇ AYLIK GELİŞİM DEĞERLENDİRMESİ','<div class="vj-public-note">Bu öğrenci için henüz kaydedilmiş üç aylık rapor bulunmuyor. Yönetici raporu hazırladığında bu sayfada görünecektir.</div>');
+    }
+    // Devam, ödev ve öğretmen notları tek bir üç aylık rapor metninde özetlenir;
+    // ayrı tekrar blokları oluşturarak veli ekranını kalabalıklaştırmayız.
+    if(vis.level&&d.lvl?.length){
+      body+=sec('SEVİYE VE İLERLEME',d.lvl.map(x=>`<div class="vj-public-row"><span><b>${esc(x.ml)}</b><br>${esc(x.ln||'')} · ${esc(x.topics||'')}</span><b>${esc(x.pr||0)}/5</b></div>${x.note?`<div class="vj-public-note">${esc(x.note)}</div>`:''}`).join(''));
+    }
+    if(vis.payments&&d.pay3?.length){
+      body+=sec('SON ÜÇ AYIN ÖDEMELERİ',d.pay3.map(x=>`<div class="vj-public-row"><span>${esc(x.dl)} ${x.desc?'· '+esc(x.desc):''}</span><b>${Number(x.amt||0).toLocaleString('tr-TR')} ₺</b></div>`).join(''));
+    }
+    if(vis.balance){
+      body+=sec('GÜNCEL BAKİYE',`<div class="vj-public-metric"><b>${Number(d.bal||0).toLocaleString('tr-TR')} ₺</b><span>Güncel bakiye</span></div>`);
+    }
     if(!body)body='<div class="vj-public-note">Bu raporda henüz gösterilecek bölüm seçilmedi.</div>';
     return `<div class="vj-report-page"><article class="vj-public-report"><header class="vj-public-head"><div class="eyebrow">ROCKJAZZ · ÖĞRENCİ GELİŞİM RAPORU</div><h1>${esc(d.n||'Öğrenci')}</h1><p>${esc(d.e||d.pr||'Eğitim programı')} · ${esc(d.gen||'')}</p></header><div class="vj-public-body">${body}</div><footer class="vj-public-footer"><span>RockJazz Müzik & Eğitim · Silifke</span><span>Öğrenci gelişim bilgilendirmesi</span></footer></article></div>`;
   }
   window.renderVeliView=async function(data){
     try{if(data&&data.sid&&!data.rs){const lr=await fbGet('lateRestrict/'+data.sid);if(lr&&lr.until&&lr.until>todays()){data.rs=1;data.ru=lr.until;data.hw='';data.gr='';data.hwLog=[];}}}catch(e){}
-    hideLoad();document.querySelectorAll('.screen').forEach(sc=>sc.classList.remove('active'));
+    hideLoad();
+    document.querySelectorAll('.screen').forEach(sc=>sc.classList.remove('active'));
     const screen=$('s-veli-view');screen.classList.add('active');
-    const vis=data.vis||{report:true,att:true,homework:true,level:true,payments:false,balance:false};
+    const vis=data.vis||{report:true,att:true,homework:true,level:false,payments:false,balance:false};
     $('veli-view-body').innerHTML=`<div class="vj-report-toolbar"><button class="btn btn-purple" onclick="window.print()">⬇ PDF olarak kaydet</button></div>${vjBuildPublicHtml(data,vis,false)}`;
   };
   // Yedek arşivi: dosya dışa aktarılır; yerel arşiv kaydı tarih/yıl/ay/öğrenci ile tutulur.
