@@ -2731,6 +2731,7 @@ body{
   <button class="btn-ghost mb14" onclick="go('s-list')">← Geri</button>
   <div class="card mb14">
     <h2 style="font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;font-size:20px;text-align:center;color:#b45309;margin-bottom:10px">📋 Yoklama Formu</h2>
+    <div id="yf-telafi-list" style="margin:0 0 12px"></div>
     <div style="display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;margin-bottom:10px">
       <button class="btn-ghost" style="padding:8px 12px;font-size:14px" onclick="yfChangeMonth(-1)">◀</button>
       <select id="yf-month" onchange="yfLoad()" style="padding:9px 8px;font-size:13px;border-radius:9px;border:1px solid var(--border);font-weight:600">
@@ -4049,6 +4050,48 @@ function yfCellInnerHTML(r,c){
   }).join('')+'</div>'):'';
   return `<div class="yf-cell" contenteditable="true" onfocus="yfCellFocus(this)" oninput="yfCellInput(this,${r},${c})" onblur="yfCellBlur(this,${r},${c})">${yfCellDisplayHTML(raw)}</div>${controls}`;
 }
+function yfRenderTelafi(){
+  const box=document.getElementById('yf-telafi-list');
+  if(!box)return;
+  const m=parseInt(document.getElementById('yf-month')?.value,10);
+  const y=parseInt(document.getElementById('yf-year')?.value,10);
+  if(!Number.isFinite(m)||!Number.isFinite(y)){box.innerHTML='';return;}
+  const prefix=y+'-'+String(m+1).padStart(2,'0');
+  const days=['Pazar','Pazartesi','Salı','Çarşamba','Perşembe','Cuma','Cumartesi'];
+  const rows=[];
+  Object.keys(telAll||{}).forEach(id=>{
+    const st=students.find(x=>x.id===id);
+    if(!st)return;
+    Object.keys(telAll[id]||{}).forEach(sourceDate=>{
+      const r=telAll[id][sourceDate];
+      const ds=String(r&&r.tDate||'').slice(0,10);
+      if(!r||!r.grant||!/^\\d{4}-\\d{2}-\\d{2}$/.test(ds)||!ds.startsWith(prefix))return;
+      const dt=ydDateObj(ds);
+      rows.push({st,r,ds,day:days[dt.getDay()]});
+    });
+  });
+  rows.sort((a,b)=>(a.ds+(a.r.tTime||'')).localeCompare(b.ds+(b.r.tTime||''))||((a.st.name||'').localeCompare(b.st.name||'','tr')));
+  if(!rows.length){
+    box.innerHTML='';
+    return;
+  }
+  box.innerHTML='<div style="border:1px solid #f59e0b;background:#fffaf0;border-radius:12px;padding:10px 12px">'+
+    '<div style="font-size:12px;font-weight:900;color:#92400e;margin-bottom:8px">🟠 BU AYIN PLANLANMIŞ TELAFİLERİ</div>'+
+    rows.map(x=>{
+      const name=hwEsc((x.st.name||'')+' '+(x.st.surname||''));
+      const date=telDLong(x.ds);
+      const time=hwEsc(x.r.tTime||'Saat belirtilmedi');
+      const status=x.r.tStatus==='came'?' · Geldi':x.r.tStatus==='absent'?' · Gelmedi':' · Planlandı';
+      return '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:#ffedd5;border:1.5px solid #f59e0b;border-left:5px solid #ea580c;border-radius:9px;padding:9px 10px;margin-top:6px;color:#7c2d12">'+
+        '<span style="font-size:12px;font-weight:900;white-space:nowrap">📅 '+hwEsc(date)+' · '+hwEsc(x.day)+'</span>'+
+        '<span style="font-size:12px;font-weight:900;white-space:nowrap">🕒 '+time+'</span>'+
+        '<span style="flex:1;min-width:120px;font-size:14px;font-weight:900;color:#7c2d12">'+name+'</span>'+
+        '<span style="background:#ea580c;color:#fff;border-radius:6px;padding:3px 8px;font-size:10px;font-weight:900;letter-spacing:.4px">TELAFİ</span>'+
+        '<span style="font-size:10px;font-weight:800;color:#9a3412">'+status+'</span>'+
+      '</div>';
+    }).join('')+
+  '</div>';
+}
 function yfRender(){
   const table=document.getElementById('yf-table');
   const mName=MONTHS[parseInt(document.getElementById('yf-month').value,10)].toUpperCase();
@@ -4062,6 +4105,7 @@ function yfRender(){
   yfInitToolbar();
   yfActiveEl=null;yfActiveRC=null;
   try{yfApplyWidth();}catch(e){}
+  try{yfRenderTelafi();}catch(e){}
 }
 function yfRenderCell(r,c){
   const td=table_yfTd(r,c);
@@ -8022,6 +8066,7 @@ async function telSchedSave(){
   }
   setSyncing(false);
   telRefresh();
+  try{yfRenderTelafi();}catch(e){}
   try{
     if(curId===c.id&&document.getElementById('cal-grid')){
       const dp=d.split('-').map(Number);
@@ -8049,6 +8094,7 @@ async function telSchedClear(id,ds){
     telAll[id][ds]=r;
   }catch(e){showConf('Telafi tarihi kaldırılamadı: '+e.message,'⚠️','Tamam',()=>{});return;}
   telRefresh();
+  try{yfRenderTelafi();}catch(e){}
   try{if(curId===id&&document.getElementById('cal-grid'))renderCal();}catch(e){}
 }
 async function telMark(id,ds,mark){
@@ -8216,6 +8262,7 @@ function telRefresh(){
   try{
     const a=document.querySelector('.screen.active');
     if(a&&a.id==='s-list')renderList();
+    if(a&&a.id==='s-yform')yfRenderTelafi();
     // Firebase telafi verisi geç geldiyse günlük formu yeniden kur; planlı telafi
     // öğrencisi, doğru tarih ve saatiyle listeye otomatik eklenir.
     if(a&&a.id==='s-daily'){
