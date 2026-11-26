@@ -4096,7 +4096,7 @@ function yfTelafiAssignments(){
     Object.keys(telAll[id]||{}).forEach(sourceDate=>{
       const r=telAll[id][sourceDate];
       const ds=String(r&&r.tDate||'').slice(0,10);
-      if(!r||!r.grant||!/^\\d{4}-\\d{2}-\\d{2}$/.test(ds)||!ds.startsWith(prefix))return;
+      if(!r||!r.grant||!/^\d{4}-\d{2}-\d{2}$/.test(ds)||!ds.startsWith(prefix))return;
       const dt=ydDateObj(ds);
       const col=(dt.getDay()+6)%7; // YF_DAYS: Monday first
       items.push({id,st,r,ds,col,time:String(r.tTime||'').slice(0,5),sourceDate});
@@ -4108,7 +4108,7 @@ function yfTelafiAssignments(){
     let bestRow=-1,bestDiff=Infinity;
     yfData.rows.forEach((row,ri)=>{
       const raw=yfPlainText(row[item.col]||'');
-      const re=/(?:^|\\D)(\\d{1,2}):([0-5]\\d)(?!\\d)/g;
+      const re=/(?:^|\D)(\d{1,2}):([0-5]\d)/g;
       let mt;
       while((mt=re.exec(raw))){
         const mins=Number(mt[1])*60+Number(mt[2]);
