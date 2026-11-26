@@ -603,6 +603,26 @@ body.vj-public-mode .vj-public-footer{font-size:10px}
   line-height:11px;text-align:center;margin-top:1px;
 }
 
+/* Strong visible planned telafi date marker in student calendar */
+.day-cell.telafi-planned{
+  background:#fff0d6!important;color:#8a3d00!important;
+  border:2px solid #f59e0b!important;border-radius:8px!important;
+  min-height:64px!important;padding:5px 2px 22px!important;
+  position:relative!important;overflow:hidden!important;
+  box-shadow:inset 0 0 0 1px rgba(245,158,11,.12)!important;
+}
+.day-cell.telafi-planned .telafi-day-label{
+  position:absolute!important;left:3px!important;right:3px!important;bottom:3px!important;
+  display:block!important;text-align:center!important;border-radius:5px!important;
+  background:#f59e0b!important;color:#fff!important;font-size:10px!important;
+  font-weight:900!important;line-height:15px!important;letter-spacing:.3px!important;
+  white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;
+}
+.day-cell.telafi-planned .telafi-day-time{
+  display:block!important;font-size:9px!important;font-weight:900!important;
+  color:#8a3d00!important;line-height:11px!important;text-align:center!important;
+  margin-top:2px!important;white-space:nowrap!important;
+}
 </style>
 
 
@@ -2505,8 +2525,8 @@ body{
 <!-- GÜNLÜK YOKLAMA -->
 <div id="s-daily" class="screen">
   <button class="btn-ghost mb14" onclick="go('s-list')">← Geri</button>
-  <div id="yd-tel-banner" style="margin:0 0 12px"></div>
   <div class="card mb14">
+    <div id="yd-tel-banner" style="margin:0 0 12px"></div>
     <div class="section-lbl">✅ Günlük Yoklama</div>
     <div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:12px">
       <button class="btn-ghost" style="padding:9px 14px;font-size:15px" onclick="ydShift(-1)">◀</button>
@@ -5205,15 +5225,19 @@ function renderCal(){
     const paid=payData.find(p=>p.date===ds);
     const paidSum=payData.filter(p=>p.date===ds).reduce((a,p)=>a+parseFloat(p.amount||0),0);
     let cls='day-cell',extra='';
-    const scheduledTel=curTab==='att'?telScheduledForDate(curId,ds):null;
+    const scheduledTel=curTab==='att'?telScheduledForDate(curId,ds):[];
     if(curTab==='att'){
       if(att==='came'){ cls+=' came'; if(telDone)extra='<span class="pay-amt" title="Telafi dersi yapıldı">🩷</span>'; }
       else if(att==='absent') cls+=' absent';
       else if(att==='istisna') cls+=' istisna';
       else if(rng&&d>=rng.a&&d<=rng.b&&!(payStart(s)&&payStart(s).slice(0,7)>mkey(curY,curM))) cls+=' payday';
-      if(scheduledTel){
+      if(scheduledTel.length){
         cls+=' telafi-planned';
-        extra+='<span class="telafi-day-label">TELAFİ</span>'+(scheduledTel.r.tTime?'<span class="telafi-day-time">'+hwEsc(scheduledTel.r.tTime)+'</span>':'');
+        const telTimes=scheduledTel.map(x=>x.r.tTime).filter(Boolean);
+        extra+='<span class="telafi-day-label">TELAFİ</span>'+
+          (telTimes.length?'<span class="telafi-day-time">'+telTimes.map(hwEsc).join(' · ')+'</span>':'');
+        const title=scheduledTel.map(x=>'Telafi · '+(x.r.tTime||'Saat belirtilmedi')).join(' | ');
+        extra=extra.replace('class="telafi-day-label"','class="telafi-day-label" title="'+hwEsc(title)+'"');
       }
       if(ds===today&&!att) cls+=' today-r';
     } else {
@@ -7815,12 +7839,13 @@ function telDLong(ds){const d=ydDateObj(ds);return d.getDate()+' '+MONTHS[d.getM
 function telDShort(ds){const d=ydDateObj(ds);return d.getDate()+' '+MONTHS[d.getMonth()];}
 // Seçili öğrenci için bu tarihe planlanmış telafi dersini bul.
 function telScheduledForDate(id,ds){
-  const o=telAll[id]||{};
-  for(const sourceDate of Object.keys(o)){
+  const o=telAll[id]||{},found=[];
+  Object.keys(o).forEach(sourceDate=>{
     const r=o[sourceDate];
-    if(r&&r.grant&&r.tDate===ds&&r.tStatus!=='absent')return {sourceDate:sourceDate,r:r};
-  }
-  return null;
+    const planned=!!(r&&r.grant&&(r.tDate||'').slice(0,10)===ds);
+    if(planned)found.push({sourceDate:sourceDate,r:r});
+  });
+  return found;
 }
 function telDaysLeft(exp){return Math.round((ydDateObj(exp)-ydDateObj(todays()))/864e5);}
 function telRecs(id){
@@ -8003,8 +8028,16 @@ async function telSchedSave(){
       curY=dp[0];curM=dp[1]-1;
       renderCal();
     }
+    if(document.querySelector('.screen.active')?.id==='s-daily'){
+      const input=document.getElementById('yd-date');
+      if(input)input.value=d;
+      ydDate=d;
+      renderDaily();
+    }
   }catch(e){}
-  showConf('Telafi dersi '+telDLong(d)+' · '+t+' olarak takvime eklendi. Veliye WhatsApp ile bildirilsin mi?','📲','Evet, Gönder',()=>telWaNotify(c.id,c.ds,false));
+  // Tarayıcı izni verilirse telafi gününden bir gün önce masaüstü bildirimi gönderilir.
+  try{requestNotifPermission();}catch(e){}
+  showConf('Telafi dersi '+telDLong(d)+' · '+t+' olarak takvime ve Günlük Yoklama listesine eklendi. Bildirim izni verilirse bir gün önce hatırlatma gösterilir. Veliye WhatsApp ile bildirilsin mi?','📲','Evet, Gönder',()=>telWaNotify(c.id,c.ds,false));
 }
 async function telSchedClear(id,ds){
   istClose();
@@ -8034,6 +8067,7 @@ async function telMark(id,ds,mark){
     }
   }catch(e){}
   setSyncing(false);
+  try{const a=document.querySelector('.screen.active');if(a&&a.id==='s-daily')renderDaily();}catch(e){}
 }
 async function telDelete(id,ds){
   showConf('Bu istisna kaydı ve telafi hakkı silinsin mi? (Takvimdeki gün işaretsiz kalır)','🗑️','Evet, Sil',()=>istRemove(id,ds));
@@ -8179,7 +8213,19 @@ function telRefresh(){
   try{telRemindRender();}catch(e){}
   try{umRender();}catch(e){}
   try{renderTelBox();}catch(e){}
-  try{const a=document.querySelector('.screen.active');if(a&&a.id==='s-list')renderList();}catch(e){}
+  try{
+    const a=document.querySelector('.screen.active');
+    if(a&&a.id==='s-list')renderList();
+    // Firebase telafi verisi geç geldiyse günlük formu yeniden kur; planlı telafi
+    // öğrencisi, doğru tarih ve saatiyle listeye otomatik eklenir.
+    if(a&&a.id==='s-daily'){
+      const ds=document.getElementById('yd-date')?.value||todays();
+      ydRenderTelBanner(ds);
+      renderDaily();
+    }
+    // Öğrenci takvimi açıksa telafi tarihini anında boya.
+    if(a&&a.id==='s-detail'&&curTab==='att'&&document.getElementById('cal-grid'))renderCal();
+  }catch(e){}
 }
 function startTelWatch(){
   try{
