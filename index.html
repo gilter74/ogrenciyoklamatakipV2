@@ -3114,6 +3114,17 @@ const dim=(y,m)=>new Date(y,m+1,0).getDate();
 const fd=(y,m)=>{const d=new Date(y,m,1).getDay();return d===0?6:d-1;};
 const tmin=t=>{const p=String(t||'').split(':').map(Number);return isNaN(p[0])?99999:(p[0]||0)*60+(p[1]||0);};
 const todays=()=>{const n=new Date();return fmt(n.getFullYear(),n.getMonth(),n.getDate());};
+// Telafi etiketi saatinden sonraki 5 dakika boyunca görünür kalır.
+function telVisibleUntilFive(ds,time){
+  if(!ds)return false;
+  const today=todays();
+  if(ds>today)return true;
+  if(ds<today)return false;
+  if(!time)return true;
+  const now=new Date();
+  return now.getHours()*60+now.getMinutes()<=tmin(time)+5;
+}
+
 const parseRange=s=>{if(!s)return null;const p=String(s).split('-');return p.length===2?{a:+p[0],b:+p[1]}:null;}; // eski aralık biçimi (yalnızca geriye uyum)
 /* ═══ ÖDEME GÜNÜ SİSTEMİ ═══
    • 1 Şubat 2027'ye kadar: herkesin ödeme günü ayın 20'si (istisna: s.payLegacyDay — Nilda Kaya = 18, sözleşmesi yenilenene kadar).
@@ -3453,8 +3464,8 @@ function renderTodaySched(){
   all.forEach(({s,time,tel,noTime})=>{
     const parts=String(time).split(':').map(Number);
     const lessonMins=(parts[0]||0)*60+(parts[1]||0);
-    if(nowMins>lessonMins+10){
-      if(tel)return; // telafi dersi: saat geçince listeden düşer (bildirim yok)
+    if(nowMins>lessonMins+(tel?5:10)){
+      if(tel)return; // telafi dersi: saatinden 5 dk sonra listeden düşer
       const key=todayStr+'|'+s.id+'|'+time;
       if(!notifiedRemovals.has(key)){
         notifiedRemovals.add(key);
@@ -4096,7 +4107,7 @@ function yfTelafiAssignments(){
     Object.keys(telAll[id]||{}).forEach(sourceDate=>{
       const r=telAll[id][sourceDate];
       const ds=String(r&&r.tDate||'').slice(0,10);
-      if(!r||!r.grant||!/^\d{4}-\d{2}-\d{2}$/.test(ds)||!ds.startsWith(prefix))return;
+      if(!r||!r.grant||!/^\d{4}-\d{2}-\d{2}$/.test(ds)||!ds.startsWith(prefix)||!telVisibleUntilFive(ds,r.tTime))return;
       const dt=ydDateObj(ds);
       const col=(dt.getDay()+6)%7; // YF_DAYS: Monday first
       items.push({id,st,r,ds,col,time:String(r.tTime||'').slice(0,5),sourceDate});
@@ -7595,7 +7606,7 @@ function ydLessons(ds){
     const st=students.find(x=>x.id===id);if(!st)return;
     Object.keys(telAll[id]||{}).forEach(ds0=>{
       const r=telAll[id][ds0];
-      if(r&&r.grant&&r.tDate===ds)arr.push({s:st,times:r.tTime?[r.tTime]:[],first:r.tTime||'',tel:ds0});
+      if(r&&r.grant&&r.tDate===ds&&telVisibleUntilFive(ds,r.tTime))arr.push({s:st,times:r.tTime?[r.tTime]:[],first:r.tTime||'',tel:ds0});
     });
   });
   prosList().forEach(p=>{
@@ -9287,6 +9298,16 @@ function renderWeek(){
       if(f&&s.education!==f)return;
       (s.schedule||[]).forEach(sl=>{if(sl.day===d&&sl.time)items.push({s,time:sl.time});});
     });
+    // Planlı telafiler de haftalık programa eklenir.
+    Object.keys(telAll||{}).forEach(id=>{
+      const st=students.find(x=>x.id===id);if(!st||(f&&st.education!==f))return;
+      Object.keys(telAll[id]||{}).forEach(sourceDate=>{
+        const r=telAll[id][sourceDate];
+        if(!r||!r.grant||!r.tDate||!telVisibleUntilFive(r.tDate,r.tTime))return;
+        const dt=ydDateObj(r.tDate),col=(dt.getDay()+6)%7;
+        if(col===d)items.push({s:st,time:r.tTime||'—',tel:true,sourceDate});
+      });
+    });
     items.sort((a,b)=>a.time.localeCompare(b.time));
     const byTime={};
     items.forEach(it=>{(byTime[it.time]=byTime[it.time]||[]).push(it.s);});
@@ -9298,7 +9319,7 @@ function renderWeek(){
       html+='<div style="display:flex;gap:10px;align-items:flex-start;padding:6px 0;border-top:1px solid #f3f4f6">'+
         '<div style="font-weight:700;font-size:13px;color:var(--purple);min-width:48px">'+hwEsc(t)+'</div>'+
         '<div style="display:flex;flex-wrap:wrap;gap:6px;flex:1">'+byTime[t].map(s=>{const c=eduColor(s.education);
-          return '<span onclick="openDet(\''+s.id+'\')" style="cursor:pointer;background:'+c.bg+';border:1px solid '+c.border+';border-radius:10px;padding:4px 9px;font-size:12px;font-weight:600">'+eduIcon(s.education)+' '+hwEsc(s.name+' '+s.surname)+'</span>';}).join('')+'</div></div>';
+          return '<span onclick="openDet(\''+s.id+'\')" style="cursor:pointer;background:'+(s.tel?'#fff0d9':c.bg)+';border:1px solid '+(s.tel?'#f59e0b':c.border)+';border-radius:10px;padding:4px 9px;font-size:12px;font-weight:700;color:'+(s.tel?'#7c2d12':'inherit')+'">'+(s.tel?'🩷 TELAFİ · ':'')+eduIcon(s.education)+' '+hwEsc(s.name+' '+s.surname)+'</span>';}).join('')+'</div></div>';
     });
     html+='</div>';
   }
